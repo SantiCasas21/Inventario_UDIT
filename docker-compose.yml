@@ -22,15 +22,14 @@ services:
 
   api:
     build:
-      context: .
+      context: ./BE_Inventario_UDIT
       dockerfile: src/API/Dockerfile
     container_name: udit-inventario-api
     ports:
       - "5000:8080"
-      - "5001:8081"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080;https://+:8081
+      - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=UDIT_Inventario_V2;User Id=sa;Password=InventarioV2_2026!;TrustServerCertificate=True;Encrypt=False
     depends_on:
       sqlserver:
