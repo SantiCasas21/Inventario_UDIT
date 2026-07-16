@@ -1,0 +1,68 @@
+<form [formGroup]="form" (ngSubmit)="guardarSalidaInsumos">
+    <mat-form-field>
+        <mat-label>Insumo</mat-label>
+        <mat-select formControlName="idInsumo" (selectionChange)="onOptionChange($event.value)">
+            @for (insumo of insumos; track insumo) {
+                <mat-option [value]="insumo.id">{{insumo.nombreInsumo}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+        <mat-label>Codigo Fabricante/Descripción</mat-label>
+        <mat-select formControlName="idInsumoTabla">
+            @for (insumoCorta of insumosCortaaux; track insumoCorta) {
+                <mat-option [value]="insumoCorta.id">{{insumoCorta.cod_Fabricante}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <mat-form-field class="example-full-width">
+        <mat-label>Descripción</mat-label>
+        <input matInput formControlName="descripcion">
+    </mat-form-field>
+
+    <mat-form-field>
+        <mat-label>Proyecto</mat-label>
+        <mat-select formControlName="idProyecto">
+            @for (proyecto of proyectos; track proyecto) {
+                <mat-option [value]="proyecto.id">{{proyecto.nombre}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+        <mat-label>Estado</mat-label>
+        <mat-select formControlName="idEstado">
+            @for (estado of estadosalidas; track estado) {
+                <mat-option [value]="estado.id">{{estado.nombre}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <!-- <mat-form-field class="example-full-width">
+        <mat-label>Fecha</mat-label>
+        <input matInput formControlName="fecha">
+    </mat-form-field> -->
+
+    <mat-form-field>
+        <mat-label>Fecha</mat-label>
+        <input matInput [matDatepicker]="pickerInicio" formControlName="fecha">
+        <mat-hint>MM/DD/YYYY</mat-hint>
+        <mat-datepicker-toggle matSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+        <mat-datepicker #pickerInicio></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field class="example-full-width">
+        <mat-label>Cantidad</mat-label>
+        <input matInput formControlName="cantidad">
+    </mat-form-field>
+
+    <div mat-dialog-actions>
+        @if(this.data.estado == 1){
+            <button (click)="guardarSalidaInsumos()" mat-raised-button color="accent">Agregar</button>
+        }
+        @else()
+        {
+            <button (click)="actualizarSalidaInsumos()" mat-raised-button color="accent">Editar</button>
+        }
+        <button (click)="cerrarPopup()" mat-raised-button color="warn">Cerrar</button>
+    </div>
+
+</form>

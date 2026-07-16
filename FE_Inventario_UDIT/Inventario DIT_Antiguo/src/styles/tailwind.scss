@@ -1,0 +1,21 @@
+/* ----------------------------------------------------------------------------------------------------- */
+/*  @ Main Tailwind file for injecting utilities.
+/* ----------------------------------------------------------------------------------------------------- */
+@tailwind utilities;
+
+.w-8{
+    width: 100px !important;
+    height: 70px !important;
+}
+
+.xl\:col-span-2{
+    width:150%;
+}
+
+.text-lg{
+    font-size: 35px !important;
+}
+
+.leading-6{
+    line-height: 3rem !important;
+}

@@ -1,0 +1,19 @@
+<form [formGroup]="form" (ngSubmit)="guardarEmpaquetamiento">
+    <mat-form-field class="example-full-width">
+        <mat-label>Tipo</mat-label>
+        <input matInput formControlName="tipo">
+    </mat-form-field>
+
+
+    <div mat-dialog-actions>
+        @if(this.data.estado == 1){
+            <button (click)="guardarEmpaquetamiento()" mat-raised-button color="accent">Agregar</button>
+        }
+        @else()
+        {
+            <button (click)="actualizarEmpaquetamiento()" mat-raised-button color="accent">Editar</button>
+        }
+        <button (click)="cerrarPopup()" mat-raised-button color="warn">Cerrar</button>
+    </div>
+
+</form>

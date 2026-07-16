@@ -1,0 +1,18 @@
+<form [formGroup]="form" (ngSubmit)="guardarUbicaciones">
+    <mat-form-field class="example-full-width">
+        <mat-label>Ubicación</mat-label>
+        <input matInput formControlName="ubicacion">
+    </mat-form-field>
+
+    <div mat-dialog-actions>
+        @if(this.data.estado == 1){
+            <button (click)="guardarUbicaciones()" mat-raised-button color="accent">Agregar</button>
+        }
+        @else()
+        {
+            <button (click)="actualizarUbicaciones()" mat-raised-button color="accent">Editar</button>
+        }
+        <button (click)="cerrarPopup()" mat-raised-button color="warn">Cerrar</button>
+    </div>
+
+</form>
