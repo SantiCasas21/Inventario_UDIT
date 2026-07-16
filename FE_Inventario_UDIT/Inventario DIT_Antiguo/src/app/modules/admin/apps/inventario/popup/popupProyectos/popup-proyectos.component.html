@@ -1,0 +1,50 @@
+<form [formGroup]="form" (ngSubmit)="guardarProyectos">
+    <mat-form-field class="example-full-width">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="nombre">
+    </mat-form-field>
+
+    <mat-form-field class="example-full-width">
+        <mat-label>Descripción</mat-label>
+        <input matInput formControlName="descripcion">
+    </mat-form-field>
+
+    <!-- <mat-form-field class="example-full-width">
+        <mat-label>Estado</mat-label>
+        <input matInput formControlName="idEstado">
+    </mat-form-field> -->
+
+    <mat-form-field>
+        <mat-label>Estado</mat-label>
+        <mat-select formControlName="idEstado">
+            @for (estado of estados; track estado) {
+                <mat-option [value]="estado.id">{{estado.estado}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <!-- <mat-form-field class="example-full-width">
+        <mat-label>Fecha Creacion</mat-label>
+        <input matInput formControlName="fechaCreacion">
+    </mat-form-field> -->
+
+    <mat-form-field>
+        <mat-label>Fecha Creación</mat-label>
+        <input matInput [matDatepicker]="pickerInicio" formControlName="fechaCreacion">
+        <mat-hint>MM/DD/YYYY</mat-hint>
+        <mat-datepicker-toggle matSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+        <mat-datepicker #pickerInicio></mat-datepicker>
+    </mat-form-field>
+
+    <div mat-dialog-actions>
+        @if(this.data.estado == 1){
+            <button (click)="guardarProyectos()" mat-raised-button color="accent">Agregar</button>
+        }
+        @else()
+        {
+            <button (click)="actualizarProyectos()" mat-raised-button color="accent">Editar</button>
+        }
+        <button (click)="cerrarPopup()" mat-raised-button color="warn">Cerrar</button>
+    </div>
+
+
+</form>

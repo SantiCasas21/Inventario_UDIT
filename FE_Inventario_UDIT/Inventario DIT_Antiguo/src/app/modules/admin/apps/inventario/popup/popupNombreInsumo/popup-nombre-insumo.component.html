@@ -1,0 +1,18 @@
+<form [formGroup]="form" (ngSubmit)="guardarNombreInsumo">
+    <mat-form-field class="example-full-width">
+        <mat-label>Nombre Insumo</mat-label>
+        <input matInput formControlName="nombreInsumo">
+    </mat-form-field>
+
+    <div mat-dialog-actions>
+        @if(this.data.estado == 1){
+            <button (click)="guardarNombreInsumo()" mat-raised-button color="accent">Agregar</button>
+        }
+        @else()
+        {
+            <button (click)="actualizarNombreInsumo()" mat-raised-button color="accent">Editar</button>
+        }
+        <button (click)="cerrarPopup()" mat-raised-button color="warn">Cerrar</button>
+    </div>
+
+</form>

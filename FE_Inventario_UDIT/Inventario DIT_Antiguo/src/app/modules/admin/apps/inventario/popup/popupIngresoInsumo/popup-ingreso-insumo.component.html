@@ -1,0 +1,98 @@
+<form [formGroup]="form" (ngSubmit)="guardarIngresoInsumo">
+    <!-- <mat-form-field class="example-full-width">
+        <mat-label>Proveedor</mat-label>
+        <input matInput formControlName="idProveedor">
+    </mat-form-field> -->
+
+    <mat-form-field>
+        <mat-label>Proveedor</mat-label>
+        <mat-select formControlName="idProveedor">
+            @for (proveedor of proveedores; track proveedor) {
+                <mat-option [value]="proveedor.id">{{proveedor.nombre}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <!-- <mat-form-field class="example-full-width">
+        <mat-label>Insumo</mat-label>
+        <input matInput formControlName="idInsumo">
+    </mat-form-field> -->
+
+    <mat-form-field>
+        <mat-label>Insumo</mat-label>
+        <mat-select formControlName="idInsumo" (selectionChange)="onOptionChange($event.value)">
+            @for (insumo of insumos; track insumo) {
+                <mat-option [value]="insumo.id">{{insumo.nombreInsumo}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+        <mat-label>Codigo Fabricante/Descripción</mat-label>
+        <input matInput placeholder="Buscar Nombre de Insumo" (input)="filterCodigo($event.target.value)">
+        <mat-select formControlName="idInsumoTabla">
+            @for (insumoCorta of filteredCodigo; track insumoCorta) {
+                <mat-option [value]="insumoCorta.id">{{insumoCorta.cod_Fabricante}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <mat-form-field class="example-full-width">
+        <mat-label>Cantidad</mat-label>
+        <input matInput formControlName="cantidad">
+    </mat-form-field>
+
+    <!-- <mat-form-field class="example-full-width">
+        <mat-label>Tipo Compra</mat-label>
+        <input matInput formControlName="idTipoCompra">
+    </mat-form-field> -->
+
+    <mat-form-field>
+        <mat-label>Tipo Compra</mat-label>
+        <mat-select formControlName="idTipoCompra">
+            @for (tipocompra of tipocompras; track tipocompra) {
+                <mat-option [value]="tipocompra.id">{{tipocompra.nombre}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <!-- <mat-form-field class="example-full-width">
+        <mat-label>Proyecto</mat-label>
+        <input matInput formControlName="idProyecto">
+    </mat-form-field> -->
+
+    <mat-form-field>
+        <mat-label>Proyecto</mat-label>
+        <mat-select formControlName="idProyecto">
+            @for (proyecto of proyectos; track proyecto) {
+                <mat-option [value]="proyecto.id">{{proyecto.nombre}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <!-- <mat-form-field class="example-full-width">
+        <mat-label>Fecha</mat-label>
+        <input matInput formControlName="fecha">
+    </mat-form-field> -->
+
+    <mat-form-field class="example-full-width">
+        <mat-label>Fecha</mat-label>
+        <input matInput [matDatepicker]="pickerInicio" formControlName="fecha">
+        <mat-hint>MM/DD/YYYY</mat-hint>
+        <mat-datepicker-toggle matSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+        <mat-datepicker #pickerInicio></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field class="example-full-width">
+        <mat-label>Precio Unitario</mat-label>
+        <input matInput formControlName="precioUnit">
+    </mat-form-field>
+
+
+    <div mat-dialog-actions>
+        @if(this.data.estado == 1){
+            <button (click)="guardarIngresoInsumo()" mat-raised-button color="accent">Agregar</button>
+        }
+        @else()
+        {
+            <button (click)="actualizarIngresoInsumo()" mat-raised-button color="accent">Editar</button>
+        }
+        <button (click)="cerrarPopup()" mat-raised-button color="warn">Cerrar</button>
+    </div>
+
+</form>

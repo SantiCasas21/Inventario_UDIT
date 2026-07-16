@@ -1,0 +1,57 @@
+<form [formGroup]="form" (ngSubmit)="guardarInsumos">
+    <mat-form-field>
+        <mat-label>Nombre Insumo</mat-label>
+        <input matInput placeholder="Buscar Nombre de Insumo" (input)="filterInsumos2($event.target.value)">
+        <mat-select formControlName="idNombreInsumo">
+            @for (insumo of filteredInsumos; track insumo) {
+                <mat-option [value]="insumo.idNombreInsumo">{{insumo.nombreInsumo}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <mat-form-field class="example-full-width">
+        <mat-label>Codigo Fabricante</mat-label>
+        <input matInput formControlName="codFabrica">
+    </mat-form-field>
+
+    <mat-form-field class="example-full-width">
+        <mat-label>Valor</mat-label>
+        <input matInput formControlName="valor">
+    </mat-form-field>
+
+    <mat-form-field>
+        <mat-label>Empaquetamiento</mat-label>
+        <input matInput placeholder="Buscar Empaquetamientos" (input)="filterEmpaquetamientos2($event.target.value)">
+        <mat-select formControlName="idEmpaquetamiento">
+            @for (empaquetamiento of filteredEmpaquetamientos; track empaquetamiento) {
+                <mat-option [value]="empaquetamiento.id">{{empaquetamiento.tipo}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+    <mat-form-field class="example-full-width">
+        <mat-label>Descripción</mat-label>
+        <input matInput formControlName="descripcion">
+    </mat-form-field>
+
+    <mat-form-field>
+        <mat-label>Ubicación</mat-label>
+        <input matInput placeholder="Buscar Ubicación" (input)="filterUbicaciones2($event.target.value)">
+        <mat-select formControlName="idUbicacion">
+            @for (ubicacion of filteredUbicaciones; track ubicacion) {
+                <mat-option [value]="ubicacion.id">{{ubicacion.ubicacion}}</mat-option>
+            }    </mat-select>
+    </mat-form-field>
+
+
+    <div mat-dialog-actions>
+        @if(this.data.estado == 1){
+            <button (click)="guardarInsumos()" mat-raised-button color="accent">Agregar</button>
+        }
+        @else()
+        {
+            <button (click)="actualizarInsumos()" mat-raised-button color="accent">Editar</button>
+        }
+        <button (click)="cerrarPopup()" mat-raised-button color="warn">Cerrar</button>
+    </div>
+
+
+</form>

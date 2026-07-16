@@ -1,0 +1,23 @@
+<form [formGroup]="form" (ngSubmit)="guardarPersonal">
+    <mat-form-field class="example-full-width">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="nombre">
+    </mat-form-field>
+
+    <mat-form-field class="example-full-width">
+        <mat-label>Cargo</mat-label>
+        <input matInput formControlName="cargo">
+    </mat-form-field>
+
+    <div mat-dialog-actions>
+        @if(this.data.estado == 1){
+            <button (click)="guardarPersonal()" mat-raised-button color="accent">Agregar</button>
+        }
+        @else()
+        {
+            <button (click)="actualizarPersonal()" mat-raised-button color="accent">Editar</button>
+        }
+        <button (click)="cerrarPopup()" mat-raised-button color="warn">Cerrar</button>
+    </div>
+
+</form>
