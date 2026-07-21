@@ -2,14 +2,14 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { NombreinsumoService } from '../../../../../../../@fuse/services/inventario/nombreinsumo/nombreinsumo.service';
+import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { CatalogoService } from '@app/core/services/catalogo.service';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
   selector: 'app-popup-nombre-insumo',
   standalone: true,
-  imports: [FormsModule, MatFormFieldModule, MatInputModule, ReactiveFormsModule, MatButtonModule],
+  imports: [FormsModule, MatFormFieldModule, MatInputModule, ReactiveFormsModule, MatButtonModule, MatDialogModule],
   templateUrl: './popup-nombre-insumo.component.html',
   styleUrl: './popup-nombre-insumo.component.scss'
 })
@@ -17,14 +17,18 @@ export class PopupNombreInsumoComponent {
   inputData:any;
   form:FormGroup;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data:any, private ref:MatDialogRef<PopupNombreInsumoComponent>, private formBuilder:FormBuilder, private service:NombreinsumoService) {
+  constructor(@Inject(MAT_DIALOG_DATA) public data:any, private ref:MatDialogRef<PopupNombreInsumoComponent>, private formBuilder:FormBuilder, private service:CatalogoService) {
     this.form = this.formBuilder.group({
-      nombreInsumo: ['', Validators.required]
+      nombre: ['', Validators.required]
     });
   }
 
   ngOnInit(): void {
     this.form.patchValue(this.data.data);
+    // Patch nombre field from legacy field name if present
+    if (this.data.data && !this.data.data.nombre && this.data.data.nombreInsumo) {
+      this.form.patchValue({ nombre: this.data.data.nombreInsumo });
+    }
   }
 
   cerrarPopup() {
@@ -32,24 +36,21 @@ export class PopupNombreInsumoComponent {
   }
 
   guardarNombreInsumo(){
-    this.service.guardarNombreInsumo(this.form.value).subscribe({
-      next:(res : any )=>{
+    const endpoint = this.data.endpoint || 'categoria-insumo';
+    this.service.create(endpoint, { nombre: this.form.value.nombre }).subscribe({
+      next:() => {
         this.cerrarPopup();
-        alert(res.mensaje)
-      }})
+      }
+    });
   }
 
   actualizarNombreInsumo(){
-    const edit : any ={
-      id : this.data.data.id,
-      nombreInsumo :  this.form.value.nombreInsumo
-    }
-    var id = edit.id
-    this.service.actualizarNombreInsumo(id, edit).subscribe({
-      next:(res=>{
-        alert(res.mensaje)
+    const endpoint = this.data.endpoint || 'categoria-insumo';
+    const id: number = this.data.data.id;
+    this.service.update(endpoint, id, { nombre: this.form.value.nombre }).subscribe({
+      next:() => {
         this.cerrarPopup();
-      })
-    })
+      }
+    });
   }
 }

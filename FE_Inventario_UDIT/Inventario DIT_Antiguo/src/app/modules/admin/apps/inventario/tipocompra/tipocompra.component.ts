@@ -1,27 +1,31 @@
-import { AfterViewInit, Component, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ViewChild, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { TipoCompra } from '../../../../../../interfaces/tipocompra';
-import { TipocompraService } from '../../../../../../@fuse/services/inventario/tipocompra/tipocompra.service';
+import { CatalogoDto } from '@app/core/models';
+import { CatalogoService } from '@app/core/services/catalogo.service';
 import { MatDialog } from '@angular/material/dialog';
 import { PopupTipoCompraComponent } from '../popup/popupTipoCompra/popup-tipo-compra.component';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-tipocompra',
   standalone: true,
-  imports: [MatTableModule, MatPaginatorModule, MatInputModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatInputModule, MatButtonModule, MatIconModule, MatCardModule, MatTooltipModule],
   templateUrl: './tipocompra.component.html',
   styleUrl: './tipocompra.component.scss'
 })
-export class TipocompraComponent implements AfterViewInit {
+export class TipocompraComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = ['editar', 'id', 'nombre'];
-  dataSource = new MatTableDataSource<TipoCompra>();
-  datoscompletos:any;
+  dataSource = new MatTableDataSource<CatalogoDto>();
+  endpoint = 'tipo-compra';
+  error: string | null = null;
 
-  constructor(private service:TipocompraService, private dialog:MatDialog) { }
+  constructor(private service:CatalogoService, private dialog:MatDialog) { }
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
 
@@ -38,19 +42,18 @@ export class TipocompraComponent implements AfterViewInit {
     this.mostrarTipoCompra();
   }
 
-  async mostrarTipoCompra(){
-
-    try
-    {
-      //this.dataSource.data  = await this.service.listarLamparas();
-      this.datoscompletos = await this.service.listarTipoCompra();
-      this.dataSource.data = this.datoscompletos;
-      this.dataSource.paginator = this.paginator;
-    }
-    catch(err)
-    {
-      //crear popup de conexion
-    }
+  mostrarTipoCompra(){
+    this.error = null;
+    this.service.getAll(this.endpoint).subscribe({
+      next: (data) => {
+        this.dataSource.data = data;
+        this.dataSource.paginator = this.paginator;
+      },
+      error: (err) => {
+        this.error = 'Error al cargar datos: ' + (err.message || 'Error de conexión');
+        console.error('Error loading', this.endpoint, err);
+      }
+    });
   }
 
   abrirPopup(data:any, estado:any){
@@ -58,7 +61,7 @@ export class TipocompraComponent implements AfterViewInit {
       width:'30%',
       enterAnimationDuration: '500ms',
       exitAnimationDuration: '500ms',
-      data:{data, estado}
+      data:{data, estado, endpoint: this.endpoint}
     })
     _popup.afterClosed().subscribe(item => {
       this.mostrarTipoCompra();

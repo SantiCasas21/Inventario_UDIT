@@ -1,7 +1,8 @@
-import { AfterViewInit, Component, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ViewChild, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { SalidaInsumos } from '../../../../../../interfaces/salidainsumos';
-import { SalidainsumosService } from '../../../../../../@fuse/services/inventario/salidainsumos/salidainsumos.service';
+import { MovimientoDto, MovimientoFilter } from '@app/core/models';
+import { MovimientoService } from '@app/core/services/movimiento.service';
 import { MatDialog } from '@angular/material/dialog';
 import { PopupSalidaInsumosComponent } from '../popup/popupSalidaInsumos/popup-salida-insumos.component';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -12,16 +13,15 @@ import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-salidainsumos',
   standalone: true,
-  imports: [MatTableModule, MatPaginatorModule, MatInputModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatInputModule, MatButtonModule, MatIconModule],
   templateUrl: './salidainsumos.component.html',
   styleUrl: './salidainsumos.component.scss'
 })
-export class SalidainsumosComponent implements AfterViewInit {
-  displayedColumns: string[] = ['editar', 'id', 'idinsumo', 'descripcion', 'idproyecto', 'idestado', 'fecha', 'cantidad', 'idinsumotabla'];
-  dataSource = new MatTableDataSource<SalidaInsumos>();
-  datoscompletos:any;
+export class SalidainsumosComponent implements OnInit, AfterViewInit {
+  displayedColumns: string[] = ['editar', 'id', 'codigoFabrica', 'observacion', 'proyectoNombre', 'estadoSalidaNombre', 'fecha', 'cantidad'];
+  dataSource = new MatTableDataSource<MovimientoDto>();
 
-  constructor(private service:SalidainsumosService, private dialog:MatDialog) { }
+  constructor(private service:MovimientoService, private dialog:MatDialog) { }
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
 
@@ -38,18 +38,12 @@ export class SalidainsumosComponent implements AfterViewInit {
     this.mostrarSalidaInsumos();
   }
 
-  async mostrarSalidaInsumos(){
-
-    try
-    {
-      this.datoscompletos = await this.service.listarSalidaInsumos();
-      this.dataSource.data = this.datoscompletos.listaSalidadesInsumos;
+  mostrarSalidaInsumos(){
+    const filter: MovimientoFilter = { tiposMovimiento: ['SALIDA'], pageSize: 1000 };
+    this.service.filter(filter).subscribe(result => {
+      this.dataSource.data = result.items;
       this.dataSource.paginator = this.paginator;
-    }
-    catch(err)
-    {
-      //crear popup de conexion
-    }
+    });
   }
 
   abrirPopup(data:any, estado:any){
@@ -63,12 +57,4 @@ export class SalidainsumosComponent implements AfterViewInit {
       this.mostrarSalidaInsumos();
     })
   }
-
-      formatDate(element: any): string {
-        if (element.fecha) {
-          const dateObject = new Date(element.fecha);
-          return dateObject.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        }
-        return '';
-      }
 }

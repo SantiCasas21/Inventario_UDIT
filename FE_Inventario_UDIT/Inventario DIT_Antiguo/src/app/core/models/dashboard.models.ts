@@ -18,4 +18,14 @@ export interface DashboardDto {
   stockBajo: StockCriticoDto[];
   // Últimos movimientos
   ultimosMovimientos: MovimientoDto[];
+  // Irregularidades
+  irregularidades: IrregularidadDto[];
+}
+
+/** DTO para una irregularidad o anomalía detectada. */
+export interface IrregularidadDto {
+  tipo: string;
+  descripcion: string;
+  insumoRef: string | null;
+  severidad: string; // "alta", "media", "info"
 }

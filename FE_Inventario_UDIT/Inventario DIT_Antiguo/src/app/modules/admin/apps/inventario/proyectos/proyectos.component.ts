@@ -1,27 +1,30 @@
-import { AfterViewInit, Component, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ViewChild, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { Proyectos } from '../../../../../../interfaces/proyectos';
-import { ProyectosService } from '../../../../../../@fuse/services/inventario/proyectos/proyectos.service';
+import { ProyectoDto } from '@app/core/models';
+import { ProyectoService } from '@app/core/services/proyecto.service';
 import { MatDialog } from '@angular/material/dialog';
 import { PopupProyectosComponent } from '../popup/popupProyectos/popup-proyectos.component';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-proyectos',
   standalone: true,
-  imports: [MatTableModule, MatPaginatorModule, MatInputModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatInputModule, MatButtonModule, MatIconModule, MatCardModule, MatTooltipModule],
   templateUrl: './proyectos.component.html',
   styleUrl: './proyectos.component.scss'
 })
-export class ProyectosComponent implements AfterViewInit {
+export class ProyectosComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = ['editar', 'id', 'nombre', 'descripcion', 'idestado', 'fechacreacion'];
-  dataSource = new MatTableDataSource<Proyectos>();
-  datoscompletos:any;
+  dataSource = new MatTableDataSource<ProyectoDto>();
+  error: string | null = null;
 
-  constructor(private service:ProyectosService, private dialog:MatDialog) { }
+  constructor(private service:ProyectoService, private dialog:MatDialog) { }
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
 
@@ -34,23 +37,22 @@ export class ProyectosComponent implements AfterViewInit {
     this.dataSource.filter = filterValue.trim().toLowerCase();
   }
 
-
   ngOnInit(): void {
     this.mostrarProyectos();
   }
 
-  async mostrarProyectos(){
-
-    try
-    {
-      this.datoscompletos = await this.service.listarProyectos();
-      this.dataSource.data = this.datoscompletos.listasProyectos;
-      this.dataSource.paginator = this.paginator;
-    }
-    catch(err)
-    {
-      //crear popup de conexion
-    }
+  mostrarProyectos(){
+    this.error = null;
+    this.service.getAll().subscribe({
+      next: (data) => {
+        this.dataSource.data = data;
+        this.dataSource.paginator = this.paginator;
+      },
+      error: (err) => {
+        this.error = 'Error al cargar datos: ' + (err.message || 'Error de conexión');
+        console.error('Error loading proyectos', err);
+      }
+    });
   }
 
   abrirPopup(data:any, estado:any){
@@ -63,13 +65,5 @@ export class ProyectosComponent implements AfterViewInit {
     _popup.afterClosed().subscribe(item => {
       this.mostrarProyectos();
     })
-  }
-
-  formatDate(element: any): string {
-    if (element.fechaCreacion) {
-      const dateObject = new Date(element.fechaCreacion);
-      return dateObject.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-    return '';
   }
 }

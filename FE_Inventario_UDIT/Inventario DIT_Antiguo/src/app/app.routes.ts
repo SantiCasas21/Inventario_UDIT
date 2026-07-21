@@ -92,4 +92,26 @@ export const appRoutes: Route[] = [
       { path: 'usuarios', loadChildren: () => import('app/features/usuarios/usuarios.routes') },
     ],
   },
+
+  // ============================================================
+  // ADMIN — Páginas de administración de catálogos
+  // ============================================================
+  {
+    path: '',
+    canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
+    component: LayoutComponent,
+    resolve: { initialData: initialDataResolver },
+    children: [
+      { path: 'empaquetamiento', loadChildren: () => import('app/modules/admin/apps/inventario/empaquetamiento/empaquetamiento.routes') },
+      { path: 'estadoproyecto', loadChildren: () => import('app/modules/admin/apps/inventario/estadoproyecto/estadoproyecto.routes') },
+      { path: 'estadosalida', loadChildren: () => import('app/modules/admin/apps/inventario/estadosalida/estadosalida.routes') },
+      { path: 'categorias', loadChildren: () => import('app/modules/admin/apps/inventario/nombreinsumo/nombreinsumo.routes') },
+      { path: 'personal', loadChildren: () => import('app/modules/admin/apps/inventario/personal/personal.routes') },
+      { path: 'proveedores', loadChildren: () => import('app/modules/admin/apps/inventario/proveedores/proveedores.routes') },
+      { path: 'proyectos', loadChildren: () => import('app/modules/admin/apps/inventario/proyectos/proyectos.routes') },
+      { path: 'tipocompra', loadChildren: () => import('app/modules/admin/apps/inventario/tipocompra/tipocompra.routes') },
+      { path: 'ubicaciones', loadChildren: () => import('app/modules/admin/apps/inventario/ubicaciones/ubicaciones.routes') },
+    ],
+  },
 ];

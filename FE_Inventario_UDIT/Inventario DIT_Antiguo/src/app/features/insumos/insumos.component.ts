@@ -2,16 +2,21 @@ import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
+import { MatPaginatorModule, MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatCardModule } from '@angular/material/card';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { Subject, takeUntil } from 'rxjs';
 import { InsumoService } from '@app/core/services/insumo.service';
 import { InsumoDto, InsumoFilter, PagedResult } from '@app/core/models';
 import { ParametricFilterComponent } from '@shared/components/parametric-filter/parametric-filter.component';
 import { INSUMO_FILTER_CONFIG } from '@shared/config/insumo-filter.config';
+import { PopupInsumosComponent } from 'app/modules/admin/apps/inventario/popup/popupInsumos/popup-insumos.component';
+import { FuseConfirmationService } from '@fuse/services/confirmation';
 
 @Component({
   selector: 'app-insumos',
@@ -19,6 +24,7 @@ import { INSUMO_FILTER_CONFIG } from '@shared/config/insumo-filter.config';
   imports: [
     CommonModule, FormsModule,
     MatTableModule, MatPaginatorModule, MatButtonModule, MatIconModule, MatInputModule,
+    MatCardModule, MatTooltipModule, MatSnackBarModule,
     ParametricFilterComponent,
   ],
   templateUrl: './insumos.component.html',
@@ -43,7 +49,9 @@ export class InsumosComponent implements OnInit, OnDestroy {
 
   constructor(
     private insumoService: InsumoService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar,
+    private fuseConfirmation: FuseConfirmationService,
   ) {}
 
   ngOnInit(): void {
@@ -76,9 +84,7 @@ export class InsumosComponent implements OnInit, OnDestroy {
   }
 
   onFilterChange(filter: Record<string, unknown>): void {
-    // Mapear los valores del filtro UI al DTO de filtro
     const f: InsumoFilter = { page: 1, pageSize: this.pageSize };
-
     if (filter['idsCategoria'] && Array.isArray(filter['idsCategoria']) && (filter['idsCategoria'] as number[]).length > 0) {
       f.idsCategoria = filter['idsCategoria'] as number[];
     }
@@ -96,13 +102,12 @@ export class InsumosComponent implements OnInit, OnDestroy {
     if (filter['textSearch'] && typeof filter['textSearch'] === 'string') {
       f.textSearch = filter['textSearch'];
     }
-
     this.currentFilter = f;
     this.page = 1;
     this.loadData();
   }
 
-  onPageChange(event: { pageIndex: number; pageSize: number }): void {
+  onPageChange(event: PageEvent): void {
     this.page = event.pageIndex + 1;
     this.pageSize = event.pageSize;
     this.loadData();
@@ -119,17 +124,52 @@ export class InsumosComponent implements OnInit, OnDestroy {
   }
 
   crearInsumo(): void {
-    // TODO: Abrir popup de creación (FASE 5)
-    console.log('Abrir popup crear insumo');
+    const popup = this.dialog.open(PopupInsumosComponent, {
+      width: '500px',
+      enterAnimationDuration: '300ms',
+      exitAnimationDuration: '300ms',
+      data: { estado: 1, data: null }
+    });
+    popup.afterClosed().subscribe(result => {
+      if (result) {
+        this.snackBar.open('Insumo creado exitosamente', 'Cerrar', { duration: 3000 });
+        this.loadData();
+      }
+    });
   }
 
   editarInsumo(insumo: InsumoDto): void {
-    // TODO: Abrir popup de edición (FASE 5)
-    console.log('Abrir popup editar insumo', insumo.id);
+    const popup = this.dialog.open(PopupInsumosComponent, {
+      width: '500px',
+      enterAnimationDuration: '300ms',
+      exitAnimationDuration: '300ms',
+      data: { estado: 2, data: insumo }
+    });
+    popup.afterClosed().subscribe(result => {
+      if (result) {
+        this.snackBar.open('Insumo actualizado exitosamente', 'Cerrar', { duration: 3000 });
+        this.loadData();
+      }
+    });
   }
 
   eliminarInsumo(insumo: InsumoDto): void {
-    // TODO: Confirmar y eliminar (FASE 5)
-    console.log('Confirmar eliminar insumo', insumo.id);
+    const dialog = this.fuseConfirmation.open({
+      title: 'Eliminar insumo',
+      message: `¿Está seguro de eliminar "${insumo.codigoFabrica}" (ID: ${insumo.id})? Esta acción no se puede deshacer.`,
+      icon: { name: 'heroicons_outline:trash', color: 'warn' },
+      actions: { confirm: { label: 'Sí, eliminar', color: 'warn' }, cancel: { label: 'Cancelar' } },
+    });
+    dialog.afterClosed().subscribe(result => {
+      if (result === 'confirmed') {
+        this.insumoService.delete(insumo.id).subscribe({
+          next: () => {
+            this.snackBar.open(`Insumo "${insumo.codigoFabrica}" eliminado`, 'Cerrar', { duration: 3000 });
+            this.loadData();
+          },
+          error: (err) => this.snackBar.open('Error: ' + (err.message || 'Error al eliminar'), 'Cerrar', { duration: 5000 })
+        });
+      }
+    });
   }
 }

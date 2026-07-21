@@ -1,4 +1,9 @@
-<form [formGroup]="form" (ngSubmit)="guardarTipoCompra">
+<h2 mat-dialog-title>
+  @if(this.data.estado == 1) { Crear Tipo Compra }
+  @else { Editar Tipo Compra }
+</h2>
+
+<form [formGroup]="form">
     <mat-form-field class="example-full-width">
         <mat-label>Nombre</mat-label>
         <input matInput formControlName="nombre">

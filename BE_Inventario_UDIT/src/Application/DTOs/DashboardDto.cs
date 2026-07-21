@@ -24,5 +24,19 @@ namespace Application.DTOs
 
         // Últimos movimientos
         public List<MovimientoDto> UltimosMovimientos { get; set; } = new();
+
+        // Irregularidades detectadas
+        public List<IrregularidadDto> Irregularidades { get; set; } = new();
+    }
+
+    /// <summary>
+    /// DTO para una irregularidad o anomalía detectada en el inventario.
+    /// </summary>
+    public class IrregularidadDto
+    {
+        public string Tipo { get; set; } = "";
+        public string Descripcion { get; set; } = "";
+        public string? InsumoRef { get; set; }
+        public string Severidad { get; set; } = "info"; // "alta", "media", "info"
     }
 }

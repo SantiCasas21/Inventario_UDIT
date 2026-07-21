@@ -1,12 +1,12 @@
-<div class="page-container">
+<div class="admin-page">
   <div class="page-header">
-    <div>
-      <h1 class="page-title">Movimientos</h1>
-      <p class="page-subtitle">Registro y consulta de movimientos de inventario</p>
-    </div>
+    <h1 class="page-title">Movimientos</h1>
+    <p class="page-subtitle">Registro y consulta de movimientos de inventario</p>
   </div>
 
-  <mat-tab-group>
+  <mat-card class="section-card">
+    <mat-card-content style="padding:0;">
+      <mat-tab-group>
     <!-- Tab: Registrar Ingreso -->
     <mat-tab label="+ Ingreso">
       <div class="tab-content">
@@ -177,5 +177,7 @@
         <div *ngIf="loading && data.length === 0" class="loading-msg">Cargando movimientos...</div>
       </div>
     </mat-tab>
-  </mat-tab-group>
+      </mat-tab-group>
+    </mat-card-content>
+  </mat-card>
 </div>

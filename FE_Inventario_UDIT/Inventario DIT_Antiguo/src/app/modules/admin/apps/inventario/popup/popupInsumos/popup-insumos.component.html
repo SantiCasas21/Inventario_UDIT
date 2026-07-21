@@ -1,57 +1,57 @@
-<form [formGroup]="form" (ngSubmit)="guardarInsumos">
-    <mat-form-field>
-        <mat-label>Nombre Insumo</mat-label>
-        <input matInput placeholder="Buscar Nombre de Insumo" (input)="filterInsumos2($event.target.value)">
-        <mat-select formControlName="idNombreInsumo">
-            @for (insumo of filteredInsumos; track insumo) {
-                <mat-option [value]="insumo.idNombreInsumo">{{insumo.nombreInsumo}}</mat-option>
-            }    </mat-select>
-    </mat-form-field>
+<h2 mat-dialog-title>
+  @if (data.estado === 1) { Crear Insumo }
+  @else { Editar Insumo }
+</h2>
 
-    <mat-form-field class="example-full-width">
-        <mat-label>Codigo Fabricante</mat-label>
-        <input matInput formControlName="codFabrica">
-    </mat-form-field>
+<form [formGroup]="form">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Código Fábrica</mat-label>
+    <input matInput formControlName="codigoFabrica" placeholder="Ej: 749-SMP4-SBC">
+  </mat-form-field>
 
-    <mat-form-field class="example-full-width">
-        <mat-label>Valor</mat-label>
-        <input matInput formControlName="valor">
-    </mat-form-field>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Categoría</mat-label>
+    <mat-select formControlName="idCategoria">
+      @for (cat of categorias; track cat.id) {
+        <mat-option [value]="cat.id">{{ cat.nombre }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
 
-    <mat-form-field>
-        <mat-label>Empaquetamiento</mat-label>
-        <input matInput placeholder="Buscar Empaquetamientos" (input)="filterEmpaquetamientos2($event.target.value)">
-        <mat-select formControlName="idEmpaquetamiento">
-            @for (empaquetamiento of filteredEmpaquetamientos; track empaquetamiento) {
-                <mat-option [value]="empaquetamiento.id">{{empaquetamiento.tipo}}</mat-option>
-            }    </mat-select>
-    </mat-form-field>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Empaquetamiento</mat-label>
+    <mat-select formControlName="idEmpaquetamiento">
+      @for (emp of empaquetamientos; track emp.id) {
+        <mat-option [value]="emp.id">{{ emp.nombre }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
 
-    <mat-form-field class="example-full-width">
-        <mat-label>Descripción</mat-label>
-        <input matInput formControlName="descripcion">
-    </mat-form-field>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Ubicación</mat-label>
+    <mat-select formControlName="idUbicacion">
+      @for (ubi of ubicaciones; track ubi.id) {
+        <mat-option [value]="ubi.id">{{ ubi.nombre }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
 
-    <mat-form-field>
-        <mat-label>Ubicación</mat-label>
-        <input matInput placeholder="Buscar Ubicación" (input)="filterUbicaciones2($event.target.value)">
-        <mat-select formControlName="idUbicacion">
-            @for (ubicacion of filteredUbicaciones; track ubicacion) {
-                <mat-option [value]="ubicacion.id">{{ubicacion.ubicacion}}</mat-option>
-            }    </mat-select>
-    </mat-form-field>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Descripción</mat-label>
+    <input matInput formControlName="descripcion" placeholder="Descripción del insumo">
+  </mat-form-field>
 
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Precio Referencia</mat-label>
+    <input matInput formControlName="precioReferencia" type="number" placeholder="0.00">
+  </mat-form-field>
 
-    <div mat-dialog-actions>
-        @if(this.data.estado == 1){
-            <button (click)="guardarInsumos()" mat-raised-button color="accent">Agregar</button>
-        }
-        @else()
-        {
-            <button (click)="actualizarInsumos()" mat-raised-button color="accent">Editar</button>
-        }
-        <button (click)="cerrarPopup()" mat-raised-button color="warn">Cerrar</button>
-    </div>
-
-
+  <div mat-dialog-actions align="end">
+    <button mat-button (click)="cerrarPopup()">Cancelar</button>
+    @if (data.estado === 1) {
+      <button (click)="guardarInsumo()" mat-raised-button color="primary" [disabled]="form.invalid">Crear</button>
+    } @else {
+      <button (click)="actualizarInsumo()" mat-raised-button color="primary" [disabled]="form.invalid">Guardar</button>
+    }
+  </div>
 </form>

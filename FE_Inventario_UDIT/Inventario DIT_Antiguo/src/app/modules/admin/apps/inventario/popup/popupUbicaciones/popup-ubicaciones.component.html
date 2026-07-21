@@ -1,7 +1,12 @@
-<form [formGroup]="form" (ngSubmit)="guardarUbicaciones">
+<h2 mat-dialog-title>
+  @if(this.data.estado == 1) { Crear Ubicación }
+  @else { Editar Ubicación }
+</h2>
+
+<form [formGroup]="form">
     <mat-form-field class="example-full-width">
-        <mat-label>Ubicación</mat-label>
-        <input matInput formControlName="ubicacion">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="nombre">
     </mat-form-field>
 
     <div mat-dialog-actions>

@@ -33,5 +33,16 @@ export interface UserInfo {
   fechaCreacion: string;
 }
 
+/** DTO para gestión de usuarios del sistema (admin). */
+export interface UserDto {
+  id: string;
+  username: string;
+  email: string;
+  nombreCompleto: string;
+  role: string;
+  activo: boolean;
+  fechaCreacion: string;
+}
+
 /** Roles disponibles en el sistema. */
 export type UserRole = 'Admin' | 'Developer' | 'Assistant' | 'User';

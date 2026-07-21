@@ -1,89 +1,73 @@
-<div class="page-container">
-  <!-- Header -->
+<div class="admin-page">
   <div class="page-header">
-    <div>
-      <h1 class="page-title">Insumos</h1>
-      <p class="page-subtitle">Gestión de insumos del inventario</p>
-    </div>
-    <button mat-raised-button color="primary" (click)="crearInsumo()">
-      <mat-icon>add</mat-icon>
-      Añadir Insumo
-    </button>
+    <h1 class="page-title">Insumos</h1>
+    <p class="page-subtitle">Gestión de insumos del inventario</p>
   </div>
 
-  <!-- Parametric Filter -->
-  <div class="filter-section">
-    <app-parametric-filter
-      [config]="filterConfig"
-      [resultCount]="totalCount"
-      (filterChange)="onFilterChange($event)">
-    </app-parametric-filter>
-  </div>
+  <mat-card class="section-card">
+    <mat-card-header>
+      <mat-card-title>Listado de Insumos</mat-card-title>
+      <mat-card-subtitle>{{ totalCount }} insumo(s) registrados</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <!-- Parametric Filter -->
+      <div class="filter-section">
+        <app-parametric-filter [config]="filterConfig" [resultCount]="totalCount" (filterChange)="onFilterChange($event)"></app-parametric-filter>
+      </div>
 
-  <!-- Error -->
-  <div *ngIf="error" class="error-msg">{{ error }}</div>
+      <div class="table-toolbar">
+        <span></span>
+        <button mat-raised-button color="primary" (click)="crearInsumo()"><mat-icon>add</mat-icon> Nuevo Insumo</button>
+      </div>
 
-  <!-- Table -->
-  <div class="table-section">
-    <div *ngIf="loading" class="loading-bar">Cargando...</div>
-    <table mat-table [dataSource]="data" class="mat-elevation-z1">
-      <ng-container matColumnDef="id">
-        <th mat-header-cell *matHeaderCellDef (click)="onSort('id')" class="sortable">
-          ID <mat-icon *ngIf="sortBy === 'id'" class="sort-icon">{{ sortDescending ? 'arrow_downward' : 'arrow_upward' }}</mat-icon>
-        </th>
-        <td mat-cell *matCellDef="let el">{{ el.id }}</td>
-      </ng-container>
-      <ng-container matColumnDef="codigoFabrica">
-        <th mat-header-cell *matHeaderCellDef (click)="onSort('codigoFabrica')" class="sortable">
-          Cód. Fabrica <mat-icon *ngIf="sortBy === 'codigoFabrica'" class="sort-icon">{{ sortDescending ? 'arrow_downward' : 'arrow_upward' }}</mat-icon>
-        </th>
-        <td mat-cell *matCellDef="let el"><strong>{{ el.codigoFabrica }}</strong></td>
-      </ng-container>
-      <ng-container matColumnDef="categoriaNombre">
-        <th mat-header-cell *matHeaderCellDef>Categoría</th>
-        <td mat-cell *matCellDef="let el">{{ el.categoriaNombre }}</td>
-      </ng-container>
-      <ng-container matColumnDef="descripcion">
-        <th mat-header-cell *matHeaderCellDef>Descripción</th>
-        <td mat-cell *matCellDef="let el">{{ el.descripcion || '-' }}</td>
-      </ng-container>
-      <ng-container matColumnDef="empaquetamientoNombre">
-        <th mat-header-cell *matHeaderCellDef>Empaquetamiento</th>
-        <td mat-cell *matCellDef="let el">{{ el.empaquetamientoNombre }}</td>
-      </ng-container>
-      <ng-container matColumnDef="ubicacionNombre">
-        <th mat-header-cell *matHeaderCellDef>Ubicación</th>
-        <td mat-cell *matCellDef="let el">{{ el.ubicacionNombre }}</td>
-      </ng-container>
-      <ng-container matColumnDef="precioReferencia">
-        <th mat-header-cell *matHeaderCellDef (click)="onSort('precioReferencia')" class="sortable">
-          Precio Ref.
-        </th>
-        <td mat-cell *matCellDef="let el">{{ el.precioReferencia | currency }}</td>
-      </ng-container>
-      <ng-container matColumnDef="acciones">
-        <th mat-header-cell *matHeaderCellDef>Acciones</th>
-        <td mat-cell *matCellDef="let el">
-          <button mat-icon-button color="primary" (click)="editarInsumo(el)" title="Editar">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button color="warn" (click)="eliminarInsumo(el)" title="Eliminar">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
+      <div *ngIf="error" class="error-msg">{{ error }}</div>
+      <div *ngIf="loading && !error" class="loading-msg">Cargando...</div>
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    </table>
+      <table mat-table [dataSource]="data" class="data-table">
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef (click)="onSort('id')" class="sortable">#</th>
+          <td mat-cell *matCellDef="let el"><code>{{ el.id }}</code></td>
+        </ng-container>
+        <ng-container matColumnDef="codigoFabrica">
+          <th mat-header-cell *matHeaderCellDef (click)="onSort('codigoFabrica')" class="sortable">Cód. Fábrica</th>
+          <td mat-cell *matCellDef="let el"><strong>{{ el.codigoFabrica }}</strong></td>
+        </ng-container>
+        <ng-container matColumnDef="categoriaNombre">
+          <th mat-header-cell *matHeaderCellDef>Categoría</th>
+          <td mat-cell *matCellDef="let el">{{ el.categoriaNombre }}</td>
+        </ng-container>
+        <ng-container matColumnDef="descripcion">
+          <th mat-header-cell *matHeaderCellDef>Descripción</th>
+          <td mat-cell *matCellDef="let el">{{ el.descripcion || '-' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="empaquetamientoNombre">
+          <th mat-header-cell *matHeaderCellDef>Empaque</th>
+          <td mat-cell *matCellDef="let el">{{ el.empaquetamientoNombre }}</td>
+        </ng-container>
+        <ng-container matColumnDef="ubicacionNombre">
+          <th mat-header-cell *matHeaderCellDef>Ubicación</th>
+          <td mat-cell *matCellDef="let el">{{ el.ubicacionNombre }}</td>
+        </ng-container>
+        <ng-container matColumnDef="precioReferencia">
+          <th mat-header-cell *matHeaderCellDef (click)="onSort('precioReferencia')" class="sortable">Precio Ref.</th>
+          <td mat-cell *matCellDef="let el">{{ el.precioReferencia | currency }}</td>
+        </ng-container>
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef style="width:100px;">Acción</th>
+          <td mat-cell *matCellDef="let el">
+            <button mat-icon-button color="primary" (click)="editarInsumo(el)" matTooltip="Editar"><mat-icon>edit</mat-icon></button>
+            <button mat-icon-button color="warn" (click)="eliminarInsumo(el)" matTooltip="Eliminar"><mat-icon>delete</mat-icon></button>
+          </td>
+        </ng-container>
 
-    <mat-paginator
-      [length]="totalCount"
-      [pageSize]="pageSize"
-      [pageIndex]="page - 1"
-      [pageSizeOptions]="[10, 20, 50]"
-      (page)="onPageChange($event)"
-      showFirstLastButtons>
-    </mat-paginator>
-  </div>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <mat-paginator
+        [length]="totalCount" [pageSize]="pageSize" [pageIndex]="page - 1"
+        [pageSizeOptions]="[10, 20, 50]" (page)="onPageChange($event)" showFirstLastButtons>
+      </mat-paginator>
+    </mat-card-content>
+  </mat-card>
 </div>

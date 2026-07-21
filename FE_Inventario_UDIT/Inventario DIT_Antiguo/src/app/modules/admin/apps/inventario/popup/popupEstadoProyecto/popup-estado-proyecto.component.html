@@ -1,7 +1,12 @@
-<form [formGroup]="form" (ngSubmit)="guardarEstadoProyecto">
+<h2 mat-dialog-title>
+  @if(this.data.estado == 1) { Crear Estado Proyecto }
+  @else { Editar Estado Proyecto }
+</h2>
+
+<form [formGroup]="form">
     <mat-form-field class="example-full-width">
-        <mat-label>Estado</mat-label>
-        <input matInput formControlName="estado">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="nombre">
     </mat-form-field>
 
 

@@ -5,3 +5,4 @@ export * from './proyecto.service';
 export * from './proveedor-full.service';
 export * from './reporte.service';
 export * from './dashboard.service';
+export * from './user-management.service';

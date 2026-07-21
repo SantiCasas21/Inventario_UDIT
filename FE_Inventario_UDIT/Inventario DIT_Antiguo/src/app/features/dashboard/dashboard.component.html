@@ -82,31 +82,44 @@
       </div>
     </div>
 
-    <!-- Stock Bajo -->
-    <div class="section-title">Stock Bajo ({{ dashboard.stockBajoCount }} insumo(s))</div>
+    <!-- Stock Bajo (paginado) -->
+    <div class="section-title">
+      Stock Bajo ({{ dashboard.stockBajoCount }} insumo(s))
+    </div>
     <div *ngIf="dashboard.stockBajo.length === 0" class="empty-msg">No hay insumos con stock bajo.</div>
-    <table *ngIf="dashboard.stockBajo.length > 0" class="data-table">
-      <thead>
-        <tr>
-          <th>Código Fabrica</th>
-          <th>Descripción</th>
-          <th>Categoría</th>
-          <th>Ubicación</th>
-          <th>Stock</th>
-          <th>Umbral</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let item of dashboard.stockBajo" class="critical-row">
-          <td><strong>{{ item.codigoFabrica }}</strong></td>
-          <td>{{ item.descripcion || '-' }}</td>
-          <td>{{ item.categoria }}</td>
-          <td>{{ item.ubicacion }}</td>
-          <td class="text-danger">{{ item.stockActual }}</td>
-          <td>{{ item.umbral }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div *ngIf="dashboard.stockBajo.length > 0" class="stock-bajo-card">
+      <table class="data-table no-margin">
+        <thead>
+          <tr>
+            <th>Código Fabrica</th>
+            <th>Descripción</th>
+            <th>Categoría</th>
+            <th>Ubicación</th>
+            <th>Stock</th>
+            <th>Umbral</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of stockPageItems" class="critical-row">
+            <td><strong>{{ item.codigoFabrica }}</strong></td>
+            <td>{{ item.descripcion || '-' }}</td>
+            <td>{{ item.categoria }}</td>
+            <td>{{ item.ubicacion }}</td>
+            <td class="text-danger">{{ item.stockActual }}</td>
+            <td>{{ item.umbral }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pagination-controls">
+        <button class="page-btn" (click)="prevStockPage()" [disabled]="stockPage === 0">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <span class="page-info">Página {{ stockPage + 1 }} de {{ stockPages }}</span>
+        <button class="page-btn" (click)="nextStockPage()" [disabled]="stockPage >= stockPages - 1">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
 
     <!-- Últimos Movimientos -->
     <div class="section-title">Últimos Movimientos</div>
@@ -137,5 +150,32 @@
         </tr>
       </tbody>
     </table>
+    <!-- Irregularidades -->
+    <div class="section-title" *ngIf="dashboard.irregularidades && dashboard.irregularidades.length > 0">
+      ⚠️ Irregularidades Detectadas ({{ dashboard.irregularidades.length }})
+    </div>
+    <div *ngIf="dashboard.irregularidades && dashboard.irregularidades.length > 0" class="irregularidades-section">
+      <div class="severity-filters">
+        <button class="sev-btn sev-all" (click)="filterSeverity('todas')" [class.active]="severityFilter === 'todas'">Todas</button>
+        <button class="sev-btn sev-alta" (click)="filterSeverity('alta')" [class.active]="severityFilter === 'alta'">🔴 Alta</button>
+        <button class="sev-btn sev-media" (click)="filterSeverity('media')" [class.active]="severityFilter === 'media'">🟡 Media</button>
+        <button class="sev-btn sev-info" (click)="filterSeverity('info')" [class.active]="severityFilter === 'info'">🟢 Info</button>
+      </div>
+      <div class="irregularidades-list">
+        <div *ngFor="let irr of filteredIrregularidades" class="irregularidad-item" [class.sev-alta]="irr.severidad === 'alta'" [class.sev-media]="irr.severidad === 'media'" [class.sev-info]="irr.severidad === 'info'">
+          <span class="sev-icon">
+            {{ irr.severidad === 'alta' ? '🔴' : irr.severidad === 'media' ? '🟡' : '🟢' }}
+          </span>
+          <span class="sev-badge" [class.bg-red]="irr.severidad === 'alta'" [class.bg-yellow]="irr.severidad === 'media'" [class.bg-blue]="irr.severidad === 'info'">
+            {{ irr.tipo }}
+          </span>
+          <span class="irr-desc">{{ irr.descripcion }}</span>
+          <span class="irr-ref" *ngIf="irr.insumoRef">{{ irr.insumoRef }}</span>
+        </div>
+      </div>
+      <div *ngIf="filteredIrregularidades.length === 0" class="empty-msg">
+        Ninguna irregularidad de esta severidad.
+      </div>
+    </div>
   </ng-container>
 </div>

@@ -2,25 +2,50 @@
   <div class="page-header">
     <div>
       <h1 class="page-title">Gestión de Usuarios</h1>
-      <p class="page-subtitle">Crear usuarios con diferentes roles. Solo Admin puede registrar nuevos usuarios.</p>
+      <p class="page-subtitle">Administración de usuarios del sistema. Solo Admin puede gestionar usuarios.</p>
     </div>
   </div>
 
-  <!-- Usuarios de prueba rápidos -->
+  <!-- Tips de Roles -->
   <mat-card class="section-card">
     <mat-card-header>
-      <mat-card-title>Usuarios de Prueba</mat-card-title>
-      <mat-card-subtitle>Crear usuarios predefinidos para probar los diferentes roles</mat-card-subtitle>
+      <mat-card-title>🎯 Roles del Sistema</mat-card-title>
+      <mat-card-subtitle>Cada rol tiene permisos específicos. Asígnale a cada usuario el rol que necesita.</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
-      <table mat-table [dataSource]="testUsers" class="mat-elevation-z0">
+      <div class="role-tips-grid">
+        <div class="role-tip" *ngFor="let tip of roleTips">
+          <mat-icon class="tip-icon" [style.color]="tip.color">{{ tip.icon }}</mat-icon>
+          <div class="tip-body">
+            <span class="tip-role" [style.color]="tip.color">{{ tip.role }}</span>
+            <span class="tip-desc">{{ tip.desc }}</span>
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Usuarios Registrados -->
+  <mat-card class="section-card">
+    <mat-card-header>
+      <mat-card-title>👥 Usuarios Registrados</mat-card-title>
+      <mat-card-subtitle *ngIf="!loading && !error">{{ users.length }} usuario(s) en el sistema</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="loading" class="loading-msg">Cargando usuarios...</div>
+      <div *ngIf="error" class="error-msg">{{ error }}</div>
+      <table *ngIf="!loading && !error" mat-table [dataSource]="users" class="mat-elevation-z0 users-table">
         <ng-container matColumnDef="username">
           <th mat-header-cell *matHeaderCellDef>Usuario</th>
           <td mat-cell *matCellDef="let u"><strong>{{ u.username }}</strong></td>
         </ng-container>
-        <ng-container matColumnDef="password">
-          <th mat-header-cell *matHeaderCellDef>Contraseña</th>
-          <td mat-cell *matCellDef="let u"><code>{{ u.password }}</code></td>
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef>Email</th>
+          <td mat-cell *matCellDef="let u">{{ u.email }}</td>
+        </ng-container>
+        <ng-container matColumnDef="nombreCompleto">
+          <th mat-header-cell *matHeaderCellDef>Nombre</th>
+          <td mat-cell *matCellDef="let u">{{ u.nombreCompleto }}</td>
         </ng-container>
         <ng-container matColumnDef="role">
           <th mat-header-cell *matHeaderCellDef>Rol</th>
@@ -30,31 +55,40 @@
             </span>
           </td>
         </ng-container>
-        <ng-container matColumnDef="nombre">
-          <th mat-header-cell *matHeaderCellDef>Nombre</th>
-          <td mat-cell *matCellDef="let u">{{ u.nombreCompleto }}</td>
-        </ng-container>
-        <ng-container matColumnDef="accion">
-          <th mat-header-cell *matHeaderCellDef>Acción</th>
+        <ng-container matColumnDef="activo">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
           <td mat-cell *matCellDef="let u">
-            <button mat-raised-button color="primary" (click)="crearUsuarioPrueba(u)" [disabled]="isCreated(u.username)">
-              <mat-icon>{{ isCreated(u.username) ? 'check' : 'person_add' }}</mat-icon>
-              {{ isCreated(u.username) ? 'Creado' : 'Crear' }}
+            <span class="status-badge" [class.active]="u.activo" [class.inactive]="!u.activo">
+              {{ u.activo ? '🟢 Activo' : '🔴 Inactivo' }}
+            </span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef>Acciones</th>
+          <td mat-cell *matCellDef="let u">
+            <button *ngIf="u.activo" mat-icon-button color="warn" (click)="confirmDeactivate(u)" matTooltip="Desactivar usuario">
+              <mat-icon>block</mat-icon>
+            </button>
+            <button *ngIf="!u.activo" mat-icon-button color="primary" (click)="confirmActivate(u)" matTooltip="Activar usuario">
+              <mat-icon>check_circle</mat-icon>
+            </button>
+            <button *ngIf="!u.activo" mat-icon-button color="warn" (click)="confirmDelete(u)" matTooltip="Eliminar permanentemente">
+              <mat-icon>delete_forever</mat-icon>
             </button>
           </td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="['username', 'password', 'role', 'nombre', 'accion']"></tr>
-        <tr mat-row *matRowDef="let row; columns: ['username', 'password', 'role', 'nombre', 'accion'];"></tr>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
     </mat-card-content>
   </mat-card>
 
-  <!-- Formulario de registro manual -->
+  <!-- Formulario de registro -->
   <mat-card class="section-card">
     <mat-card-header>
-      <mat-card-title>Registrar Nuevo Usuario</mat-card-title>
-      <mat-card-subtitle>Crear manualmente un usuario con cualquier rol</mat-card-subtitle>
+      <mat-card-title>📝 Registrar Nuevo Usuario</mat-card-title>
+      <mat-card-subtitle>Crea usuarios con el rol adecuado para cada persona</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
       <form [formGroup]="registerForm" (ngSubmit)="registrarUsuario()" class="register-form">
@@ -103,10 +137,11 @@
     </mat-card-content>
   </mat-card>
 
-  <!-- Credenciales de Admin -->
+  <!-- Credenciales del Sistema -->
   <mat-card class="section-card admin-card">
     <mat-card-header>
-      <mat-card-title>Credenciales del Sistema</mat-card-title>
+      <mat-card-title>🔑 Credenciales del Sistema</mat-card-title>
+      <mat-card-subtitle>Usuarios predefinidos para acceso rápido. Admin se crea automáticamente al iniciar.</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
       <table class="creds-table">

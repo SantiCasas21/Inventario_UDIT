@@ -11,6 +11,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatCardModule } from '@angular/material/card';
 import { Subject, takeUntil } from 'rxjs';
 import { MovimientoService } from '@app/core/services/movimiento.service';
 import { CatalogoService } from '@app/core/services/catalogo.service';
@@ -27,7 +28,7 @@ import { MOVIMIENTO_FILTER_CONFIG } from '@shared/config/movimiento-filter.confi
     MatTabsModule, MatTableModule, MatPaginatorModule,
     MatButtonModule, MatIconModule, MatInputModule, MatSelectModule,
     MatDatepickerModule, MatFormFieldModule, MatSnackBarModule,
-    ParametricFilterComponent,
+    ParametricFilterComponent, MatCardModule,
   ],
   templateUrl: './movimientos.component.html',
   styleUrls: ['./movimientos.component.scss']

@@ -27,14 +27,9 @@
                                 <td mat-cell *matCellDef="let element"> {{element.id}} </td>
                             </ng-container>
 
-                            <ng-container matColumnDef="idproveedor">
-                                <th mat-header-cell *matHeaderCellDef> Proveedor </th>
-                                <td mat-cell *matCellDef="let element"> {{element.nombreProveedor}} </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="idinsumo">
+                            <ng-container matColumnDef="codigoFabrica">
                                 <th mat-header-cell *matHeaderCellDef> Insumo </th>
-                                <td mat-cell *matCellDef="let element"> {{element.nombreInsumo}} </td>
+                                <td mat-cell *matCellDef="let element"> {{element.codigoFabrica}} </td>
                             </ng-container>
 
                             <ng-container matColumnDef="cantidad">
@@ -42,34 +37,29 @@
                                 <td mat-cell *matCellDef="let element"> {{element.cantidad}} </td>
                             </ng-container>
 
-                            <ng-container matColumnDef="idtipocompra">
-                                <th mat-header-cell *matHeaderCellDef> Tipo Compra </th>
-                                <td mat-cell *matCellDef="let element"> {{element.nombreTipoCompra}} </td>
+                            <ng-container matColumnDef="proveedorNombre">
+                                <th mat-header-cell *matHeaderCellDef> Proveedor </th>
+                                <td mat-cell *matCellDef="let element"> {{element.proveedorNombre}} </td>
                             </ng-container>
 
-                            <ng-container matColumnDef="idproyecto">
+                            <ng-container matColumnDef="tipoCompraNombre">
+                                <th mat-header-cell *matHeaderCellDef> Tipo Compra </th>
+                                <td mat-cell *matCellDef="let element"> {{element.tipoCompraNombre}} </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="proyectoNombre">
                                 <th mat-header-cell *matHeaderCellDef> Proyecto </th>
-                                <td mat-cell *matCellDef="let element"> {{element.nombreProyecto}} </td>
+                                <td mat-cell *matCellDef="let element"> {{element.proyectoNombre}} </td>
                             </ng-container>
 
                             <ng-container matColumnDef="fecha">
-                                <th mat-header-cell *matHeaderCellDef>  Fecha </th>
-                                <td mat-cell *matCellDef="let element"> {{formatDate(element)}} </td>
+                                <th mat-header-cell *matHeaderCellDef> Fecha </th>
+                                <td mat-cell *matCellDef="let element"> {{element.fecha | date:'shortDate'}} </td>
                             </ng-container>
 
-                            <ng-container matColumnDef="preciounit">
-                                <th mat-header-cell *matHeaderCellDef>  Precio Unitario </th>
-                                <td mat-cell *matCellDef="let element"> {{element.precioUnit}} </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="restante">
-                                <th mat-header-cell *matHeaderCellDef> Restante </th>
-                                <td mat-cell *matCellDef="let element"> {{element.restante}} </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="idinsumotabla">
-                                <th mat-header-cell *matHeaderCellDef> ID Insumo </th>
-                                <td mat-cell *matCellDef="let element"> {{element.idInsumoTabla}} </td>
+                            <ng-container matColumnDef="precioUnitario">
+                                <th mat-header-cell *matHeaderCellDef> Precio Unit. </th>
+                                <td mat-cell *matCellDef="let element"> {{element.precioUnitario | currency}} </td>
                             </ng-container>
 
                             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>

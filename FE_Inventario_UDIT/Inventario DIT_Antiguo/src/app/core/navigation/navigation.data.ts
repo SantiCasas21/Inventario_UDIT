@@ -38,6 +38,14 @@ export const NAVIGATION_ITEMS: FuseNavigationItem[] = [
     icon: 'heroicons_outline:cog-6-tooth',
     children: [
       { id: 'usuarios', title: 'Usuarios', type: 'basic', link: '/usuarios' },
+      { id: 'empaquetamiento', title: 'Empaquetamiento', type: 'basic', link: '/empaquetamiento' },
+      { id: 'estadoproyecto', title: 'Estado Proyecto', type: 'basic', link: '/estadoproyecto' },
+      { id: 'estadosalida', title: 'Estado Salida', type: 'basic', link: '/estadosalida' },
+      { id: 'categorias', title: 'Categorías', type: 'basic', link: '/categorias' },
+      { id: 'proveedores', title: 'Proveedores', type: 'basic', link: '/proveedores' },
+      { id: 'proyectos', title: 'Proyectos', type: 'basic', link: '/proyectos' },
+      { id: 'tipocompra', title: 'Tipo Compra', type: 'basic', link: '/tipocompra' },
+      { id: 'ubicaciones', title: 'Ubicaciones', type: 'basic', link: '/ubicaciones' },
     ],
   },
 ];

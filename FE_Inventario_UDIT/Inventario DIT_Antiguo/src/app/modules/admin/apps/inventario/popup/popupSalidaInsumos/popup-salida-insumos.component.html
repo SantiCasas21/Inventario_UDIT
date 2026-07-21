@@ -1,45 +1,35 @@
-<form [formGroup]="form" (ngSubmit)="guardarSalidaInsumos">
+<form [formGroup]="form">
     <mat-form-field>
         <mat-label>Insumo</mat-label>
-        <mat-select formControlName="idInsumo" (selectionChange)="onOptionChange($event.value)">
+        <mat-select formControlName="idInsumo">
             @for (insumo of insumos; track insumo) {
-                <mat-option [value]="insumo.id">{{insumo.nombreInsumo}}</mat-option>
-            }    </mat-select>
-    </mat-form-field>
-
-    <mat-form-field>
-        <mat-label>Codigo Fabricante/Descripción</mat-label>
-        <mat-select formControlName="idInsumoTabla">
-            @for (insumoCorta of insumosCortaaux; track insumoCorta) {
-                <mat-option [value]="insumoCorta.id">{{insumoCorta.cod_Fabricante}}</mat-option>
-            }    </mat-select>
+                <mat-option [value]="insumo.id">{{insumo.nombre}}</mat-option>
+            }
+        </mat-select>
     </mat-form-field>
 
     <mat-form-field class="example-full-width">
-        <mat-label>Descripción</mat-label>
-        <input matInput formControlName="descripcion">
+        <mat-label>Cantidad</mat-label>
+        <input matInput formControlName="cantidad" type="number">
     </mat-form-field>
 
     <mat-form-field>
         <mat-label>Proyecto</mat-label>
         <mat-select formControlName="idProyecto">
-            @for (proyecto of proyectos; track proyecto) {
-                <mat-option [value]="proyecto.id">{{proyecto.nombre}}</mat-option>
-            }    </mat-select>
+            @for (proy of proyectos; track proy) {
+                <mat-option [value]="proy.id">{{proy.nombre}}</mat-option>
+            }
+        </mat-select>
     </mat-form-field>
 
     <mat-form-field>
         <mat-label>Estado</mat-label>
-        <mat-select formControlName="idEstado">
+        <mat-select formControlName="idEstadoSalida">
             @for (estado of estadosalidas; track estado) {
                 <mat-option [value]="estado.id">{{estado.nombre}}</mat-option>
-            }    </mat-select>
+            }
+        </mat-select>
     </mat-form-field>
-
-    <!-- <mat-form-field class="example-full-width">
-        <mat-label>Fecha</mat-label>
-        <input matInput formControlName="fecha">
-    </mat-form-field> -->
 
     <mat-form-field>
         <mat-label>Fecha</mat-label>
@@ -50,8 +40,8 @@
     </mat-form-field>
 
     <mat-form-field class="example-full-width">
-        <mat-label>Cantidad</mat-label>
-        <input matInput formControlName="cantidad">
+        <mat-label>Observación</mat-label>
+        <input matInput formControlName="observacion">
     </mat-form-field>
 
     <div mat-dialog-actions>
@@ -64,5 +54,4 @@
         }
         <button (click)="cerrarPopup()" mat-raised-button color="warn">Cerrar</button>
     </div>
-
 </form>

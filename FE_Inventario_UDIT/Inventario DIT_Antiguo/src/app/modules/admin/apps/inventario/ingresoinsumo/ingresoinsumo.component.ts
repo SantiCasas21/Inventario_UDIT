@@ -1,7 +1,8 @@
-import { AfterViewInit, Component, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ViewChild, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { IngresoInsumo } from '../../../../../../interfaces/ingresoinsumo';
-import { IngresoinsumoService } from '../../../../../../@fuse/services/inventario/ingresoinsumo/ingresoinsumo.service';
+import { MovimientoDto, MovimientoFilter } from '@app/core/models';
+import { MovimientoService } from '@app/core/services/movimiento.service';
 import { MatDialog } from '@angular/material/dialog';
 import { PopupIngresoInsumoComponent } from '../popup/popupIngresoInsumo/popup-ingreso-insumo.component';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -12,16 +13,15 @@ import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-ingresoinsumo',
   standalone: true,
-  imports: [MatTableModule, MatPaginatorModule, MatInputModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatInputModule, MatButtonModule, MatIconModule],
   templateUrl: './ingresoinsumo.component.html',
   styleUrl: './ingresoinsumo.component.scss'
 })
-export class IngresoinsumoComponent implements AfterViewInit {
-  displayedColumns: string[] = ['editar', 'id', 'idproveedor','cantidad', 'idtipocompra','idproyecto', 'fecha', 'preciounit', 'restante','idinsumotabla'];
-  dataSource = new MatTableDataSource<IngresoInsumo>();
-  datoscompletos:any;
+export class IngresoinsumoComponent implements OnInit, AfterViewInit {
+  displayedColumns: string[] = ['editar', 'id', 'codigoFabrica', 'cantidad', 'proveedorNombre', 'tipoCompraNombre', 'proyectoNombre', 'fecha', 'precioUnitario'];
+  dataSource = new MatTableDataSource<MovimientoDto>();
 
-  constructor(private service:IngresoinsumoService, private dialog:MatDialog) { }
+  constructor(private service:MovimientoService, private dialog:MatDialog) { }
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
 
@@ -38,19 +38,12 @@ export class IngresoinsumoComponent implements AfterViewInit {
     this.mostrarIngresoInsumo();
   }
 
-  async mostrarIngresoInsumo(){
-
-    try
-    {
-      this.datoscompletos = await this.service.listarIngresoInsumo();
-      this.dataSource.data = this.datoscompletos.listaIngresosInsumos;
+  mostrarIngresoInsumo(){
+    const filter: MovimientoFilter = { tiposMovimiento: ['INGRESO'], pageSize: 1000 };
+    this.service.filter(filter).subscribe(result => {
+      this.dataSource.data = result.items;
       this.dataSource.paginator = this.paginator;
-
-    }
-    catch(err)
-    {
-      //crear popup de conexion
-    }
+    });
   }
 
   abrirPopup(data:any, estado:any){
@@ -63,13 +56,5 @@ export class IngresoinsumoComponent implements AfterViewInit {
     _popup.afterClosed().subscribe(item => {
       this.mostrarIngresoInsumo();
     })
-  }
-
-  formatDate(element: any): string {
-    if (element.fecha) {
-      const dateObject = new Date(element.fecha);
-      return dateObject.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-    return '';
   }
 }

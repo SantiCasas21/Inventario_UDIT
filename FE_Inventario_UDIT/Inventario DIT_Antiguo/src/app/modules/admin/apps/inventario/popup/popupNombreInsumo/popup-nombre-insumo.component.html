@@ -1,7 +1,12 @@
-<form [formGroup]="form" (ngSubmit)="guardarNombreInsumo">
+<h2 mat-dialog-title>
+  @if(this.data.estado == 1) { Crear Categoría }
+  @else { Editar Categoría }
+</h2>
+
+<form [formGroup]="form">
     <mat-form-field class="example-full-width">
-        <mat-label>Nombre Insumo</mat-label>
-        <input matInput formControlName="nombreInsumo">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="nombre">
     </mat-form-field>
 
     <div mat-dialog-actions>

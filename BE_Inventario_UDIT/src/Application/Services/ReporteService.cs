@@ -234,6 +234,77 @@ namespace Application.Services
 
             var ultimosMovs = ultimosMovsPaged.Items.Select(MovimientoDto.FromEntity).ToList();
 
+            // ==========================================
+            // Detección de Irregularidades
+            // ==========================================
+            var irregularidades = new List<IrregularidadDto>();
+
+            // 1. Duplicados por CódigoFábrica
+            var duplicados = insumos
+                .GroupBy(i => i.CodigoFabrica)
+                .Where(g => g.Count() > 1)
+                .ToList();
+
+            foreach (var grupo in duplicados)
+            {
+                var ids = string.Join(", ", grupo.Select(i => i.Id));
+                irregularidades.Add(new IrregularidadDto
+                {
+                    Tipo = "duplicado",
+                    Descripcion = $"Código de fábrica '{grupo.Key}' aparece {grupo.Count()} veces (IDs: {ids})",
+                    InsumoRef = grupo.Key,
+                    Severidad = "alta"
+                });
+            }
+
+            // 2. Sin descripción
+            foreach (var insumo in insumos.Where(i => string.IsNullOrWhiteSpace(i.Descripcion)))
+            {
+                irregularidades.Add(new IrregularidadDto
+                {
+                    Tipo = "sin_descripcion",
+                    Descripcion = $"Insumo '{insumo.CodigoFabrica}' no tiene descripción",
+                    InsumoRef = insumo.CodigoFabrica,
+                    Severidad = "media"
+                });
+            }
+
+            // 3. Precio cero o nulo
+            foreach (var insumo in insumos.Where(i => i.PrecioReferencia == null || i.PrecioReferencia == 0))
+            {
+                irregularidades.Add(new IrregularidadDto
+                {
+                    Tipo = "precio_cero",
+                    Descripcion = $"Insumo '{insumo.CodigoFabrica}' tiene precio {insumo.PrecioReferencia?.ToString() ?? "sin definir"}",
+                    InsumoRef = insumo.CodigoFabrica,
+                    Severidad = "media"
+                });
+            }
+
+            // 4. Stock negativo (consultar stock general)
+            try
+            {
+                var stockGeneral = await _movRepo.GetStockGeneralDbAsync();
+                var stocksNegativos = stockGeneral.Where(s => s.StockActual < 0).ToList();
+                foreach (var st in stocksNegativos)
+                {
+                    irregularidades.Add(new IrregularidadDto
+                    {
+                        Tipo = "stock_negativo",
+                        Descripcion = $"Insumo ID {st.IdInsumo} tiene stock negativo: {st.StockActual}",
+                        InsumoRef = st.IdInsumo.ToString(),
+                        Severidad = "alta"
+                    });
+                }
+            }
+            catch
+            {
+                // Si falla la consulta de stock, continuamos sin ella
+            }
+
+            // Limitar a máximo 15 irregularidades para no saturar el dashboard
+            var irregularidadesLimitadas = irregularidades.Take(15).ToList();
+
             var dashboard = new DashboardDto
             {
                 TotalInsumos = insumos.Count,
@@ -246,7 +317,8 @@ namespace Application.Services
                 SalidasHoy = movsHoy.Count(m => m.TipoMovimiento == Domain.Enums.TipoMovimiento.Salida),
                 StockBajoCount = stockBajoResult.Data?.Count ?? 0,
                 StockBajo = stockBajoResult.Data ?? new(),
-                UltimosMovimientos = ultimosMovs
+                UltimosMovimientos = ultimosMovs,
+                Irregularidades = irregularidadesLimitadas
             };
 
             return OperationResult<DashboardDto>.Ok(dashboard);
