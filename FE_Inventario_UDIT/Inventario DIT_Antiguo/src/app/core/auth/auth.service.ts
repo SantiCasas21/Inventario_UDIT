@@ -1,187 +1,140 @@
-import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { AuthUtils } from 'app/core/auth/auth.utils';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of, throwError, catchError, map, timeout } from 'rxjs';
 import { UserService } from 'app/core/user/user.service';
-import { catchError, Observable, of, switchMap, throwError } from 'rxjs';
+import { LoginRequest, LoginResponse, UserInfo } from '@app/core/models';
+import { environment } from '@env/environment';
 
-@Injectable({providedIn: 'root'})
-export class AuthService
-{
-    private _authenticated: boolean = false;
-    private _httpClient = inject(HttpClient);
-    private _userService = inject(UserService);
+@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private _authenticated = false;
+  private _http = inject(HttpClient);
+  private _userService = inject(UserService);
+  private _baseUrl = environment.API_BASE_URL;
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Accessors
-    // -----------------------------------------------------------------------------------------------------
+  set accessToken(token: string) {
+    localStorage.setItem('accessToken', token);
+  }
 
-    /**
-     * Setter & getter for access token
-     */
-    set accessToken(token: string)
-    {
-        localStorage.setItem('accessToken', token);
+  get accessToken(): string {
+    return localStorage.getItem('accessToken') ?? '';
+  }
+
+  get isAuthenticated(): boolean {
+    return this._authenticated;
+  }
+
+  /**
+   * Sign in — llamada directa con HttpClient para evitar capas innecesarias.
+   * El backend responde { success, message, data: { token, expiration, username, nombreCompleto, role } }
+   */
+  signIn(credentials: LoginRequest): Observable<LoginResponse> {
+    if (this._authenticated) {
+      return throwError(() => new Error('Ya hay sesión activa.'));
     }
 
-    get accessToken(): string
-    {
-        return localStorage.getItem('accessToken') ?? '';
-    }
+    console.log('[Auth] Enviando login a:', `${this._baseUrl}/auth/login`, credentials);
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
+    return this._http.post<{ success: boolean; message: string; data: LoginResponse }>(
+      `${this._baseUrl}/auth/login`,
+      credentials
+    ).pipe(
+      timeout(15000),
+      map(res => {
+        console.log('[Auth] Respuesta cruda del backend:', JSON.stringify(res));
 
-    /**
-     * Forgot password
-     *
-     * @param email
-     */
-    forgotPassword(email: string): Observable<any>
-    {
-        return this._httpClient.post('api/auth/forgot-password', email);
-    }
-
-    /**
-     * Reset password
-     *
-     * @param password
-     */
-    resetPassword(password: string): Observable<any>
-    {
-        return this._httpClient.post('api/auth/reset-password', password);
-    }
-
-    /**
-     * Sign in
-     *
-     * @param credentials
-     */
-    signIn(credentials: { email: string; password: string }): Observable<any>
-    {
-        // Throw error, if the user is already logged in
-        if ( this._authenticated )
-        {
-            return throwError('User is already logged in.');
+        if (!res || !res.success) {
+          throw new Error(res?.message || 'Credenciales inválidas');
+        }
+        if (!res.data || !res.data.token) {
+          throw new Error('El servidor no devolvió un token válido. Respuesta: ' + JSON.stringify(res));
         }
 
-        return this._httpClient.post('api/auth/sign-in', credentials).pipe(
-            switchMap((response: any) =>
-            {
-                // Store the access token in the local storage
-                this.accessToken = response.accessToken;
+        const login = res.data;
+        this.accessToken = login.token;
+        this._authenticated = true;
+        this._userService.user = {
+          id: '',
+          name: login.nombreCompleto,
+          username: login.username,
+          email: '',
+          nombreCompleto: login.nombreCompleto,
+          role: login.role,
+          activo: true,
+          fechaCreacion: '',
+        };
 
-                // Set the authenticated flag to true
-                this._authenticated = true;
-
-                // Store the user on the user service
-                this._userService.user = response.user;
-
-                // Return a new observable with the response
-                return of(response);
-            }),
-        );
-    }
-
-    /**
-     * Sign in using the access token
-     */
-    signInUsingToken(): Observable<any>
-    {
-        // Sign in using the token
-        return this._httpClient.post('api/auth/sign-in-with-token', {
-            accessToken: this.accessToken,
-        }).pipe(
-            catchError(() =>
-
-                // Return false
-                of(false),
-            ),
-            switchMap((response: any) =>
-            {
-                // Replace the access token with the new one if it's available on
-                // the response object.
-                //
-                // This is an added optional step for better security. Once you sign
-                // in using the token, you should generate a new one on the server
-                // side and attach it to the response object. Then the following
-                // piece of code can replace the token with the refreshed one.
-                if ( response.accessToken )
-                {
-                    this.accessToken = response.accessToken;
-                }
-
-                // Set the authenticated flag to true
-                this._authenticated = true;
-
-                // Store the user on the user service
-                this._userService.user = response.user;
-
-                // Return true
-                return of(true);
-            }),
-        );
-    }
-
-    /**
-     * Sign out
-     */
-    signOut(): Observable<any>
-    {
-        // Remove the access token from the local storage
-        localStorage.removeItem('accessToken');
-
-        // Set the authenticated flag to false
-        this._authenticated = false;
-
-        // Return the observable
-        return of(true);
-    }
-
-    /**
-     * Sign up
-     *
-     * @param user
-     */
-    signUp(user: { name: string; email: string; password: string; company: string }): Observable<any>
-    {
-        return this._httpClient.post('api/auth/sign-up', user);
-    }
-
-    /**
-     * Unlock session
-     *
-     * @param credentials
-     */
-    unlockSession(credentials: { email: string; password: string }): Observable<any>
-    {
-        return this._httpClient.post('api/auth/unlock-session', credentials);
-    }
-
-    /**
-     * Check the authentication status
-     */
-    check(): Observable<boolean>
-    {
-        // Check if the user is logged in
-        if ( this._authenticated )
-        {
-            return of(true);
+        console.log('[Auth] Login exitoso. Token guardado, rol:', login.role);
+        return login;
+      }),
+      catchError(err => {
+        console.error('[Auth] Error en login:', err);
+        let msg: string;
+        if (err?.name === 'TimeoutError') {
+          msg = 'El servidor no responde. Verifica que el backend esté corriendo en ' + this._baseUrl;
+        } else if (err?.status === 0) {
+          msg = 'No hay conexión con el servidor. ¿Está corriendo el backend en ' + this._baseUrl + '?';
+        } else {
+          msg = err?.message || err?.error?.message || 'Error de conexión con el servidor';
         }
+        return throwError(() => new Error(msg));
+      })
+    );
+  }
 
-        // Check the access token availability
-        if ( !this.accessToken )
-        {
-            return of(false);
-        }
-
-        // Check the access token expire date
-        if ( AuthUtils.isTokenExpired(this.accessToken) )
-        {
-            return of(false);
-        }
-
-        // If the access token exists, and it didn't expire, sign in using it
-        return this.signInUsingToken();
+  /**
+   * Valida token contra GET /api/auth/me
+   */
+  validateToken(): Observable<UserInfo> {
+    if (!this.accessToken) {
+      return throwError(() => new Error('No hay token.'));
     }
+
+    return this._http.get<{ success: boolean; data: UserInfo }>(`${this._baseUrl}/auth/me`).pipe(
+      timeout(10000),
+      map(res => {
+        if (!res?.success || !res?.data) throw new Error('Token inválido o expirado.');
+        const u = res.data;
+        this._authenticated = true;
+        this._userService.user = {
+          id: u.id, name: u.nombreCompleto, username: u.username,
+          email: u.email, nombreCompleto: u.nombreCompleto, role: u.role,
+          activo: u.activo, fechaCreacion: u.fechaCreacion,
+        };
+        return u;
+      }),
+      catchError(err => {
+        this.signOut();
+        return throwError(() => err);
+      })
+    );
+  }
+
+  signOut(): Observable<boolean> {
+    localStorage.removeItem('accessToken');
+    this._authenticated = false;
+    this._userService.user = null;
+    return of(true);
+  }
+
+  signUp(data: { username: string; email: string; password: string; nombreCompleto: string; role: string }): Observable<LoginResponse> {
+    return this._http.post<{ success: boolean; message?: string; data: LoginResponse }>(
+      `${this._baseUrl}/auth/register`, data
+    ).pipe(
+      map(res => {
+        if (!res?.success || !res?.data) throw new Error(res?.message || 'Error al crear usuario.');
+        return res.data;
+      })
+    );
+  }
+
+  register(data: { username: string; email: string; password: string; nombreCompleto: string; role: string }): Observable<LoginResponse> {
+    return this.signUp(data);
+  }
+
+  check(): Observable<boolean> {
+    if (this._authenticated) return of(true);
+    if (!this.accessToken) return of(false);
+    return this.validateToken().pipe(map(() => true), catchError(() => of(false)));
+  }
 }

@@ -54,8 +54,8 @@ export class AuthSignInComponent implements OnInit
     {
         // Create the form
         this.signInForm = this._formBuilder.group({
-            email     : ['jcasass@ucentral.edu.co', [Validators.required, Validators.email]],
-            password  : ['admin', Validators.required],
+            username  : ['admin', Validators.required],
+            password  : ['Admin2026!', Validators.required],
             rememberMe: [''],
         });
     }
@@ -104,10 +104,12 @@ export class AuthSignInComponent implements OnInit
                     // Reset the form
                     this.signInNgForm.resetForm();
 
-                    // Set the alert
+                    // Set the alert with the actual error
+                    const errorMsg = response?.message || response?.error?.message || response?.statusText || 'Error de conexión';
+                    console.error('[SignIn] Error:', response);
                     this.alert = {
                         type   : 'error',
-                        message: 'Wrong email or password',
+                        message: 'Error: ' + errorMsg,
                     };
 
                     // Show the alert

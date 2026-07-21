@@ -1,0 +1,41 @@
+<!-- Contador de resultados + toggle Smart Filter -->
+<div class="filter-bar">
+  <div class="results-info" *ngIf="resultCount !== null">
+    <span class="results-label">Resultados:</span>
+    <span class="results-count">{{ resultCount }}</span>
+  </div>
+  <div class="smart-filter-toggle" *ngIf="config.showSmartFilterToggle">
+    <input type="checkbox" id="smartFilter" [(ngModel)]="smartFilter" />
+    <label for="smartFilter" class="smart-filter-label">Filtrado inteligente</label>
+  </div>
+  <div class="loading-indicator" *ngIf="loading">
+    <span>Cargando...</span>
+  </div>
+</div>
+
+<!-- Breadcrumbs de filtros aplicados -->
+<div class="applied-filters" *ngIf="appliedFilters.length > 0">
+  <span class="applied-label">Filtros aplicados:</span>
+  <span
+    *ngFor="let f of appliedFilters"
+    class="filter-chip"
+    (click)="removeFilter(f)">
+    {{ f.label }}: {{ f.value }}
+    <span class="chip-x">×</span>
+  </span>
+</div>
+
+<!-- Tabla de columnas del filtro -->
+<div class="parametric-table">
+  <app-filter-column
+    *ngFor="let col of smartColumns"
+    [config]="col"
+    (valueChange)="onColumnChange($event)">
+  </app-filter-column>
+</div>
+
+<!-- Botones de acción -->
+<div class="filter-actions">
+  <button class="btn-reset-all" (click)="resetAll()">Restablecer todos</button>
+  <button class="btn-apply" (click)="applyFilters()">Aplicar filtros</button>
+</div>

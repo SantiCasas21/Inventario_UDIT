@@ -1,4 +1,3 @@
-import { provideHttpClient } from '@angular/common/http';
 import { APP_INITIALIZER, ApplicationConfig, inject } from '@angular/core';
 import { LuxonDateAdapter } from '@angular/material-luxon-adapter';
 import { DateAdapter, MAT_DATE_FORMATS } from '@angular/material/core';
@@ -10,13 +9,11 @@ import { firstValueFrom } from 'rxjs';
 import { appRoutes } from 'app/app.routes';
 import { provideAuth } from 'app/core/auth/auth.provider';
 import { provideIcons } from 'app/core/icons/icons.provider';
-import { mockApiServices } from 'app/mock-api';
 import { TranslocoHttpLoader } from './core/transloco/transloco.http-loader';
 
 export const appConfig: ApplicationConfig = {
     providers: [
         provideAnimations(),
-        provideHttpClient(),
         provideRouter(appRoutes,
             withPreloading(PreloadAllModules),
             withInMemoryScrolling({scrollPositionRestoration: 'enabled'}),
@@ -80,10 +77,6 @@ export const appConfig: ApplicationConfig = {
         provideAuth(),
         provideIcons(),
         provideFuse({
-            mockApi: {
-                delay   : 0,
-                services: mockApiServices,
-            },
             fuse   : {
                 layout : 'classy',
                 scheme : 'light',

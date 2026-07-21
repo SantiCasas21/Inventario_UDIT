@@ -1,0 +1,181 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Movimientos</h1>
+      <p class="page-subtitle">Registro y consulta de movimientos de inventario</p>
+    </div>
+  </div>
+
+  <mat-tab-group>
+    <!-- Tab: Registrar Ingreso -->
+    <mat-tab label="+ Ingreso">
+      <div class="tab-content">
+        <h3 class="tab-title">Registrar Ingreso de Insumo</h3>
+        <form [formGroup]="ingresoForm" (ngSubmit)="registrarIngreso()" class="movimiento-form">
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Insumo</mat-label>
+              <mat-select formControlName="idInsumo">
+                <mat-option *ngFor="let i of insumos" [value]="i.id">{{ i.codigoFabrica }} - {{ i.descripcion }}</mat-option>
+              </mat-select>
+              <mat-error>Requerido</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Cantidad</mat-label>
+              <input matInput type="number" formControlName="cantidad" min="1" />
+              <mat-error>Mínimo 1</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Precio Unitario</mat-label>
+              <input matInput type="number" formControlName="precioUnitario" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Proveedor</mat-label>
+              <mat-select formControlName="idProveedor">
+                <mat-option *ngFor="let p of proveedores" [value]="p.id">{{ p.nombre }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Tipo de Compra</mat-label>
+              <mat-select formControlName="idTipoCompra">
+                <mat-option *ngFor="let t of tiposCompra" [value]="t.id">{{ t.nombre }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Observación</mat-label>
+              <textarea matInput formControlName="observacion" rows="2"></textarea>
+            </mat-form-field>
+          </div>
+          <button mat-raised-button color="primary" type="submit" [disabled]="ingresoForm.invalid">
+            <mat-icon>save</mat-icon> Registrar Ingreso
+          </button>
+        </form>
+      </div>
+    </mat-tab>
+
+    <!-- Tab: Registrar Salida -->
+    <mat-tab label="- Salida">
+      <div class="tab-content">
+        <h3 class="tab-title">Registrar Salida de Insumo</h3>
+        <form [formGroup]="salidaForm" (ngSubmit)="registrarSalida()" class="movimiento-form">
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Insumo</mat-label>
+              <mat-select formControlName="idInsumo">
+                <mat-option *ngFor="let i of insumos" [value]="i.id">{{ i.codigoFabrica }} - {{ i.descripcion }}</mat-option>
+              </mat-select>
+              <mat-error>Requerido</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Cantidad</mat-label>
+              <input matInput type="number" formControlName="cantidad" min="1" />
+              <mat-error>Mínimo 1</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Precio Unitario</mat-label>
+              <input matInput type="number" formControlName="precioUnitario" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Proyecto</mat-label>
+              <mat-select formControlName="idProyecto">
+                <mat-option *ngFor="let p of proyectos" [value]="p.id">{{ p.nombre }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Estado Salida</mat-label>
+              <mat-select formControlName="idEstadoSalida">
+                <mat-option *ngFor="let e of estadosSalida" [value]="e.id">{{ e.nombre }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Observación</mat-label>
+              <textarea matInput formControlName="observacion" rows="2"></textarea>
+            </mat-form-field>
+          </div>
+          <button mat-raised-button color="warn" type="submit" [disabled]="salidaForm.invalid">
+            <mat-icon>save</mat-icon> Registrar Salida
+          </button>
+        </form>
+      </div>
+    </mat-tab>
+
+    <!-- Tab: Historial con filtro -->
+    <mat-tab label="Historial">
+      <div class="tab-content">
+        <!-- Filtro paramétrico -->
+        <div class="filter-section">
+          <app-parametric-filter
+            [config]="filterConfig"
+            [resultCount]="totalCount"
+            (filterChange)="onFilterChange($event)">
+          </app-parametric-filter>
+        </div>
+
+        <!-- Tabla -->
+        <div class="table-section" *ngIf="!loading || data.length > 0">
+          <table mat-table [dataSource]="data" class="mat-elevation-z1">
+            <ng-container matColumnDef="fecha">
+              <th mat-header-cell *matHeaderCellDef>Fecha</th>
+              <td mat-cell *matCellDef="let el">{{ el.fecha | date:'short' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="tipoMovimiento">
+              <th mat-header-cell *matHeaderCellDef>Tipo</th>
+              <td mat-cell *matCellDef="let el">
+                <span class="tipo-badge" [class.ingreso]="el.tipoMovimiento === 'INGRESO'" [class.salida]="el.tipoMovimiento === 'SALIDA'" [class.ajuste]="el.tipoMovimiento === 'AJUSTE'">
+                  {{ el.tipoMovimiento }}
+                </span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="codigoFabrica">
+              <th mat-header-cell *matHeaderCellDef>Insumo</th>
+              <td mat-cell *matCellDef="let el"><strong>{{ el.codigoFabrica }}</strong></td>
+            </ng-container>
+            <ng-container matColumnDef="cantidad">
+              <th mat-header-cell *matHeaderCellDef>Cantidad</th>
+              <td mat-cell *matCellDef="let el">{{ el.cantidad }}</td>
+            </ng-container>
+            <ng-container matColumnDef="precioUnitario">
+              <th mat-header-cell *matHeaderCellDef>Precio Unit.</th>
+              <td mat-cell *matCellDef="let el">{{ el.precioUnitario | currency }}</td>
+            </ng-container>
+            <ng-container matColumnDef="proveedorNombre">
+              <th mat-header-cell *matHeaderCellDef>Proveedor</th>
+              <td mat-cell *matCellDef="let el">{{ el.proveedorNombre || '-' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="proyectoNombre">
+              <th mat-header-cell *matHeaderCellDef>Proyecto</th>
+              <td mat-cell *matCellDef="let el">{{ el.proyectoNombre || '-' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="observacion">
+              <th mat-header-cell *matHeaderCellDef>Observación</th>
+              <td mat-cell *matCellDef="let el">{{ el.observacion || '-' }}</td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+          </table>
+
+          <mat-paginator
+            [length]="totalCount"
+            [pageSize]="pageSize"
+            [pageIndex]="page - 1"
+            [pageSizeOptions]="[10, 20, 50]"
+            (page)="onPageChange($event)"
+            showFirstLastButtons>
+          </mat-paginator>
+        </div>
+        <div *ngIf="loading && data.length === 0" class="loading-msg">Cargando movimientos...</div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

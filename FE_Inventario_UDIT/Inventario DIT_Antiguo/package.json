@@ -1,8 +1,8 @@
 {
-  "name": "fuse-angular",
-  "version": "19.0.0",
-  "description": "Fuse - Angular Admin Template and Starter Project",
-  "author": "https://themeforest.net/user/srcn",
+  "name": "inventario-udit",
+  "version": "2.0.0",
+  "description": "Inventario UDIT - Sistema de Gestión de Inventario - Unidad DIT Universidad Central",
+  "author": "UDIT - Universidad Central",
   "license": "https://themeforest.net/licenses/standard",
   "private": true,
   "scripts": {

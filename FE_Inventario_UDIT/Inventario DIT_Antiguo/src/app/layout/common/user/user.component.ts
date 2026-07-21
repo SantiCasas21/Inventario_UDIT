@@ -93,7 +93,7 @@ export class UserComponent implements OnInit, OnDestroy
         this._userService.update({
             ...this.user,
             status,
-        }).subscribe();
+        });
     }
 
     /**

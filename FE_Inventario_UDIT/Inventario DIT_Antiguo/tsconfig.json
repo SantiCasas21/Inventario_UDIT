@@ -4,6 +4,14 @@
     "compilerOptions": {
         "allowSyntheticDefaultImports": true,
         "baseUrl": "./src",
+        "paths": {
+            "@fuse/*": ["@fuse/*"],
+            "@app/*": ["app/*"],
+            "@models/*": ["app/core/models/*"],
+            "@core/*": ["app/core/*"],
+            "@shared/*": ["app/shared/*"],
+            "@env/*": ["environments/*"]
+        },
         "outDir": "./dist/out-tsc",
         "sourceMap": true,
         "declaration": false,

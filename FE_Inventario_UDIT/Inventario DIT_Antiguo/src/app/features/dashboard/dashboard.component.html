@@ -1,0 +1,141 @@
+<div class="dashboard-container">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div>
+      <h1 class="dashboard-title">Dashboard</h1>
+      <p class="dashboard-subtitle">Resumen general del inventario</p>
+    </div>
+    <button class="refresh-btn" (click)="loadDashboard()" [disabled]="loading">
+      <mat-icon>refresh</mat-icon>
+      Actualizar
+    </button>
+  </div>
+
+  <!-- Loading / Error -->
+  <div *ngIf="loading" class="loading-msg">Cargando dashboard...</div>
+  <div *ngIf="error" class="error-msg">{{ error }}</div>
+
+  <!-- Dashboard content -->
+  <ng-container *ngIf="dashboard && !loading">
+    <!-- Stat cards -->
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-icon bg-blue"><mat-icon>circle-stack</mat-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ dashboard.totalInsumos }}</span>
+          <span class="stat-label">Insumos</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon bg-green"><mat-icon>folder</mat-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ dashboard.totalProyectos }}</span>
+          <span class="stat-label">Proyectos</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon bg-purple"><mat-icon>truck</mat-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ dashboard.totalProveedores }}</span>
+          <span class="stat-label">Proveedores</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon bg-orange"><mat-icon>arrows-right-left</mat-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ dashboard.totalMovimientos }}</span>
+          <span class="stat-label">Movimientos</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's activity -->
+    <div class="section-title">Actividad Reciente</div>
+    <div class="stat-cards small">
+      <div class="stat-card">
+        <div class="stat-icon bg-green-light"><mat-icon>arrow-up</mat-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ dashboard.ingresosHoy }}</span>
+          <span class="stat-label">Ingresos Hoy</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon bg-red-light"><mat-icon>arrow-down</mat-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ dashboard.salidasHoy }}</span>
+          <span class="stat-label">Salidas Hoy</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon bg-blue-light"><mat-icon>calendar</mat-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ dashboard.movimientosHoy }}</span>
+          <span class="stat-label">Total Hoy</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon bg-indigo-light"><mat-icon>chart-bar</mat-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ dashboard.movimientosEsteMes }}</span>
+          <span class="stat-label">Este Mes</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock Bajo -->
+    <div class="section-title">Stock Bajo ({{ dashboard.stockBajoCount }} insumo(s))</div>
+    <div *ngIf="dashboard.stockBajo.length === 0" class="empty-msg">No hay insumos con stock bajo.</div>
+    <table *ngIf="dashboard.stockBajo.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>Código Fabrica</th>
+          <th>Descripción</th>
+          <th>Categoría</th>
+          <th>Ubicación</th>
+          <th>Stock</th>
+          <th>Umbral</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of dashboard.stockBajo" class="critical-row">
+          <td><strong>{{ item.codigoFabrica }}</strong></td>
+          <td>{{ item.descripcion || '-' }}</td>
+          <td>{{ item.categoria }}</td>
+          <td>{{ item.ubicacion }}</td>
+          <td class="text-danger">{{ item.stockActual }}</td>
+          <td>{{ item.umbral }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Últimos Movimientos -->
+    <div class="section-title">Últimos Movimientos</div>
+    <div *ngIf="dashboard.ultimosMovimientos.length === 0" class="empty-msg">No hay movimientos registrados.</div>
+    <table *ngIf="dashboard.ultimosMovimientos.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Insumo</th>
+          <th>Cantidad</th>
+          <th>Proveedor / Proyecto</th>
+          <th>Observación</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let m of dashboard.ultimosMovimientos">
+          <td>{{ m.fecha | date:'short' }}</td>
+          <td>
+            <span class="tipo-badge" [class.ingreso]="m.tipoMovimiento === 'INGRESO'" [class.salida]="m.tipoMovimiento === 'SALIDA'" [class.ajuste]="m.tipoMovimiento === 'AJUSTE'">
+              {{ m.tipoMovimiento }}
+            </span>
+          </td>
+          <td>{{ m.codigoFabrica }}</td>
+          <td>{{ m.cantidad }}</td>
+          <td>{{ m.proveedorNombre || m.proyectoNombre || '-' }}</td>
+          <td>{{ m.observacion || '-' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </ng-container>
+</div>

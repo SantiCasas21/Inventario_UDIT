@@ -4,7 +4,7 @@ import { MessagesService } from 'app/layout/common/messages/messages.service';
 import { NotificationsService } from 'app/layout/common/notifications/notifications.service';
 import { QuickChatService } from 'app/layout/common/quick-chat/quick-chat.service';
 import { ShortcutsService } from 'app/layout/common/shortcuts/shortcuts.service';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
 export const initialDataResolver = () =>
 {
@@ -14,12 +14,12 @@ export const initialDataResolver = () =>
     const quickChatService = inject(QuickChatService);
     const shortcutsService = inject(ShortcutsService);
 
-    // Fork join multiple API endpoint calls to wait all of them to finish
+    // Cada servicio protegido con catchError para que un fallo no bloquee la navegación
     return forkJoin([
         navigationService.get(),
-        messagesService.getAll(),
-        notificationsService.getAll(),
-        quickChatService.getChats(),
-        shortcutsService.getAll(),
+        messagesService.getAll().pipe(catchError(() => of([]))),
+        notificationsService.getAll().pipe(catchError(() => of([]))),
+        quickChatService.getChats().pipe(catchError(() => of([]))),
+        shortcutsService.getAll().pipe(catchError(() => of([]))),
     ]);
 };

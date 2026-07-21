@@ -1,52 +1,40 @@
 import { HttpErrorResponse, HttpEvent, HttpHandlerFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from 'app/core/auth/auth.service';
-import { AuthUtils } from 'app/core/auth/auth.utils';
+import { environment } from '@env/environment';
 import { catchError, Observable, throwError } from 'rxjs';
 
 /**
- * Intercept
- *
- * @param req
- * @param next
+ * Interceptor HTTP que:
+ * - Agrega el header Authorization: Bearer {token} a las llamadas a la API
+ * - Maneja respuestas 401 → sign out + reload
  */
-export const authInterceptor = (req: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> =>
-{
-    const authService = inject(AuthService);
+export const authInterceptor = (req: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> => {
+  const authService = inject(AuthService);
 
-    // Clone the request object
-    let newReq = req.clone();
+  // Solo interceptar llamadas a la API del backend
+  const isApiRequest = req.url.startsWith(environment.API_BASE_URL);
 
-    // Request
-    //
-    // If the access token didn't expire, add the Authorization header.
-    // We won't add the Authorization header if the access token expired.
-    // This will force the server to return a "401 Unauthorized" response
-    // for the protected API routes which our response interceptor will
-    // catch and delete the access token from the local storage while logging
-    // the user out from the app.
-    if ( authService.accessToken && !AuthUtils.isTokenExpired(authService.accessToken) )
-    {
-        newReq = req.clone({
-            headers: req.headers.set('Authorization', 'Bearer ' + authService.accessToken),
-        });
-    }
+  if (!isApiRequest) {
+    return next(req);
+  }
 
-    // Response
-    return next(newReq).pipe(
-        catchError((error) =>
-        {
-            // Catch "401 Unauthorized" responses
-            if ( error instanceof HttpErrorResponse && error.status === 401 )
-            {
-                // Sign out
-                authService.signOut();
+  const token = authService.accessToken;
+  let newReq = req;
 
-                // Reload the app
-                location.reload();
-            }
+  if (token) {
+    newReq = req.clone({
+      headers: req.headers.set('Authorization', `Bearer ${token}`),
+    });
+  }
 
-            return throwError(error);
-        }),
-    );
+  return next(newReq).pipe(
+    catchError((error) => {
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        authService.signOut();
+        location.reload();
+      }
+      return throwError(() => error);
+    })
+  );
 };
