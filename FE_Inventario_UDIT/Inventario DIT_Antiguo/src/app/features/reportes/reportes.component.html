@@ -1,104 +1,196 @@
-<div class="page-container">
-  <div class="page-header">
-    <h1 class="page-title">Reportes</h1>
-    <p class="page-subtitle">Consultas y reportes del inventario</p>
+<div class="page-container p-6 md:p-8">
+  <div class="page-header mb-6">
+    <h1 class="text-3xl font-bold tracking-tight">Reportes</h1>
+    <p class="text-secondary">Consultas y reportes del inventario</p>
   </div>
 
-  <mat-tab-group>
+  <mat-tab-group class="bg-card rounded-2xl shadow-sm border border-gray-200">
     <!-- Kardex -->
     <mat-tab label="Kardex por Insumo">
-      <div class="tab-content">
-        <h3 class="tab-title">Kardex Detallado</h3>
-        <div class="report-filters">
-          <mat-form-field appearance="outline">
+      <div class="p-6">
+        <h3 class="text-xl font-semibold mb-4">Kardex Detallado</h3>
+
+        <!-- Tip Box -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r shadow-sm">
+          <div class="flex items-start">
+            <mat-icon class="text-blue-500 mr-3 mt-0.5">lightbulb</mat-icon>
+            <div>
+              <h4 class="text-blue-800 font-bold mb-1">¿Para qué sirve este reporte?</h4>
+              <p class="text-blue-700 text-sm m-0">El <strong>Kardex</strong> muestra el historial detallado de movimientos (ingresos, salidas y ajustes) de un insumo específico. Es fundamental para rastrear la trazabilidad de un artículo y auditar su saldo acumulado en el tiempo.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4 items-center mb-6">
+          <mat-form-field appearance="outline" class="w-full sm:w-1/3">
             <mat-label>Insumo</mat-label>
             <mat-select [(ngModel)]="kardexInsumoId">
-              <mat-option *ngFor="let i of insumos" [value]="i.id">{{ i.codigoFabrica }}</mat-option>
+              <mat-option *ngFor="let i of insumos" [value]="i.id">{{ i.codigoFabrica }} - {{ i.descripcion }}</mat-option>
             </mat-select>
           </mat-form-field>
-          <mat-form-field appearance="outline"><mat-label>Desde</mat-label><input matInput type="date" [(ngModel)]="kardexDesde" /></mat-form-field>
-          <mat-form-field appearance="outline"><mat-label>Hasta</mat-label><input matInput type="date" [(ngModel)]="kardexHasta" /></mat-form-field>
-          <button mat-raised-button color="primary" (click)="cargarKardex()"><mat-icon>search</mat-icon>Buscar</button>
+          <mat-form-field appearance="outline" class="w-full sm:w-1/4">
+            <mat-label>Desde</mat-label>
+            <input matInput [matDatepicker]="kardexDesdePicker" [(ngModel)]="kardexDesde" />
+            <mat-datepicker-toggle matSuffix [for]="kardexDesdePicker"></mat-datepicker-toggle>
+            <mat-datepicker #kardexDesdePicker></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-full sm:w-1/4">
+            <mat-label>Hasta</mat-label>
+            <input matInput [matDatepicker]="kardexHastaPicker" [(ngModel)]="kardexHasta" />
+            <mat-datepicker-toggle matSuffix [for]="kardexHastaPicker"></mat-datepicker-toggle>
+            <mat-datepicker #kardexHastaPicker></mat-datepicker>
+          </mat-form-field>
+          <button mat-raised-button color="primary" class="h-14 w-full sm:w-auto" (click)="cargarKardex()"><mat-icon>search</mat-icon>Buscar</button>
         </div>
-        <table mat-table [dataSource]="kardexData" class="mat-elevation-z1" *ngIf="kardexData.length > 0">
+        <table mat-table [dataSource]="kardexData" class="mat-elevation-z1 w-full" *ngIf="kardexData.length > 0">
           <ng-container *ngFor="let col of kardexColumns" [matColumnDef]="col">
             <th mat-header-cell *matHeaderCellDef>{{ col | titlecase }}</th>
             <td mat-cell *matCellDef="let el">{{ el[col] }}</td>
           </ng-container>
           <tr mat-header-row *matHeaderRowDef="kardexColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: kardexColumns;"></tr>
+          <tr mat-row *matRowDef="let row; columns: kardexColumns;" class="hover:bg-gray-50"></tr>
         </table>
       </div>
     </mat-tab>
 
     <!-- Stock Crítico -->
     <mat-tab label="Stock Crítico">
-      <div class="tab-content">
-        <h3 class="tab-title">Insumos bajo umbral</h3>
-        <div class="report-filters">
-          <mat-form-field appearance="outline"><mat-label>Umbral</mat-label><input matInput type="number" [(ngModel)]="stockUmbral" min="0" /></mat-form-field>
-          <button mat-raised-button color="primary" (click)="cargarStockCritico()"><mat-icon>search</mat-icon>Consultar</button>
+      <div class="p-6">
+        <h3 class="text-xl font-semibold mb-4">Insumos bajo umbral</h3>
+
+        <!-- Tip Box -->
+        <div class="bg-orange-50 border-l-4 border-orange-500 p-4 mb-6 rounded-r shadow-sm">
+          <div class="flex items-start">
+            <mat-icon class="text-orange-500 mr-3 mt-0.5">warning</mat-icon>
+            <div>
+              <h4 class="text-orange-800 font-bold mb-1">¿Para qué sirve este reporte?</h4>
+              <p class="text-orange-700 text-sm m-0">Este reporte te permite identificar rápidamente cuáles insumos están por agotarse o tienen existencias inferiores al umbral que definas. Úsalo para planificar compras y evitar quedarte sin inventario.</p>
+            </div>
+          </div>
         </div>
-        <table mat-table [dataSource]="stockData" class="mat-elevation-z1" *ngIf="stockData.length > 0">
+
+        <div class="flex flex-col sm:flex-row gap-4 items-center mb-6">
+          <mat-form-field appearance="outline" class="w-full sm:w-1/3">
+            <mat-label>Umbral Mínimo</mat-label>
+            <input matInput type="number" [(ngModel)]="stockUmbral" min="0" />
+            <span matSuffix class="pr-2 text-secondary">unidades</span>
+          </mat-form-field>
+          <button mat-raised-button color="primary" class="h-14 w-full sm:w-auto" (click)="cargarStockCritico()"><mat-icon>search</mat-icon>Consultar</button>
+        </div>
+        <table mat-table [dataSource]="stockData" class="mat-elevation-z1 w-full" *ngIf="stockData.length > 0">
           <ng-container *ngFor="let col of stockColumns" [matColumnDef]="col">
-            <th mat-header-cell *matHeaderCellDef>{{ col }}</th>
-            <td mat-cell *matCellDef="let el">{{ el[col] }}</td>
+            <th mat-header-cell *matHeaderCellDef>{{ col | titlecase }}</th>
+            <td mat-cell *matCellDef="let el">
+              <span *ngIf="col === 'stockActual'" class="font-bold text-red-600">{{ el[col] }}</span>
+              <span *ngIf="col !== 'stockActual'">{{ el[col] }}</span>
+            </td>
           </ng-container>
           <tr mat-header-row *matHeaderRowDef="stockColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: stockColumns;"></tr>
+          <tr mat-row *matRowDef="let row; columns: stockColumns;" class="hover:bg-gray-50"></tr>
         </table>
       </div>
     </mat-tab>
 
     <!-- Movimientos por Periodo -->
     <mat-tab label="Movimientos por Periodo">
-      <div class="tab-content">
-        <h3 class="tab-title">Resumen de movimientos</h3>
-        <div class="report-filters">
-          <mat-form-field appearance="outline"><mat-label>Desde</mat-label><input matInput type="date" [(ngModel)]="movDesde" /></mat-form-field>
-          <mat-form-field appearance="outline"><mat-label>Hasta</mat-label><input matInput type="date" [(ngModel)]="movHasta" /></mat-form-field>
-          <mat-form-field appearance="outline"><mat-label>Insumo (opcional)</mat-label>
+      <div class="p-6">
+        <h3 class="text-xl font-semibold mb-4">Resumen de movimientos</h3>
+
+        <!-- Tip Box -->
+        <div class="bg-teal-50 border-l-4 border-teal-500 p-4 mb-6 rounded-r shadow-sm">
+          <div class="flex items-start">
+            <mat-icon class="text-teal-500 mr-3 mt-0.5">analytics</mat-icon>
+            <div>
+              <h4 class="text-teal-800 font-bold mb-1">¿Para qué sirve este reporte?</h4>
+              <p class="text-teal-700 text-sm m-0">Obtén una visión general de la actividad del inventario en un rango de fechas. Verás un resumen de las entradas y salidas totales, y una lista con todos los movimientos registrados en ese periodo de tiempo. Puedes filtrar por un insumo específico si lo deseas.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4 items-center mb-6">
+          <mat-form-field appearance="outline" class="w-full sm:w-1/4">
+            <mat-label>Desde</mat-label>
+            <input matInput [matDatepicker]="movDesdePicker" [(ngModel)]="movDesde" />
+            <mat-datepicker-toggle matSuffix [for]="movDesdePicker"></mat-datepicker-toggle>
+            <mat-datepicker #movDesdePicker></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-full sm:w-1/4">
+            <mat-label>Hasta</mat-label>
+            <input matInput [matDatepicker]="movHastaPicker" [(ngModel)]="movHasta" />
+            <mat-datepicker-toggle matSuffix [for]="movHastaPicker"></mat-datepicker-toggle>
+            <mat-datepicker #movHastaPicker></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-full sm:w-1/3">
+            <mat-label>Insumo (opcional)</mat-label>
             <mat-select [(ngModel)]="movInsumoId">
-              <mat-option *ngFor="let i of insumos" [value]="i.id">{{ i.codigoFabrica }}</mat-option>
+              <mat-option [value]="null">Todos los insumos</mat-option>
+              <mat-option *ngFor="let i of insumos" [value]="i.id">{{ i.codigoFabrica }} - {{ i.descripcion }}</mat-option>
             </mat-select>
           </mat-form-field>
-          <button mat-raised-button color="primary" (click)="cargarMovimientos()"><mat-icon>search</mat-icon>Buscar</button>
+          <button mat-raised-button color="primary" class="h-14 w-full sm:w-auto" (click)="cargarMovimientos()"><mat-icon>search</mat-icon>Buscar</button>
         </div>
-        <div *ngIf="movData" class="resumen-box">
-          <span>Ingresos: <strong>{{ movData.totalIngresos }}</strong> ({{ movData.cantidadIngresada }} und)</span>
-          <span>Salidas: <strong>{{ movData.totalSalidas }}</strong> ({{ movData.cantidadSalida }} und)</span>
-          <span>Ajustes: <strong>{{ movData.totalAjustes }}</strong></span>
+        
+        <div *ngIf="movData" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-green-50 p-4 rounded-xl border border-green-100 flex flex-col items-center justify-center">
+            <span class="text-green-600 text-sm font-semibold uppercase tracking-wider mb-1">Ingresos</span>
+            <span class="text-3xl font-bold text-green-700">{{ movData.totalIngresos }}</span>
+            <span class="text-green-600 text-xs mt-1">({{ movData.cantidadIngresada }} unidades)</span>
+          </div>
+          <div class="bg-red-50 p-4 rounded-xl border border-red-100 flex flex-col items-center justify-center">
+            <span class="text-red-600 text-sm font-semibold uppercase tracking-wider mb-1">Salidas</span>
+            <span class="text-3xl font-bold text-red-700">{{ movData.totalSalidas }}</span>
+            <span class="text-red-600 text-xs mt-1">({{ movData.cantidadSalida }} unidades)</span>
+          </div>
+          <div class="bg-gray-100 p-4 rounded-xl border border-gray-200 flex flex-col items-center justify-center">
+            <span class="text-gray-600 text-sm font-semibold uppercase tracking-wider mb-1">Ajustes</span>
+            <span class="text-3xl font-bold text-gray-700">{{ movData.totalAjustes }}</span>
+            <span class="text-gray-500 text-xs mt-1">operaciones</span>
+          </div>
         </div>
-        <table mat-table [dataSource]="movData?.movimientos || []" class="mat-elevation-z1" *ngIf="movData">
+
+        <table mat-table [dataSource]="movData?.movimientos || []" class="mat-elevation-z1 w-full" *ngIf="movData">
           <ng-container *ngFor="let col of movColumns" [matColumnDef]="col">
-            <th mat-header-cell *matHeaderCellDef>{{ col }}</th>
+            <th mat-header-cell *matHeaderCellDef>{{ col | titlecase }}</th>
             <td mat-cell *matCellDef="let el">{{ el[col] }}</td>
           </ng-container>
           <tr mat-header-row *matHeaderRowDef="movColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: movColumns;"></tr>
+          <tr mat-row *matRowDef="let row; columns: movColumns;" class="hover:bg-gray-50"></tr>
         </table>
       </div>
     </mat-tab>
 
     <!-- Proyecto -->
     <mat-tab label="Consumo por Proyecto">
-      <div class="tab-content">
-        <h3 class="tab-title">Insumos retirados por proyecto</h3>
-        <div class="report-filters">
-          <mat-form-field appearance="outline"><mat-label>Proyecto</mat-label>
+      <div class="p-6">
+        <h3 class="text-xl font-semibold mb-4">Insumos retirados por proyecto</h3>
+
+        <!-- Tip Box -->
+        <div class="bg-purple-50 border-l-4 border-purple-500 p-4 mb-6 rounded-r shadow-sm">
+          <div class="flex items-start">
+            <mat-icon class="text-purple-500 mr-3 mt-0.5">folder_special</mat-icon>
+            <div>
+              <h4 class="text-purple-800 font-bold mb-1">¿Para qué sirve este reporte?</h4>
+              <p class="text-purple-700 text-sm m-0">Permite auditar cuántos insumos y en qué cantidad se han despachado para un proyecto específico en la Universidad. Esto ayuda a controlar el consumo y costos de los proyectos o dependencias.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4 items-center mb-6">
+          <mat-form-field appearance="outline" class="w-full sm:w-1/2">
+            <mat-label>Proyecto</mat-label>
             <mat-select [(ngModel)]="proyProyectoId">
               <mat-option *ngFor="let p of proyectos" [value]="p.id">{{ p.nombre }}</mat-option>
             </mat-select>
           </mat-form-field>
-          <button mat-raised-button color="primary" (click)="cargarProyecto()"><mat-icon>search</mat-icon>Consultar</button>
+          <button mat-raised-button color="primary" class="h-14 w-full sm:w-auto" (click)="cargarProyecto()"><mat-icon>search</mat-icon>Consultar</button>
         </div>
-        <table mat-table [dataSource]="proyData" class="mat-elevation-z1" *ngIf="proyData.length > 0">
+        <table mat-table [dataSource]="proyData" class="mat-elevation-z1 w-full" *ngIf="proyData.length > 0">
           <ng-container *ngFor="let col of proyColumns" [matColumnDef]="col">
-            <th mat-header-cell *matHeaderCellDef>{{ col }}</th>
+            <th mat-header-cell *matHeaderCellDef>{{ col | titlecase }}</th>
             <td mat-cell *matCellDef="let el">{{ el[col] }}</td>
           </ng-container>
           <tr mat-header-row *matHeaderRowDef="proyColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: proyColumns;"></tr>
+          <tr mat-row *matRowDef="let row; columns: proyColumns;" class="hover:bg-gray-50"></tr>
         </table>
       </div>
     </mat-tab>

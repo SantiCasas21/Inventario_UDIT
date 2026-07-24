@@ -15,6 +15,9 @@ namespace Application.DTOs
         /// <summary>Filtrar por uno o varios insumos (IDs)</summary>
         public List<int>? IdsInsumo { get; set; }
 
+        /// <summary>Filtrar por categoría del insumo</summary>
+        public List<int>? IdsCategoria { get; set; }
+
         /// <summary>Filtrar por uno o varios proveedores (IDs)</summary>
         public List<int>? IdsProveedor { get; set; }
 
@@ -42,6 +45,9 @@ namespace Application.DTOs
         // ==========================================
         /// <summary>Búsqueda en Observación (contiene)</summary>
         public string? TextSearch { get; set; }
+
+        /// <summary>Búsqueda por Cód. Fábrica del insumo (contiene)</summary>
+        public string? CodigoFabricaSearch { get; set; }
 
         // ==========================================
         // Paginación

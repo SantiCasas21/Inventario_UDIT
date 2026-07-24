@@ -23,11 +23,11 @@ namespace Application.DTOs
         // ==========================================
         // Rangos
         // ==========================================
-        /// <summary>Precio de referencia mínimo (inclusive)</summary>
-        public decimal? PrecioMin { get; set; }
+        /// <summary>Valor de medida mínimo (inclusive)</summary>
+        public decimal? ValorMedidaMin { get; set; }
 
-        /// <summary>Precio de referencia máximo (inclusive)</summary>
-        public decimal? PrecioMax { get; set; }
+        /// <summary>Valor de medida máximo (inclusive)</summary>
+        public decimal? ValorMedidaMax { get; set; }
 
         // ==========================================
         // Búsqueda textual
@@ -49,7 +49,7 @@ namespace Application.DTOs
         // ==========================================
         /// <summary>
         /// Campo por el cual ordenar:
-        /// "CodigoFabrica", "Descripcion", "PrecioReferencia",
+        /// "CodigoFabrica", "Descripcion", "ValorMedida",
         /// "Categoria", "Empaquetamiento", "Ubicacion"
         /// </summary>
         public string? SortBy { get; set; }

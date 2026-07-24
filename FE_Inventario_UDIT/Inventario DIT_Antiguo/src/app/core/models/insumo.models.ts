@@ -14,6 +14,9 @@ export interface InsumoDto {
   ubicacionNombre: string;
   descripcion: string | null;
   precioReferencia: number | null;
+  valorMedida: number | null;
+  unidadMedida: string | null;
+  cantidad: number;
 }
 
 /** DTO para crear/actualizar un Insumo. */
@@ -24,6 +27,8 @@ export interface InsumoRequest {
   idUbicacion: number;
   descripcion?: string;
   precioReferencia?: number;
+  valorMedida?: number;
+  unidadMedida?: string;
 }
 
 // ==========================================
@@ -38,10 +43,10 @@ export interface InsumoFilter {
   idsEmpaquetamiento?: number[];
   /** Multi-select de ubicaciones (IDs) */
   idsUbicacion?: number[];
-  /** Precio de referencia mínimo */
-  precioMin?: number;
-  /** Precio de referencia máximo */
-  precioMax?: number;
+  /** Valor de medida mínimo */
+  valorMedidaMin?: number;
+  /** Valor de medida máximo */
+  valorMedidaMax?: number;
   /** Búsqueda en CódigoFabrica y Descripción (OR, contiene) */
   textSearch?: string;
   /** Página actual (default 1) */

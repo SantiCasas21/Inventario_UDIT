@@ -1,57 +1,111 @@
-<h2 mat-dialog-title>
-  @if (data.estado === 1) { Crear Insumo }
-  @else { Editar Insumo }
-</h2>
-
-<form [formGroup]="form">
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Código Fábrica</mat-label>
-    <input matInput formControlName="codigoFabrica" placeholder="Ej: 749-SMP4-SBC">
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Categoría</mat-label>
-    <mat-select formControlName="idCategoria">
-      @for (cat of categorias; track cat.id) {
-        <mat-option [value]="cat.id">{{ cat.nombre }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Empaquetamiento</mat-label>
-    <mat-select formControlName="idEmpaquetamiento">
-      @for (emp of empaquetamientos; track emp.id) {
-        <mat-option [value]="emp.id">{{ emp.nombre }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Ubicación</mat-label>
-    <mat-select formControlName="idUbicacion">
-      @for (ubi of ubicaciones; track ubi.id) {
-        <mat-option [value]="ubi.id">{{ ubi.nombre }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Descripción</mat-label>
-    <input matInput formControlName="descripcion" placeholder="Descripción del insumo">
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Precio Referencia</mat-label>
-    <input matInput formControlName="precioReferencia" type="number" placeholder="0.00">
-  </mat-form-field>
-
-  <div mat-dialog-actions align="end">
-    <button mat-button (click)="cerrarPopup()">Cancelar</button>
-    @if (data.estado === 1) {
-      <button (click)="guardarInsumo()" mat-raised-button color="primary" [disabled]="form.invalid">Crear</button>
-    } @else {
-      <button (click)="actualizarInsumo()" mat-raised-button color="primary" [disabled]="form.invalid">Guardar</button>
-    }
+<div class="flex flex-col h-full bg-white">
+  <!-- Header -->
+  <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-udit-verde text-white rounded-t">
+    <h2 class="m-0 text-xl font-bold flex items-center">
+      <mat-icon class="mr-2">{{ data.estado === 1 ? 'add_circle' : 'edit' }}</mat-icon>
+      {{ data.estado === 1 ? 'Crear Nuevo Insumo' : 'Editar Insumo' }}
+    </h2>
+    <button mat-icon-button (click)="cerrarPopup()" class="text-white hover:bg-white/20">
+      <mat-icon>close</mat-icon>
+    </button>
   </div>
-</form>
+
+  <!-- Content -->
+  <mat-dialog-content class="p-6">
+    <form [formGroup]="form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      
+      <!-- Código Fábrica -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Código Fábrica</mat-label>
+        <mat-icon matPrefix class="text-gray-400 mr-2">qr_code</mat-icon>
+        <input matInput formControlName="codigoFabrica" placeholder="Ej: 749-SMP4-SBC">
+        <mat-error *ngIf="form.get('codigoFabrica')?.hasError('required')">Requerido</mat-error>
+      </mat-form-field>
+
+      <!-- Descripción -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Descripción</mat-label>
+        <mat-icon matPrefix class="text-gray-400 mr-2">description</mat-icon>
+        <input matInput formControlName="descripcion" placeholder="Descripción breve del insumo">
+      </mat-form-field>
+
+      <!-- Categoría (Autocomplete) -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Categoría</mat-label>
+        <mat-icon matPrefix class="text-gray-400 mr-2">category</mat-icon>
+        <input type="text" matInput formControlName="categoriaObj" [matAutocomplete]="autoCat" placeholder="Buscar categoría...">
+        <mat-autocomplete #autoCat="matAutocomplete" [displayWith]="displayFn">
+          <mat-option *ngFor="let cat of filteredCategorias | async" [value]="cat">
+            {{ cat.nombre }}
+          </mat-option>
+        </mat-autocomplete>
+        <mat-error *ngIf="form.get('idCategoria')?.hasError('required')">Requerido</mat-error>
+      </mat-form-field>
+
+      <!-- Empaquetamiento (Autocomplete) -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Empaquetamiento</mat-label>
+        <mat-icon matPrefix class="text-gray-400 mr-2">inventory_2</mat-icon>
+        <input type="text" matInput formControlName="empaquetamientoObj" [matAutocomplete]="autoEmp" placeholder="Buscar empaque...">
+        <mat-autocomplete #autoEmp="matAutocomplete" [displayWith]="displayFn">
+          <mat-option *ngFor="let emp of filteredEmpaquetamientos | async" [value]="emp">
+            {{ emp.nombre }}
+          </mat-option>
+        </mat-autocomplete>
+        <mat-error *ngIf="form.get('idEmpaquetamiento')?.hasError('required')">Requerido</mat-error>
+      </mat-form-field>
+
+      <!-- Ubicación (Autocomplete) -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Ubicación</mat-label>
+        <mat-icon matPrefix class="text-gray-400 mr-2">place</mat-icon>
+        <input type="text" matInput formControlName="ubicacionObj" [matAutocomplete]="autoUbi" placeholder="Buscar ubicación...">
+        <mat-autocomplete #autoUbi="matAutocomplete" [displayWith]="displayFn">
+          <mat-option *ngFor="let ubi of filteredUbicaciones | async" [value]="ubi">
+            {{ ubi.nombre }}
+          </mat-option>
+        </mat-autocomplete>
+        <mat-error *ngIf="form.get('idUbicacion')?.hasError('required')">Requerido</mat-error>
+      </mat-form-field>
+
+      <!-- Valor y Unidad de Medida -->
+      <div class="col-span-1 md:col-span-2 grid grid-cols-2 gap-4">
+        <!-- Valor Medida -->
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Valor</mat-label>
+          <mat-icon matPrefix class="text-gray-400 mr-2">tag</mat-icon>
+          <input matInput formControlName="valorMedida" type="number" step="any" placeholder="Ej: 4.7">
+        </mat-form-field>
+  
+        <!-- Unidad de Medida (Select dinámico) -->
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Unidad de Medida</mat-label>
+          <mat-icon matPrefix class="text-gray-400 mr-2">straighten</mat-icon>
+          <mat-select formControlName="unidadMedida" placeholder="Seleccione unidad">
+            <mat-option *ngFor="let u of unidadesDisponibles" [value]="u">
+              {{ u }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Precio de Referencia -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Precio Referencia</mat-label>
+        <mat-icon matPrefix class="text-gray-400 mr-2">attach_money</mat-icon>
+        <input matInput formControlName="precioReferencia" type="number" placeholder="0.00">
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+
+  <!-- Actions -->
+  <mat-dialog-actions class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+    <button mat-button (click)="cerrarPopup()" class="text-gray-600 hover:bg-gray-200">Cancelar</button>
+    <button mat-raised-button color="primary" class="bg-udit-verde text-white" 
+            (click)="data.estado === 1 ? guardarInsumo() : actualizarInsumo()" 
+            [disabled]="form.invalid">
+      <mat-icon class="mr-1">{{ data.estado === 1 ? 'save' : 'update' }}</mat-icon>
+      {{ data.estado === 1 ? 'Crear Insumo' : 'Guardar Cambios' }}
+    </button>
+  </mat-dialog-actions>
+</div>

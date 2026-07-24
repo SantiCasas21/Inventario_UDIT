@@ -27,6 +27,7 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   private currentFilter: Record<string, unknown> = {};
+  private filterSubject = new Subject<Record<string, unknown>>();
 
   constructor(private catalogoService: CatalogoService) {}
 
@@ -42,6 +43,16 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
       }
       return col;
     });
+
+    // Configurar filtrado reactivo con debounce
+    this.filterSubject
+      .pipe(
+        debounceTime(this.config.debounceMs || 300),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(filter => {
+        this.filterChange.emit(filter);
+      });
   }
 
   ngOnDestroy(): void {
@@ -54,6 +65,29 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
 
     // Actualizar breadcrumbs de filtros aplicados
     this.updateAppliedFilters();
+
+    // Si el filtrado inteligente está activo, emitir automáticamente con debounce
+    if (this.smartFilter) {
+      this.applyFiltersDebounced();
+    }
+  }
+
+  private applyFiltersDebounced(): void {
+    const cleanFilter = this.buildCleanFilter();
+    this.filterSubject.next(cleanFilter);
+  }
+
+  private buildCleanFilter(): Record<string, unknown> {
+    const clean: Record<string, unknown> = {};
+    for (const key of Object.keys(this.currentFilter)) {
+      const value = this.currentFilter[key];
+      if (value !== undefined && value !== null && value !== '' &&
+          !(Array.isArray(value) && value.length === 0) &&
+          !(typeof value === 'object' && !Array.isArray(value) && !(value as Record<string, unknown>).min && !(value as Record<string, unknown>).max)) {
+        clean[key] = value;
+      }
+    }
+    return clean;
   }
 
   private updateAppliedFilters(): void {
@@ -90,17 +124,7 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
   }
 
   applyFilters(): void {
-    // Construir objeto de filtro limpio (sin valores vacíos)
-    const cleanFilter: Record<string, unknown> = {};
-    for (const key of Object.keys(this.currentFilter)) {
-      const value = this.currentFilter[key];
-      if (value !== undefined && value !== null && value !== '' &&
-          !(Array.isArray(value) && value.length === 0) &&
-          !(typeof value === 'object' && !(value as { min?: string; max?: string }).min && !(value as { min?: string; max?: string }).max)) {
-        cleanFilter[key] = value;
-      }
-    }
-    this.filterChange.emit(cleanFilter);
+    this.filterChange.emit(this.buildCleanFilter());
   }
 
   resetAll(): void {

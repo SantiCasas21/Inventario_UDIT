@@ -10,7 +10,9 @@ const generatePalette = require(path.resolve(__dirname, ('src/@fuse/tailwind/uti
  * Tailwind-like color palettes automatically
  */
 const customPalettes = {
-    brand: generatePalette('#2196F3')
+    brand: generatePalette('#2196F3'),
+    uditVerde: generatePalette('#636F03'),
+    uditRojo: generatePalette('#B11F16')
 };
 
 /**
@@ -57,6 +59,10 @@ const themes = {
     },
     'amber' : {
         primary: colors.amber
+    },
+    'udit'  : {
+        primary: customPalettes.uditVerde,
+        warn: customPalettes.uditRojo
     }
 };
 
@@ -96,13 +102,28 @@ const config = {
                 'spin-slow': 'spin 3s linear infinite'
             },
             colors                  : {
-                gray: colors.slate
+                gray: colors.slate,
+                udit: {
+                    // PALETA PRIMARIA (Manual de Identidad UDIT)
+                    verde: '#636F03',      // Pantone 378c — COLOR PRIMARIO DE MARCA
+                    rojo: '#B11F16',       // Pantone 484c — Alertas, salidas
+                    negro: '#1A171B',      // Pantone Negro — Texto principal
+                    lima: '#ACAA00',       // Pantone 384c — Badges secundarios
+                    beige: '#F3E7CE',      // Pantone 468c — Fondos suaves
+
+                    // PALETA SECUNDARIA (solo acentos)
+                    orange: '#E95D0F',
+                    navy: '#122253',
+                    teal: '#0B8689',
+                    blue: '#1472B8',
+                    purple: '#634998'
+                }
             },
             flex                    : {
                 '0': '0 0 auto'
             },
             fontFamily              : {
-                sans: `"Inter var", ${defaultTheme.fontFamily.sans.join(',')}`,
+                sans: `"Galliard", "ZapfHumanist", "Roboto", "Titillium", "Inter var", ${defaultTheme.fontFamily.sans.join(',')}`,
                 mono: `"IBM Plex Mono", ${defaultTheme.fontFamily.mono.join(',')}`
             },
             opacity                 : {

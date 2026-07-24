@@ -12,7 +12,7 @@
 .results-count {
   font-size: 14px;
   font-weight: 700;
-  color: #1976d2;
+  color: #636F03;
 }
 .smart-filter-toggle {
   display: flex;
@@ -46,14 +46,14 @@
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  background: #e3f2fd;
+  background: #F3E7CE;
   border-radius: 16px;
   font-size: 12px;
-  color: #1565c0;
+  color: #636F03;
   cursor: pointer;
 }
 .filter-chip:hover {
-  background: #bbdefb;
+  background: #e8dbb6;
 }
 .chip-x {
   font-size: 14px;
@@ -87,7 +87,7 @@
 }
 .btn-reset-all {
   padding: 8px 20px;
-  border: 1px solid #ccc;
+  border: 1px solid #ACAA00;
   border-radius: 6px;
   background: #fff;
   font-size: 13px;
@@ -95,20 +95,20 @@
   color: #555;
 }
 .btn-reset-all:hover {
-  background: #f5f5f5;
+  background: #F3E7CE;
 }
 .btn-apply {
   padding: 8px 24px;
   border: none;
   border-radius: 6px;
-  background: #1976d2;
+  background: #636F03;
   color: #fff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
 .btn-apply:hover {
-  background: #1565c0;
+  background: #4f5902;
 }
 .btn-apply:disabled {
   background: #bdbdbd;

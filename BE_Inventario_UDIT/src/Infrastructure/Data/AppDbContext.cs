@@ -142,6 +142,14 @@ namespace Infrastructure.Data
                       .HasColumnType("decimal(18,2)")
                       .HasColumnName("PrecioReferencia");
 
+                entity.Property(e => e.ValorMedida)
+                      .HasColumnType("decimal(18,2)")
+                      .HasColumnName("ValorMedida");
+
+                entity.Property(e => e.UnidadMedida)
+                      .HasMaxLength(20)
+                      .HasColumnName("UnidadMedida");
+
                 // Relación con Categoria
                 entity.HasOne(e => e.Categoria)
                       .WithMany(e => e.Insumos)

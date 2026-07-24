@@ -3,6 +3,55 @@
 /*  @ Styles from this file will override 'vendors.scss' and Fuse's base styles.
 /* ----------------------------------------------------------------------------------------------------- */
 
+:root {
+  /* PALETA PRIMARIA UDIT (Manual de Identidad) */
+  --udit-verde: #636F03;
+  --udit-rojo: #B11F16;
+  --udit-negro: #1A171B;
+  --udit-lima: #ACAA00;
+  --udit-beige: #F3E7CE;
+
+  /* PALETA SECUNDARIA UDIT (acentos) */
+  --udit-orange: #E95D0F;
+  --udit-blue-dark: #122253;
+  --udit-teal: #0B8689;
+  --udit-blue-light: #1472B8;
+  --udit-purple: #634998;
+
+  /* Sobrescribir colores de Angular Material nativos con PALETA PRIMARIA */
+  --mdc-filled-button-container-color: var(--udit-verde) !important;
+  --mdc-filled-button-label-text-color: #ffffff !important;
+  --mdc-text-button-label-text-color: var(--udit-verde) !important;
+  --mdc-outlined-button-label-text-color: var(--udit-verde) !important;
+  --mdc-outlined-button-outline-color: var(--udit-verde) !important;
+
+  /* Para mat-icon-button (botones de acción como lapiz o bote de basura) */
+  --mat-icon-button-state-layer-color: var(--udit-verde) !important;
+}
+
+/* Forzar que los botones primary usen UDIT Verde Oliva (Paleta Primaria) */
+.mat-mdc-button.mat-primary,
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-unelevated-button.mat-primary,
+.mat-mdc-icon-button.mat-primary {
+  --mdc-filled-button-container-color: var(--udit-verde) !important;
+  --mdc-text-button-label-text-color: var(--udit-verde) !important;
+  color: var(--udit-verde);
+}
+
+.mat-mdc-raised-button.mat-primary .mdc-button__label,
+.mat-mdc-unelevated-button.mat-primary .mdc-button__label {
+  color: white !important;
+}
+
+/* Fix mat-dialog extra border/padding issue */
+.mdc-dialog__surface {
+  border: none !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
 /* Mensaje de error compartido entre componentes admin */
 .error-msg {
   padding: 12px 20px;

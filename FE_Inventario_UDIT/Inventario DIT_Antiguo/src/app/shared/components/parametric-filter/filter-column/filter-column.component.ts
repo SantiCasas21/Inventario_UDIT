@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import { FilterColumnConfig, SelectOption } from '../parametric-filter.types';
 
 @Component({
@@ -135,7 +136,7 @@ import { FilterColumnConfig, SelectOption } from '../parametric-filter.types';
       margin: 0;
     }
     .option-item:hover, .option-item.selected {
-      background: #e3f2fd;
+      background: #F3E7CE;
     }
     .no-options {
       padding: 8px;
@@ -180,7 +181,7 @@ import { FilterColumnConfig, SelectOption } from '../parametric-filter.types';
     .reset-link {
       background: none;
       border: none;
-      color: #1976d2;
+      color: #636F03;
       font-size: 11px;
       cursor: pointer;
       padding: 2px 0;
@@ -191,7 +192,7 @@ import { FilterColumnConfig, SelectOption } from '../parametric-filter.types';
     }
   `]
 })
-export class FilterColumnComponent implements OnInit {
+export class FilterColumnComponent implements OnInit, OnDestroy {
   @Input() config!: FilterColumnConfig;
 
   @Output() valueChange = new EventEmitter<{ key: string; value: unknown[] | { min?: string; max?: string } | string }>();
@@ -203,17 +204,24 @@ export class FilterColumnComponent implements OnInit {
   allOptions: SelectOption[] = [];
   filteredOptions: SelectOption[] = [];
 
+  private destroy$ = new Subject<void>();
+
   ngOnInit(): void {
     if (this.config.options) {
       this.allOptions = this.config.options;
       this.filteredOptions = [...this.allOptions];
     }
     if (this.config.options$) {
-      this.config.options$.subscribe(opts => {
+      this.config.options$.pipe(takeUntil(this.destroy$)).subscribe(opts => {
         this.allOptions = opts;
         this.filteredOptions = [...this.allOptions];
       });
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // Multi-select

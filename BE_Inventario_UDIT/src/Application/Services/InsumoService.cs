@@ -13,10 +13,12 @@ namespace Application.Services
     public class InsumoService : IInsumoService
     {
         private readonly IInsumoRepository _repository;
+        private readonly IMovimientoRepository _movRepo;
 
-        public InsumoService(IInsumoRepository repository)
+        public InsumoService(IInsumoRepository repository, IMovimientoRepository movRepo)
         {
             _repository = repository;
+            _movRepo = movRepo;
         }
 
         public async Task<OperationResult<PagedResult<InsumoDto>>> GetAllAsync(InsumoFilterDto? filter = null)
@@ -24,8 +26,8 @@ namespace Application.Services
             PagedResult<Insumo> paged;
 
             if (filter != null && (filter.IdsCategoria?.Count > 0 || filter.IdsEmpaquetamiento?.Count > 0
-                || filter.IdsUbicacion?.Count > 0 || filter.PrecioMin.HasValue
-                || filter.PrecioMax.HasValue || !string.IsNullOrWhiteSpace(filter.TextSearch)))
+                || filter.IdsUbicacion?.Count > 0 || filter.ValorMedidaMin.HasValue
+                || filter.ValorMedidaMax.HasValue || !string.IsNullOrWhiteSpace(filter.TextSearch)))
             {
                 paged = await _repository.FilterPagedAsync(filter);
             }
@@ -35,7 +37,16 @@ namespace Application.Services
                     page: filter?.Page ?? 1, pageSize: filter?.PageSize ?? 20);
             }
 
-            var dtos = paged.Items.Select(MapToDto).ToList();
+            var stockDb = await _movRepo.GetStockGeneralDbAsync();
+            var stockDict = stockDb.ToDictionary(s => s.IdInsumo);
+
+            var dtos = paged.Items.Select(i => 
+            {
+                var dto = MapToDto(i);
+                dto.Cantidad = stockDict.GetValueOrDefault(i.Id)?.StockActual ?? 0;
+                return dto;
+            }).ToList();
+
             return OperationResult<PagedResult<InsumoDto>>.Ok(new PagedResult<InsumoDto>
             {
                 Page = paged.Page, PageSize = paged.PageSize,
@@ -49,7 +60,10 @@ namespace Application.Services
             if (insumo == null)
                 return OperationResult<InsumoDto>.Fail($"Insumo con ID {id} no encontrado");
 
-            return OperationResult<InsumoDto>.Ok(MapToDto(insumo));
+            var dto = MapToDto(insumo);
+            dto.Cantidad = await _movRepo.GetStockByInsumoAsync(id);
+
+            return OperationResult<InsumoDto>.Ok(dto);
         }
 
         public async Task<OperationResult<InsumoDto>> CreateAsync(InsumoRequestDto request)
@@ -64,7 +78,9 @@ namespace Application.Services
                 IdEmpaquetamiento = request.IdEmpaquetamiento,
                 IdUbicacion = request.IdUbicacion,
                 Descripcion = request.Descripcion,
-                PrecioReferencia = request.PrecioReferencia
+                PrecioReferencia = request.PrecioReferencia,
+                ValorMedida = request.ValorMedida,
+                UnidadMedida = request.UnidadMedida
             };
 
             var created = await _repository.AddAsync(entity);
@@ -86,6 +102,8 @@ namespace Application.Services
             entity.IdUbicacion = request.IdUbicacion;
             entity.Descripcion = request.Descripcion;
             entity.PrecioReferencia = request.PrecioReferencia;
+            entity.ValorMedida = request.ValorMedida;
+            entity.UnidadMedida = request.UnidadMedida;
 
             await _repository.UpdateAsync(entity);
             return OperationResult<InsumoDto>.Ok(MapToDto(entity), "Insumo actualizado exitosamente");
@@ -110,7 +128,9 @@ namespace Application.Services
             IdUbicacion = insumo.IdUbicacion,
             UbicacionNombre = insumo.Ubicacion?.Nombre ?? "",
             Descripcion = insumo.Descripcion,
-            PrecioReferencia = insumo.PrecioReferencia
+            PrecioReferencia = insumo.PrecioReferencia,
+            ValorMedida = insumo.ValorMedida,
+            UnidadMedida = insumo.UnidadMedida
         };
     }
 }

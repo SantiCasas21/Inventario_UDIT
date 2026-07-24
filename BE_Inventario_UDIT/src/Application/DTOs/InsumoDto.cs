@@ -18,6 +18,9 @@ namespace Application.DTOs
         public string UbicacionNombre { get; set; } = string.Empty;
         public string? Descripcion { get; set; }
         public decimal? PrecioReferencia { get; set; }
+        public decimal? ValorMedida { get; set; }
+        public string? UnidadMedida { get; set; }
+        public int Cantidad { get; set; }
     }
 
     /// <summary>
@@ -31,5 +34,7 @@ namespace Application.DTOs
         public int IdUbicacion { get; set; }
         public string? Descripcion { get; set; }
         public decimal? PrecioReferencia { get; set; }
+        public decimal? ValorMedida { get; set; }
+        public string? UnidadMedida { get; set; }
     }
 }

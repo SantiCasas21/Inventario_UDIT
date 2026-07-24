@@ -29,6 +29,8 @@ namespace Application.DTOs
         public int? IdEstadoSalida { get; set; }
         public string? EstadoSalidaNombre { get; set; }
 
+        public string? InsumoUbicacion { get; set; }
+
         /// <summary>
         /// Factory method: mapea de entidad a DTO.
         /// Centralizado aquí para que KardexService y MovimientoController
@@ -59,7 +61,8 @@ namespace Application.DTOs
                 IdProyecto = m.IdProyecto,
                 ProyectoNombre = m.Proyecto?.Nombre,
                 IdEstadoSalida = m.IdEstadoSalida,
-                EstadoSalidaNombre = m.EstadoSalida?.Nombre
+                EstadoSalidaNombre = m.EstadoSalida?.Nombre,
+                InsumoUbicacion = m.Insumo?.Ubicacion?.Nombre
             };
         }
     }

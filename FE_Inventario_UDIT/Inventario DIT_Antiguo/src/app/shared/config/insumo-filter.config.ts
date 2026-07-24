@@ -6,6 +6,12 @@ export const INSUMO_FILTER_CONFIG: ParametricFilterConfig = {
   debounceMs: 400,
   columns: [
     {
+      key: 'textSearch',
+      label: 'Código Fabricante',
+      type: 'text-search',
+      searchPlaceholder: 'Cód. Fábrica / Descripción...',
+    },
+    {
       key: 'idsCategoria',
       label: 'Categoría',
       type: 'multi-select',
@@ -30,16 +36,9 @@ export const INSUMO_FILTER_CONFIG: ParametricFilterConfig = {
       searchPlaceholder: 'Buscar...',
     },
     {
-      key: 'precioRange',
-      label: 'Precio Ref.',
+      key: 'valorMedidaRange',
+      label: 'Valor Unidad',
       type: 'range-number',
-      unit: '$',
-    },
-    {
-      key: 'textSearch',
-      label: 'Búsqueda',
-      type: 'text-search',
-      searchPlaceholder: 'Cód. Fabrica / Descripción',
     },
   ],
 };

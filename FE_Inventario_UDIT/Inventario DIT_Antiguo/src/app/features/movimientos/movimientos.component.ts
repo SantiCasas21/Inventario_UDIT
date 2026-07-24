@@ -11,14 +11,17 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatCardModule } from '@angular/material/card';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, Observable } from 'rxjs';
+import { map, startWith } from 'rxjs/operators';
 import { MovimientoService } from '@app/core/services/movimiento.service';
 import { CatalogoService } from '@app/core/services/catalogo.service';
 import { InsumoService } from '@app/core/services/insumo.service';
 import { MovimientoDto, MovimientoFilter, MovimientoRequest, PagedResult, CatalogoDto, InsumoDto } from '@app/core/models';
 import { ParametricFilterComponent } from '@shared/components/parametric-filter/parametric-filter.component';
 import { MOVIMIENTO_FILTER_CONFIG } from '@shared/config/movimiento-filter.config';
+import { UserService } from '@app/core/user/user.service';
 
 @Component({
   selector: 'app-movimientos',
@@ -28,14 +31,14 @@ import { MOVIMIENTO_FILTER_CONFIG } from '@shared/config/movimiento-filter.confi
     MatTabsModule, MatTableModule, MatPaginatorModule,
     MatButtonModule, MatIconModule, MatInputModule, MatSelectModule,
     MatDatepickerModule, MatFormFieldModule, MatSnackBarModule,
-    ParametricFilterComponent, MatCardModule,
+    ParametricFilterComponent, MatCardModule, MatAutocompleteModule,
   ],
   templateUrl: './movimientos.component.html',
   styleUrls: ['./movimientos.component.scss']
 })
 export class MovimientosComponent implements OnInit, OnDestroy {
   // Tab: Historial con filtro
-  displayedColumns = ['fecha', 'tipoMovimiento', 'codigoFabrica', 'cantidad', 'precioUnitario', 'proveedorNombre', 'proyectoNombre', 'observacion'];
+  displayedColumns = ['fecha', 'tipoMovimiento', 'codigoFabrica', 'insumoUbicacion', 'cantidad', 'precioUnitario', 'proveedorNombre', 'proyectoNombre', 'observacion'];
   data: MovimientoDto[] = [];
   totalCount = 0;
   page = 1;
@@ -50,12 +53,19 @@ export class MovimientosComponent implements OnInit, OnDestroy {
   // Tab: Formulario Salida
   salidaForm: FormGroup;
 
+  // Tab: Formulario Ajuste
+  ajusteForm: FormGroup;
+
   // Catálogos para selects
   insumos: InsumoDto[] = [];
   proveedores: CatalogoDto[] = [];
   tiposCompra: CatalogoDto[] = [];
   proyectos: CatalogoDto[] = [];
   estadosSalida: CatalogoDto[] = [];
+
+  filteredInsumosIngreso!: Observable<InsumoDto[]>;
+  filteredInsumosSalida!: Observable<InsumoDto[]>;
+  filteredInsumosAjuste!: Observable<InsumoDto[]>;
 
   private destroy$ = new Subject<void>();
 
@@ -65,9 +75,11 @@ export class MovimientosComponent implements OnInit, OnDestroy {
     private catalogoService: CatalogoService,
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
+    private userService: UserService,
   ) {
     this.ingresoForm = this.fb.group({
       idInsumo: [null, Validators.required],
+      insumoObj: [''],
       cantidad: [1, [Validators.required, Validators.min(1)]],
       precioUnitario: [null],
       observacion: [''],
@@ -77,12 +89,24 @@ export class MovimientosComponent implements OnInit, OnDestroy {
 
     this.salidaForm = this.fb.group({
       idInsumo: [null, Validators.required],
+      insumoObj: [''],
       cantidad: [1, [Validators.required, Validators.min(1)]],
       precioUnitario: [null],
       observacion: [''],
       idProyecto: [null],
       idEstadoSalida: [null],
     });
+
+    this.ajusteForm = this.fb.group({
+      idInsumo: [null, Validators.required],
+      insumoObj: [''],
+      cantidad: [1, [Validators.required, Validators.min(1)]],
+      observacion: ['', Validators.required],
+    });
+  }
+
+  get userRole(): string {
+    return this.userService.currentUser?.role || '';
   }
 
   ngOnInit(): void {
@@ -121,6 +145,9 @@ export class MovimientosComponent implements OnInit, OnDestroy {
     if (filter['tiposMovimiento'] && Array.isArray(filter['tiposMovimiento'])) {
       f.tiposMovimiento = filter['tiposMovimiento'] as string[];
     }
+    if (filter['idsCategoria'] && Array.isArray(filter['idsCategoria'])) {
+      f.idsCategoria = filter['idsCategoria'] as number[];
+    }
     if (filter['idsInsumo'] && Array.isArray(filter['idsInsumo'])) {
       f.idsInsumo = filter['idsInsumo'] as number[];
     }
@@ -141,17 +168,12 @@ export class MovimientosComponent implements OnInit, OnDestroy {
       if (r.min) f.cantidadMin = parseFloat(r.min);
       if (r.max) f.cantidadMax = parseFloat(r.max);
     }
-    if (filter['precioRange']) {
-      const r = filter['precioRange'] as { min?: string; max?: string };
-      if (r.min) f.precioUnitarioMin = parseFloat(r.min);
-      if (r.max) f.precioUnitarioMax = parseFloat(r.max);
-    }
     if (filter['fechaRange']) {
       const r = filter['fechaRange'] as { min?: string; max?: string };
       if (r.min) f.fechaDesde = r.min;
       if (r.max) f.fechaHasta = r.max;
     }
-    if (filter['textSearch']) f.textSearch = filter['textSearch'] as string;
+    if (filter['codigoFabricaSearch']) f.codigoFabricaSearch = filter['codigoFabricaSearch'] as string;
 
     this.currentFilter = f;
     this.page = 1;
@@ -165,11 +187,50 @@ export class MovimientosComponent implements OnInit, OnDestroy {
   }
 
   loadCatalogos(): void {
-    this.insumoService.filter({}).pipe(takeUntil(this.destroy$)).subscribe(r => this.insumos = r.items);
+    this.insumoService.filter({}).pipe(takeUntil(this.destroy$)).subscribe(r => {
+      this.insumos = r.items;
+      this.initInsumosFilters();
+    });
     this.catalogoService.getAll('proveedor').pipe(takeUntil(this.destroy$)).subscribe(r => this.proveedores = r);
     this.catalogoService.getAll('tipo-compra').pipe(takeUntil(this.destroy$)).subscribe(r => this.tiposCompra = r);
     this.catalogoService.getAll('proyecto').pipe(takeUntil(this.destroy$)).subscribe(r => this.proyectos = r as unknown as CatalogoDto[]);
     this.catalogoService.getAll('estado-salida').pipe(takeUntil(this.destroy$)).subscribe(r => this.estadosSalida = r);
+  }
+
+  initInsumosFilters() {
+    this.filteredInsumosIngreso = this.ingresoForm.get('insumoObj')!.valueChanges.pipe(
+      startWith(''),
+      map(val => this._filterInsumo(val, this.ingresoForm, 'idInsumo'))
+    );
+    this.filteredInsumosSalida = this.salidaForm.get('insumoObj')!.valueChanges.pipe(
+      startWith(''),
+      map(val => this._filterInsumo(val, this.salidaForm, 'idInsumo'))
+    );
+    this.filteredInsumosAjuste = this.ajusteForm.get('insumoObj')!.valueChanges.pipe(
+      startWith(''),
+      map(val => this._filterInsumo(val, this.ajusteForm, 'idInsumo'))
+    );
+  }
+
+  private _filterInsumo(val: string | InsumoDto, form: FormGroup, targetControl: string): InsumoDto[] {
+    let search = '';
+    if (typeof val === 'string') {
+      search = val;
+      if (search === '') form.get(targetControl)?.setValue(null);
+    } else if (val && val.codigoFabrica) {
+      search = val.codigoFabrica;
+      form.get(targetControl)?.setValue(val.id);
+    }
+
+    const filterValue = search.toLowerCase();
+    return this.insumos.filter(option => 
+      option.codigoFabrica.toLowerCase().includes(filterValue) || 
+      (option.descripcion && option.descripcion.toLowerCase().includes(filterValue))
+    );
+  }
+
+  displayFnInsumo(item?: InsumoDto): string {
+    return item ? `${item.codigoFabrica} - ${item.descripcion}` : '';
   }
 
   // ==================== Registrar Ingreso ====================
@@ -194,6 +255,20 @@ export class MovimientosComponent implements OnInit, OnDestroy {
       next: () => {
         this.snackBar.open('Salida registrada exitosamente', 'Cerrar', { duration: 3000 });
         this.salidaForm.reset({ cantidad: 1 });
+        this.loadHistorial();
+      },
+      error: (err) => this.snackBar.open('Error: ' + (err.message || 'Error'), 'Cerrar', { duration: 5000 }),
+    });
+  }
+
+  // ==================== Registrar Ajuste ====================
+  registrarAjuste(): void {
+    if (this.ajusteForm.invalid) return;
+    const req: MovimientoRequest = this.ajusteForm.value;
+    this.movimientoService.registrarAjuste(req).subscribe({
+      next: () => {
+        this.snackBar.open('Ajuste registrado exitosamente', 'Cerrar', { duration: 3000 });
+        this.ajusteForm.reset({ cantidad: 1 });
         this.loadHistorial();
       },
       error: (err) => this.snackBar.open('Error: ' + (err.message || 'Error'), 'Cerrar', { duration: 5000 }),

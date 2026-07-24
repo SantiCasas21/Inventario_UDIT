@@ -9,6 +9,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 import { ReporteService } from '@app/core/services/reporte.service';
 import { CatalogoService } from '@app/core/services/catalogo.service';
 import { InsumoService } from '@app/core/services/insumo.service';
@@ -17,7 +19,7 @@ import { InsumoDto, CatalogoDto, KardexDetalladoDto, StockCriticoDto, Movimiento
 @Component({
   selector: 'app-reportes',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatTabsModule, MatTableModule, MatButtonModule, MatIconModule, MatSelectModule, MatInputModule, MatFormFieldModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatTabsModule, MatTableModule, MatButtonModule, MatIconModule, MatSelectModule, MatInputModule, MatFormFieldModule, MatSnackBarModule, MatDatepickerModule, MatNativeDateModule],
   templateUrl: './reportes.component.html',
   styleUrls: ['./reportes.component.scss']
 })
@@ -61,9 +63,18 @@ export class ReportesComponent implements OnInit {
     this.catalogoService.getAll('proyecto').subscribe(r => this.proyectos = r as unknown as ProyectoDto[]);
   }
 
+  private formatDate(date: any): string | undefined {
+    if (!date) return undefined;
+    if (typeof date === 'string') return date;
+    if (date instanceof Date) {
+      return date.toISOString().split('T')[0];
+    }
+    return undefined;
+  }
+
   cargarKardex(): void {
     if (!this.kardexInsumoId) return;
-    this.reporteService.getKardex(this.kardexInsumoId, this.kardexDesde || undefined, this.kardexHasta || undefined)
+    this.reporteService.getKardex(this.kardexInsumoId, this.formatDate(this.kardexDesde), this.formatDate(this.kardexHasta))
       .subscribe({ next: r => this.kardexData = r, error: e => this.snackBar.open('Error: ' + (e.message || 'Error'), 'Cerrar', { duration: 5000 }) });
   }
 
@@ -74,7 +85,7 @@ export class ReportesComponent implements OnInit {
 
   cargarMovimientos(): void {
     this.reporteService.getMovimientosPeriodo(
-      this.movDesde || undefined, this.movHasta || undefined, this.movInsumoId || undefined
+      this.formatDate(this.movDesde), this.formatDate(this.movHasta), this.movInsumoId || undefined
     ).subscribe({ next: r => this.movData = r, error: e => this.snackBar.open('Error: ' + (e.message || 'Error'), 'Cerrar', { duration: 5000 }) });
   }
 

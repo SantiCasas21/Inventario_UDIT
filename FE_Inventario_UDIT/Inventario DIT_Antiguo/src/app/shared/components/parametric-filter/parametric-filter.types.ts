@@ -42,6 +42,8 @@ export interface ParametricFilterConfig {
   columns: FilterColumnConfig[];
   /** Mostrar toggle "Filtrado inteligente" */
   showSmartFilterToggle?: boolean;
+  /** Texto personalizado para el toggle de filtrado inteligente */
+  smartFilterLabel?: string;
   /** Texto del placeholder de búsqueda global */
   searchPlaceholder?: string;
   /** Debounce para búsqueda texto (ms, default 400) */

@@ -33,13 +33,13 @@ namespace Application.Common.Helpers
             if (filter.IdsUbicacion?.Count > 0)
                 predicate = predicate.And(i => filter.IdsUbicacion.Contains(i.IdUbicacion));
 
-            // Rango: precio mínimo
-            if (filter.PrecioMin.HasValue)
-                predicate = predicate.And(i => i.PrecioReferencia >= filter.PrecioMin.Value);
+            // Rango: valor mínimo
+            if (filter.ValorMedidaMin.HasValue)
+                predicate = predicate.And(i => i.ValorMedida >= filter.ValorMedidaMin.Value);
 
-            // Rango: precio máximo
-            if (filter.PrecioMax.HasValue)
-                predicate = predicate.And(i => i.PrecioReferencia <= filter.PrecioMax.Value);
+            // Rango: valor máximo
+            if (filter.ValorMedidaMax.HasValue)
+                predicate = predicate.And(i => i.ValorMedida <= filter.ValorMedidaMax.Value);
 
             // Texto: búsqueda en CódigoFabrica Y Descripción (OR entre ellos)
             if (!string.IsNullOrWhiteSpace(filter.TextSearch))
@@ -74,6 +74,13 @@ namespace Application.Common.Helpers
             // Multi-select: insumos
             if (filter.IdsInsumo?.Count > 0)
                 predicate = predicate.And(m => filter.IdsInsumo.Contains(m.IdInsumo));
+
+            // Multi-select: categorias
+            if (filter.IdsCategoria?.Count > 0)
+            {
+                predicate = predicate.And(m =>
+                    m.Insumo != null && filter.IdsCategoria.Contains(m.Insumo.IdCategoria));
+            }
 
             // Multi-select: proveedores
             if (filter.IdsProveedor?.Count > 0)
@@ -132,6 +139,14 @@ namespace Application.Common.Helpers
                 var search = filter.TextSearch.Trim();
                 predicate = predicate.And(m =>
                     m.Observacion != null && m.Observacion.Contains(search));
+            }
+
+            // Texto: búsqueda por código de fábrica del insumo
+            if (!string.IsNullOrWhiteSpace(filter.CodigoFabricaSearch))
+            {
+                var search = filter.CodigoFabricaSearch.Trim();
+                predicate = predicate.And(m =>
+                    m.Insumo != null && m.Insumo.CodigoFabrica.Contains(search));
             }
 
             return predicate;

@@ -21,6 +21,7 @@ export interface MovimientoDto {
   proyectoNombre: string | null;
   idEstadoSalida: number | null;
   estadoSalidaNombre: string | null;
+  insumoUbicacion?: string | null;
 }
 
 /** DTO para registrar un nuevo movimiento (ingreso, salida o ajuste). */
@@ -55,6 +56,8 @@ export interface StockDto {
 export interface MovimientoFilter {
   /** Tipos de movimiento: "INGRESO", "SALIDA", "AJUSTE" */
   tiposMovimiento?: string[];
+  /** Multi-select de categorías (IDs) */
+  idsCategoria?: number[];
   /** Multi-select de insumos (IDs) */
   idsInsumo?: number[];
   /** Multi-select de proveedores (IDs) */
@@ -79,6 +82,8 @@ export interface MovimientoFilter {
   fechaHasta?: string;
   /** Búsqueda en Observación (contiene) */
   textSearch?: string;
+  /** Búsqueda por Código de Fábrica (contiene) */
+  codigoFabricaSearch?: string;
   /** Página actual (default 1) */
   page?: number;
   /** Registros por página (default 20) */

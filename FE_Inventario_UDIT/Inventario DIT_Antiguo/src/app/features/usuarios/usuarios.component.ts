@@ -34,10 +34,10 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   displayedColumns: string[] = ['username', 'email', 'nombreCompleto', 'role', 'activo', 'acciones'];
 
   roleTips = [
-    { role: 'Admin', icon: 'admin_panel_settings', color: '#d32f2f', desc: 'Control total del sistema. Puede crear, editar, eliminar y gestionar usuarios.' },
-    { role: 'Developer', icon: 'build', color: '#f57f17', desc: 'CRUD completo en catálogos, insumos y movimientos. No puede eliminar ni gestionar usuarios.' },
-    { role: 'Assistant', icon: 'inventory_2', color: '#1976d2', desc: 'Gestiona movimientos (ingresos/salidas) e insumos. Opera en el día a día.' },
-    { role: 'User', icon: 'visibility', color: '#388e3c', desc: 'Solo lectura. Puede ver dashboard, insumos, movimientos y reportes.' },
+    { role: 'Admin', icon: 'admin_panel_settings', color: '#B11F16', desc: 'Control total del sistema. Puede crear, editar, eliminar y gestionar usuarios.' },
+    { role: 'Developer', icon: 'build', color: '#1472B8', desc: 'CRUD completo en catálogos, insumos y movimientos. No puede eliminar ni gestionar usuarios.' },
+    { role: 'Assistant', icon: 'inventory_2', color: '#ACAA00', desc: 'Gestiona movimientos (ingresos/salidas) e insumos. Opera en el día a día.' },
+    { role: 'User', icon: 'visibility', color: '#636F03', desc: 'Solo lectura. Puede ver dashboard, insumos, movimientos y reportes.' },
   ];
 
   private destroy$ = new Subject<void>();

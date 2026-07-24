@@ -17,6 +17,7 @@ import { ParametricFilterComponent } from '@shared/components/parametric-filter/
 import { INSUMO_FILTER_CONFIG } from '@shared/config/insumo-filter.config';
 import { PopupInsumosComponent } from 'app/modules/admin/apps/inventario/popup/popupInsumos/popup-insumos.component';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { UserService } from '@app/core/user/user.service';
 
 @Component({
   selector: 'app-insumos',
@@ -31,7 +32,7 @@ import { FuseConfirmationService } from '@fuse/services/confirmation';
   styleUrls: ['./insumos.component.scss']
 })
 export class InsumosComponent implements OnInit, OnDestroy {
-  displayedColumns = ['id', 'codigoFabrica', 'categoriaNombre', 'descripcion', 'empaquetamientoNombre', 'ubicacionNombre', 'precioReferencia', 'acciones'];
+  displayedColumns = ['codigoFabrica', 'categoriaNombre', 'descripcion', 'empaquetamientoNombre', 'ubicacionNombre', 'valorMedida', 'precioReferencia', 'cantidad', 'acciones'];
   data: InsumoDto[] = [];
   totalCount = 0;
   page = 1;
@@ -52,7 +53,12 @@ export class InsumosComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private fuseConfirmation: FuseConfirmationService,
+    private userService: UserService,
   ) {}
+
+  get userRole(): string {
+    return this.userService.currentUser?.role || '';
+  }
 
   ngOnInit(): void {
     this.loadData();
@@ -94,10 +100,10 @@ export class InsumosComponent implements OnInit, OnDestroy {
     if (filter['idsUbicacion'] && Array.isArray(filter['idsUbicacion']) && (filter['idsUbicacion'] as number[]).length > 0) {
       f.idsUbicacion = filter['idsUbicacion'] as number[];
     }
-    if (filter['precioRange']) {
-      const range = filter['precioRange'] as { min?: string; max?: string };
-      if (range.min) f.precioMin = parseFloat(range.min);
-      if (range.max) f.precioMax = parseFloat(range.max);
+    if (filter['valorMedidaRange']) {
+      const range = filter['valorMedidaRange'] as { min?: string; max?: string };
+      if (range.min) f.valorMedidaMin = parseFloat(range.min);
+      if (range.max) f.valorMedidaMax = parseFloat(range.max);
     }
     if (filter['textSearch'] && typeof filter['textSearch'] === 'string') {
       f.textSearch = filter['textSearch'];

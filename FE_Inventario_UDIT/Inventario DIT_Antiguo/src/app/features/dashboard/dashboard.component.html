@@ -105,7 +105,11 @@
             <td>{{ item.descripcion || '-' }}</td>
             <td>{{ item.categoria }}</td>
             <td>{{ item.ubicacion }}</td>
-            <td class="text-danger">{{ item.stockActual }}</td>
+            <td>
+              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-udit-rojo text-white">
+                {{ item.stockActual }}
+              </span>
+            </td>
             <td>{{ item.umbral }}</td>
           </tr>
         </tbody>
@@ -144,7 +148,14 @@
             </span>
           </td>
           <td>{{ m.codigoFabrica }}</td>
-          <td>{{ m.cantidad }}</td>
+          <td>
+            <span class="px-2 py-1 rounded-full text-xs font-semibold"
+                  [ngClass]="m.tipoMovimiento === 'INGRESO' ? 'bg-udit-verde text-white' :
+                             (m.tipoMovimiento === 'SALIDA' ? 'bg-udit-rojo text-white' :
+                              'bg-udit-teal text-white')">
+              {{ m.cantidad }}
+            </span>
+          </td>
           <td>{{ m.proveedorNombre || m.proyectoNombre || '-' }}</td>
           <td>{{ m.observacion || '-' }}</td>
         </tr>

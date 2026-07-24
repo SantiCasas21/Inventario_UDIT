@@ -28,6 +28,9 @@ namespace Domain.Entities
 
         public decimal? PrecioReferencia { get; set; }
 
+        public decimal? ValorMedida { get; set; }
+        public string? UnidadMedida { get; set; }
+
         // Navigation property al Kardex
         public ICollection<MovimientoInventario> Movimientos { get; set; } = new List<MovimientoInventario>();
     }

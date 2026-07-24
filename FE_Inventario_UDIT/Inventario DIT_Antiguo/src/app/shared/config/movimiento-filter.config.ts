@@ -17,6 +17,20 @@ export const MOVIMIENTO_FILTER_CONFIG: ParametricFilterConfig = {
       searchable: false,
     },
     {
+      key: 'codigoFabricaSearch',
+      label: 'Código Fabricante',
+      type: 'text-search',
+      searchPlaceholder: 'Cód. Fábrica...',
+    },
+    {
+      key: 'idsCategoria',
+      label: 'Categoría',
+      type: 'multi-select',
+      optionsUrl: 'categoria-insumo',
+      searchable: true,
+      searchPlaceholder: 'Buscar categoría...',
+    },
+    {
       key: 'idsInsumo',
       label: 'Insumo',
       type: 'multi-select',
@@ -63,21 +77,9 @@ export const MOVIMIENTO_FILTER_CONFIG: ParametricFilterConfig = {
       unit: 'und',
     },
     {
-      key: 'precioRange',
-      label: 'Precio Unit.',
-      type: 'range-number',
-      unit: '$',
-    },
-    {
       key: 'fechaRange',
       label: 'Fecha',
       type: 'range-date',
-    },
-    {
-      key: 'textSearch',
-      label: 'Búsqueda',
-      type: 'text-search',
-      searchPlaceholder: 'Observación...',
     },
   ],
 };

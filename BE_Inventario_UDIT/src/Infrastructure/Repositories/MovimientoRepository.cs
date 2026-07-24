@@ -86,12 +86,19 @@ namespace Infrastructure.Repositories
             var filterExpression = FilterExpressionBuilder.BuildMovimientoFilter(filter);
             var orderBy = BuildMovimientoOrderBy(filter.SortBy, filter.SortDescending);
 
-            return await base.GetPagedAsync(
+            var paged = await base.GetPagedAsync(
                 filter.Page,
                 filter.PageSize,
                 filterExpression,
                 orderBy,
                 "Insumo", "Proveedor", "TipoCompra", "Proyecto", "EstadoSalida");
+
+            // Tenemos que cargar explícitamente Insumo.Ubicacion porque GetPagedAsync del BaseRepository solo soporta 1 nivel
+            // Como esto devuelve entidades trackeadas, EF Core vinculará la navegación.
+            var insumoIds = paged.Items.Select(x => x.IdInsumo).Distinct().ToList();
+            await _context.Insumos.Include(i => i.Ubicacion).Where(i => insumoIds.Contains(i.Id)).LoadAsync();
+
+            return paged;
         }
 
         private static Func<IQueryable<MovimientoInventario>, IOrderedQueryable<MovimientoInventario>>? BuildMovimientoOrderBy(
