@@ -1,0 +1,129 @@
+<div class="premium-bg min-h-screen"><div class="admin-page">
+    <!-- Encabezado con animaciones y gradiente -->
+    <div class="flex items-center justify-between mb-8">
+        <div class="transform transition duration-500 hover:scale-105">
+            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 mb-1">
+                <span class="gradient-text">Auditoría</span> del Sistema
+            </h1>
+            <p class="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <mat-icon class="text-indigo-400" style="font-size: 18px; width: 18px; height: 18px;">history</mat-icon>
+                Registro inmutable de todas las acciones y unificaciones
+            </p>
+        </div>
+        <button mat-flat-button color="primary" class="rounded-full px-6 shadow-lg shadow-indigo-200 transition-transform hover:scale-105 btn-gloss" (click)="loadLogs()">
+            <mat-icon>refresh</mat-icon>
+            Actualizar
+        </button>
+    </div>
+
+    <!-- Filtros Glassmorphism -->
+    <mat-card class="mb-8 glass-card border-none">
+        <mat-card-content class="p-6">
+            <form [formGroup]="filterForm" class="flex flex-wrap gap-6 items-end">
+                <mat-form-field appearance="outline" class="w-full md:w-80 mb-0 fuse-mat-dense">
+                    <mat-label>Buscar (Usuario, Acción o Detalles)</mat-label>
+                    <mat-icon matPrefix class="text-indigo-400">search</mat-icon>
+                    <input matInput formControlName="textSearch" placeholder="Ej. Unificar, Juan, etc.">
+                </mat-form-field>
+                
+                <mat-form-field appearance="outline" class="w-full md:w-56 mb-0 fuse-mat-dense">
+                    <mat-label>Módulo</mat-label>
+                    <mat-icon matPrefix class="text-indigo-400">view_module</mat-icon>
+                    <mat-select formControlName="modulo">
+                        <mat-option value="">Todos los módulos</mat-option>
+                        <mat-option *ngFor="let mod of modulos" [value]="mod">{{mod}}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </form>
+        </mat-card-content>
+    </mat-card>
+
+    <!-- Tabla de Logs -->
+    <mat-card class="glass-card flex-grow overflow-hidden flex flex-col border-none">
+        <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 font-medium m-4 rounded-r-lg shadow-sm">
+            <div class="flex items-center gap-2">
+                <mat-icon>error_outline</mat-icon>
+                {{ error }}
+            </div>
+        </div>
+        
+        <div class="overflow-auto flex-grow px-2">
+            <table mat-table [dataSource]="dataSource" class="w-full">
+                <!-- Fecha Column -->
+                <ng-container matColumnDef="fecha">
+                    <th mat-header-cell *matHeaderCellDef> Fecha </th>
+                    <td mat-cell *matCellDef="let element" class="whitespace-nowrap font-medium text-gray-700"> 
+                        <div class="flex items-center gap-2">
+                            <mat-icon class="text-gray-400" style="font-size: 16px; width:16px; height: 16px;">calendar_today</mat-icon>
+                            {{ formatDate(element.fecha) }} 
+                        </div>
+                    </td>
+                </ng-container>
+
+                <!-- Usuario Column -->
+                <ng-container matColumnDef="usuario">
+                    <th mat-header-cell *matHeaderCellDef> Usuario </th>
+                    <td mat-cell *matCellDef="let element">
+                        <div class="flex items-center gap-3">
+                            <div class="avatar-circle">
+                                {{ element.usuario.charAt(0).toUpperCase() }}
+                            </div>
+                            <span class="font-semibold text-gray-800">{{ element.usuario }}</span>
+                        </div>
+                    </td>
+                </ng-container>
+
+                <!-- Módulo Column -->
+                <ng-container matColumnDef="modulo">
+                    <th mat-header-cell *matHeaderCellDef> Módulo </th>
+                    <td mat-cell *matCellDef="let element" class="font-medium text-gray-600"> 
+                        {{ element.modulo }} 
+                    </td>
+                </ng-container>
+
+                <!-- Acción Column -->
+                <ng-container matColumnDef="accion">
+                    <th mat-header-cell *matHeaderCellDef> Acción </th>
+                    <td mat-cell *matCellDef="let element">
+                        <span class="badge" [ngClass]="element.accion | tipoMovimientoBadge">
+                          {{ element.accion }}
+                        </span>
+                    </td>
+                </ng-container>
+
+                <!-- Detalles Column -->
+                <ng-container matColumnDef="detalles">
+                    <th mat-header-cell *matHeaderCellDef> Detalles </th>
+                    <td mat-cell *matCellDef="let element">
+                        <div class="details-cell" [matTooltip]="element.detalles" matTooltipClass="custom-tooltip"> 
+                            {{ element.detalles }} 
+                        </div>
+                    </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row-animate cursor-default"></tr>
+                
+                <!-- Sin datos -->
+                <tr class="mat-row" *matNoDataRow>
+                    <td class="mat-cell text-center py-12" colspan="5">
+                        <div class="flex flex-col items-center justify-center text-gray-400">
+                            <mat-icon style="font-size: 48px; width: 48px; height: 48px; margin-bottom: 16px;">search_off</mat-icon>
+                            <span *ngIf="isLoading" class="text-lg font-medium">Cargando registros...</span>
+                            <span *ngIf="!isLoading" class="text-lg font-medium">No se encontraron registros de auditoría.</span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <mat-paginator 
+            [length]="totalCount" 
+            [pageSize]="pageSize" 
+            [pageSizeOptions]="[10, 20, 50, 100]"
+            (page)="onPageChange($event)"
+            class="bg-transparent border-t border-gray-100 rounded-b-xl">
+        </mat-paginator>
+    </mat-card>
+    </div>
+</div>

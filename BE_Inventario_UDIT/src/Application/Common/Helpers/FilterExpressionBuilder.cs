@@ -29,9 +29,12 @@ namespace Application.Common.Helpers
             if (filter.IdsEmpaquetamiento?.Count > 0)
                 predicate = predicate.And(i => filter.IdsEmpaquetamiento.Contains(i.IdEmpaquetamiento));
 
-            // Multi-select: ubicaciones
-            if (filter.IdsUbicacion?.Count > 0)
-                predicate = predicate.And(i => filter.IdsUbicacion.Contains(i.IdUbicacion));
+            // Nota: El filtro por IdsUbicacion ya no se hace aquí porque Insumo ya no tiene IdUbicacion.
+            // Se debe manejar en InsumoService cruzando con los datos de MovimientoInventario.
+
+            // Multi-select: Unidades de Medida
+            if (filter.UnidadesMedida?.Count > 0)
+                predicate = predicate.And(i => !string.IsNullOrEmpty(i.UnidadMedida) && filter.UnidadesMedida.Contains(i.UnidadMedida));
 
             // Rango: valor mínimo
             if (filter.ValorMedidaMin.HasValue)
@@ -64,9 +67,13 @@ namespace Application.Common.Helpers
             if (filter.TiposMovimiento?.Count > 0)
             {
                 // Convertir strings a enum para comparación en memoria
-                // EF Core traduce el Contains sobre lista de enums a IN (...)
                 var tipos = filter.TiposMovimiento
-                    .Select(t => Enum.Parse<Domain.Enums.TipoMovimiento>(t, ignoreCase: true))
+                    .Select(t => 
+                    {
+                        if (t.Equals("UNIFICAR", StringComparison.OrdinalIgnoreCase))
+                            return Domain.Enums.TipoMovimiento.Unificacion;
+                        return Enum.Parse<Domain.Enums.TipoMovimiento>(t, ignoreCase: true);
+                    })
                     .ToList();
                 predicate = predicate.And(m => tipos.Contains(m.TipoMovimiento));
             }

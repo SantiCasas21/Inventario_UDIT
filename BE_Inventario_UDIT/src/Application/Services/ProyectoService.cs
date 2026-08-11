@@ -12,10 +12,12 @@ namespace Application.Services
     public class ProyectoService : IProyectoService
     {
         private readonly IBaseRepository<Proyecto> _repository;
+        private readonly IAuditoriaService _auditoriaService;
 
-        public ProyectoService(IBaseRepository<Proyecto> repository)
+        public ProyectoService(IBaseRepository<Proyecto> repository, IAuditoriaService auditoriaService)
         {
             _repository = repository;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task<OperationResult<IEnumerable<ProyectoDto>>> GetAllAsync()
@@ -39,6 +41,12 @@ namespace Application.Services
             if (string.IsNullOrWhiteSpace(request.Nombre))
                 return OperationResult<ProyectoDto>.Fail("El nombre del proyecto es obligatorio");
 
+            var allProyectos = await _repository.GetAllAsync();
+            if (allProyectos.Any(p => string.Equals(p.Nombre?.Trim(), request.Nombre?.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                return OperationResult<ProyectoDto>.Fail($"Ya existe un proyecto con el nombre '{request.Nombre}'");
+            }
+
             var entity = new Proyecto
             {
                 Nombre = request.Nombre,
@@ -48,6 +56,9 @@ namespace Application.Services
             };
 
             var created = await _repository.AddAsync(entity);
+            
+            await _auditoriaService.LogAsync("CREAR", "Proyecto", $"Se creó el proyecto '{request.Nombre}' con ID {created.Id}");
+            
             return OperationResult<ProyectoDto>.Ok(MapToDto(created), "Proyecto creado exitosamente");
         }
 
@@ -55,6 +66,12 @@ namespace Application.Services
         {
             if (string.IsNullOrWhiteSpace(request.Nombre))
                 return OperationResult<ProyectoDto>.Fail("El nombre del proyecto es obligatorio");
+
+            var allProyectos = await _repository.GetAllAsync();
+            if (allProyectos.Any(p => p.Id != id && string.Equals(p.Nombre?.Trim(), request.Nombre?.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                return OperationResult<ProyectoDto>.Fail($"Ya existe un proyecto con el nombre '{request.Nombre}'");
+            }
 
             var entity = await _repository.GetByIdAsync(id, "Estado");
             if (entity == null)
@@ -65,16 +82,36 @@ namespace Application.Services
             entity.IdEstado = request.IdEstado;
 
             await _repository.UpdateAsync(entity);
+            
+            await _auditoriaService.LogAsync("EDITAR", "Proyecto", $"Se editó el proyecto '{request.Nombre}' con ID {entity.Id}");
+            
             return OperationResult<ProyectoDto>.Ok(MapToDto(entity), "Proyecto actualizado exitosamente");
         }
 
         public async Task<OperationResult> DeleteAsync(int id)
         {
-            if (!await _repository.ExistsAsync(id))
-                return OperationResult.Fail($"Proyecto con ID {id} no encontrado");
+            try
+            {
+                if (!await _repository.ExistsAsync(id))
+                    return OperationResult.Fail($"Proyecto con ID {id} no encontrado");
 
-            await _repository.DeleteAsync(id);
-            return OperationResult.Ok("Proyecto eliminado exitosamente");
+                var entity = await _repository.GetByIdAsync(id);
+                string nombre = entity?.Nombre ?? id.ToString();
+                
+                await _repository.DeleteAsync(id);
+                
+                await _auditoriaService.LogAsync("ELIMINAR", "Proyecto", $"Se eliminó el proyecto '{nombre}' con ID {id}");
+                
+                return OperationResult.Ok("Proyecto eliminado exitosamente");
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+            {
+                return OperationResult.Fail("No se puede eliminar este Proyecto porque está asociado a movimientos en el sistema.");
+            }
+            catch (Exception ex)
+            {
+                return OperationResult.Fail($"Ocurrió un error al eliminar: {ex.Message}");
+            }
         }
 
         private static ProyectoDto MapToDto(Proyecto p) => new()

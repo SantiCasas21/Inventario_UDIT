@@ -23,6 +23,17 @@ export class UserService {
     return this._user.asObservable();
   }
 
+  hasRole(roles: string | string[]): boolean {
+    if (!this._currentUser || !this._currentUser.role) {
+      return false;
+    }
+    const userRole = this._currentUser.role.toLowerCase();
+    if (Array.isArray(roles)) {
+      return roles.some(r => r.toLowerCase() === userRole);
+    }
+    return userRole === roles.toLowerCase();
+  }
+
   /** Update user data locally */
   update(userData: Partial<User>): void {
     this._user.next(userData as User);

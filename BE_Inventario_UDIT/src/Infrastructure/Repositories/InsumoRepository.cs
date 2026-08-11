@@ -29,8 +29,7 @@ namespace Infrastructure.Repositories
             // Construir query base con includes
             IQueryable<Insumo> query = _dbSet
                 .Include(i => i.Categoria)
-                .Include(i => i.Empaquetamiento)
-                .Include(i => i.Ubicacion);
+                .Include(i => i.Empaquetamiento);
 
             // Aplicar filtros UNO A UNO (solo los que no son null)
             if (idCategoria.HasValue)
@@ -75,7 +74,7 @@ namespace Infrastructure.Repositories
                 filter.PageSize,
                 filterExpression,
                 orderBy,
-                "Categoria", "Empaquetamiento", "Ubicacion");
+                "Categoria", "Empaquetamiento");
         }
 
         private static Func<IQueryable<Insumo>, IOrderedQueryable<Insumo>>? BuildInsumoOrderBy(
@@ -92,15 +91,15 @@ namespace Infrastructure.Repositories
                 "precioreferencia" => desc
                     ? q => q.OrderByDescending(i => i.PrecioReferencia ?? 0)
                     : q => q.OrderBy(i => i.PrecioReferencia ?? 0),
+                "valormedida" => desc
+                    ? q => q.OrderByDescending(i => i.ValorMedida ?? 0)
+                    : q => q.OrderBy(i => i.ValorMedida ?? 0),
                 "categoria" => desc
                     ? q => q.OrderByDescending(i => i.Categoria.Nombre)
                     : q => q.OrderBy(i => i.Categoria.Nombre),
                 "empaquetamiento" => desc
                     ? q => q.OrderByDescending(i => i.Empaquetamiento.Tipo)
                     : q => q.OrderBy(i => i.Empaquetamiento.Tipo),
-                "ubicacion" => desc
-                    ? q => q.OrderByDescending(i => i.Ubicacion.Nombre)
-                    : q => q.OrderBy(i => i.Ubicacion.Nombre),
                 _ => null // default: BaseRepository ordena por Id
             };
         }

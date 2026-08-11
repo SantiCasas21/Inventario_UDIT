@@ -70,22 +70,28 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 // ==========================================
 builder.Services.AddScoped<ICatalogoService<CategoriaInsumo>>(sp => new CatalogoService<CategoriaInsumo>(
     sp.GetRequiredService<IBaseRepository<CategoriaInsumo>>(),
+    sp.GetRequiredService<IAuditoriaService>(),
     e => new CatalogoDto { Id = e.Id, Nombre = e.Nombre },
     req => new CategoriaInsumo { Nombre = req.Nombre },
     (e, v) => e.Nombre = v,
     "Categoria de Insumo"
 ));
 
-builder.Services.AddScoped<ICatalogoService<Empaquetamiento>>(sp => new CatalogoService<Empaquetamiento>(
-    sp.GetRequiredService<IBaseRepository<Empaquetamiento>>(),
-    e => new CatalogoDto { Id = e.Id, Nombre = e.Tipo },
-    req => new Empaquetamiento { Tipo = req.Nombre },
-    (e, v) => e.Tipo = v,
-    "Empaquetamiento"
+// NOTA: Empaquetamiento se registra como servicio dedicado (IEmpaquetamientoService)
+// con clasificación inteligente de familias y filtrado por categoría.
+
+builder.Services.AddScoped<ICatalogoService<FamiliaEmpaquetamiento>>(sp => new CatalogoService<FamiliaEmpaquetamiento>(
+    sp.GetRequiredService<IBaseRepository<FamiliaEmpaquetamiento>>(),
+    sp.GetRequiredService<IAuditoriaService>(),
+    e => new CatalogoDto { Id = e.Id, Nombre = e.Nombre },
+    req => new FamiliaEmpaquetamiento { Nombre = req.Nombre },
+    (e, v) => e.Nombre = v,
+    "Familia de Empaquetamiento"
 ));
 
 builder.Services.AddScoped<ICatalogoService<Ubicacion>>(sp => new CatalogoService<Ubicacion>(
     sp.GetRequiredService<IBaseRepository<Ubicacion>>(),
+    sp.GetRequiredService<IAuditoriaService>(),
     e => new CatalogoDto { Id = e.Id, Nombre = e.Nombre },
     req => new Ubicacion { Nombre = req.Nombre },
     (e, v) => e.Nombre = v,
@@ -94,6 +100,7 @@ builder.Services.AddScoped<ICatalogoService<Ubicacion>>(sp => new CatalogoServic
 
 builder.Services.AddScoped<ICatalogoService<TipoCompra>>(sp => new CatalogoService<TipoCompra>(
     sp.GetRequiredService<IBaseRepository<TipoCompra>>(),
+    sp.GetRequiredService<IAuditoriaService>(),
     e => new CatalogoDto { Id = e.Id, Nombre = e.Nombre },
     req => new TipoCompra { Nombre = req.Nombre },
     (e, v) => e.Nombre = v,
@@ -102,6 +109,7 @@ builder.Services.AddScoped<ICatalogoService<TipoCompra>>(sp => new CatalogoServi
 
 builder.Services.AddScoped<ICatalogoService<EstadoSalida>>(sp => new CatalogoService<EstadoSalida>(
     sp.GetRequiredService<IBaseRepository<EstadoSalida>>(),
+    sp.GetRequiredService<IAuditoriaService>(),
     e => new CatalogoDto { Id = e.Id, Nombre = e.Nombre },
     req => new EstadoSalida { Nombre = req.Nombre },
     (e, v) => e.Nombre = v,
@@ -110,6 +118,7 @@ builder.Services.AddScoped<ICatalogoService<EstadoSalida>>(sp => new CatalogoSer
 
 builder.Services.AddScoped<ICatalogoService<EstadoProyecto>>(sp => new CatalogoService<EstadoProyecto>(
     sp.GetRequiredService<IBaseRepository<EstadoProyecto>>(),
+    sp.GetRequiredService<IAuditoriaService>(),
     e => new CatalogoDto { Id = e.Id, Nombre = e.Estado },
     req => new EstadoProyecto { Estado = req.Nombre },
     (e, v) => e.Estado = v,
@@ -118,6 +127,7 @@ builder.Services.AddScoped<ICatalogoService<EstadoProyecto>>(sp => new CatalogoS
 
 builder.Services.AddScoped<ICatalogoService<Proveedor>>(sp => new CatalogoService<Proveedor>(
     sp.GetRequiredService<IBaseRepository<Proveedor>>(),
+    sp.GetRequiredService<IAuditoriaService>(),
     e => new CatalogoDto { Id = e.Id, Nombre = e.Nombre },
     req => new Proveedor { Nombre = req.Nombre },
     (e, v) => e.Nombre = v,
@@ -126,6 +136,7 @@ builder.Services.AddScoped<ICatalogoService<Proveedor>>(sp => new CatalogoServic
 
 builder.Services.AddScoped<ICatalogoService<Personal>>(sp => new CatalogoService<Personal>(
     sp.GetRequiredService<IBaseRepository<Personal>>(),
+    sp.GetRequiredService<IAuditoriaService>(),
     e => new CatalogoDto { Id = e.Id, Nombre = e.Nombre },
     req => new Personal { Nombre = req.Nombre },
     (e, v) => e.Nombre = v,
@@ -133,11 +144,13 @@ builder.Services.AddScoped<ICatalogoService<Personal>>(sp => new CatalogoService
 ));
 
 // Servicios de dominio (interfaces → implementaciones)
+builder.Services.AddScoped<IEmpaquetamientoService, EmpaquetamientoService>();
 builder.Services.AddScoped<IKardexService, KardexService>();
 builder.Services.AddScoped<IReporteService, ReporteService>();
 builder.Services.AddScoped<IInsumoService, InsumoService>();
 builder.Services.AddScoped<IProyectoService, ProyectoService>();
 builder.Services.AddScoped<IProveedorService, ProveedorService>();
+builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 
 // ==========================================
@@ -232,6 +245,10 @@ if (app.Environment.IsDevelopment())
 
     // Seed de roles y admin por defecto
     await DbInitializer.SeedAsync(scope.ServiceProvider);
+
+    // Clasificación inteligente de empaquetamientos sin familia (idempotente)
+    var empaquetamientoService = scope.ServiceProvider.GetRequiredService<IEmpaquetamientoService>();
+    await empaquetamientoService.ClasificarPendientesAsync();
 }
 
 app.Run();

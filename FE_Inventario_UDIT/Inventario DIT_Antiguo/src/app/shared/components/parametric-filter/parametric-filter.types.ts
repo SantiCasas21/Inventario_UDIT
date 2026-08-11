@@ -18,8 +18,14 @@ export interface FilterColumnConfig {
   options?: SelectOption[];
   /** URL para cargar opciones dinámicamente desde API de catálogo */
   optionsUrl?: string;
+  /** Campo a usar como valor (default: 'id') */
+  optionsValueField?: 'id' | 'nombre';
   /** Observable de opciones (alternativa a optionsUrl) */
   options$?: Observable<SelectOption[]>;
+  /** Clave de otra columna de la que dependen las opciones (ej: 'idsCategoria') */
+  dependsOn?: string;
+  /** Endpoint para cargar opciones filtradas por categoría (ej: 'empaquetamiento/por-categoria') */
+  optionsByCategoriaUrl?: string;
   /** Unidad para range (ej: '$', 'und', 'kg') */
   unit?: string;
   /** Mostrar input de búsqueda dentro del select */

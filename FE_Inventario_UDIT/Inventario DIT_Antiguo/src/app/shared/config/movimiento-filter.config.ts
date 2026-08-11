@@ -13,6 +13,8 @@ export const MOVIMIENTO_FILTER_CONFIG: ParametricFilterConfig = {
         { label: 'Ingreso', value: 'INGRESO' },
         { label: 'Salida', value: 'SALIDA' },
         { label: 'Ajuste', value: 'AJUSTE' },
+        { label: 'Unificar', value: 'UNIFICAR' },
+        { label: 'Traslado', value: 'TRASLADO' },
       ],
       searchable: false,
     },
@@ -29,14 +31,6 @@ export const MOVIMIENTO_FILTER_CONFIG: ParametricFilterConfig = {
       optionsUrl: 'categoria-insumo',
       searchable: true,
       searchPlaceholder: 'Buscar categoría...',
-    },
-    {
-      key: 'idsInsumo',
-      label: 'Insumo',
-      type: 'multi-select',
-      optionsUrl: 'insumo',
-      searchable: true,
-      searchPlaceholder: 'Buscar insumo...',
     },
     {
       key: 'idsProveedor',

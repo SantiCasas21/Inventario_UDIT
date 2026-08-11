@@ -10,10 +10,10 @@ export interface InsumoDto {
   codigoFabrica: string;
   idEmpaquetamiento: number;
   empaquetamientoNombre: string;
-  idUbicacion: number;
-  ubicacionNombre: string;
+  ubicacionesStock: StockUbicacionDto[];
   descripcion: string | null;
   precioReferencia: number | null;
+  moneda: string | null;
   valorMedida: number | null;
   unidadMedida: string | null;
   cantidad: number;
@@ -24,9 +24,9 @@ export interface InsumoRequest {
   idCategoria: number;
   codigoFabrica: string;
   idEmpaquetamiento: number;
-  idUbicacion: number;
   descripcion?: string;
   precioReferencia?: number;
+  moneda?: string;
   valorMedida?: number;
   unidadMedida?: string;
 }
@@ -39,10 +39,14 @@ export interface InsumoRequest {
 export interface InsumoFilter {
   /** Multi-select de categorías (IDs) */
   idsCategoria?: number[];
+  /** Multi-select de insumos (IDs) */
+  idsInsumo?: number[];
   /** Multi-select de empaquetamientos (IDs) */
   idsEmpaquetamiento?: number[];
   /** Multi-select de ubicaciones (IDs) */
   idsUbicacion?: number[];
+  /** Multi-select de unidades de medida (nombres) */
+  unidadesMedida?: string[];
   /** Valor de medida mínimo */
   valorMedidaMin?: number;
   /** Valor de medida máximo */
@@ -57,4 +61,10 @@ export interface InsumoFilter {
   sortBy?: string;
   /** Orden descendente */
   sortDescending?: boolean;
+}
+
+export interface StockUbicacionDto {
+  idUbicacion: number;
+  ubicacionNombre: string;
+  stock: number;
 }

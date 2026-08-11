@@ -1,9 +1,11 @@
 using System.Linq.Expressions;
 
+#nullable disable
+
 namespace Application.Common.Helpers
 {
     /// <summary>
-    /// PredicateBuilder — combina expresiones lambda con AND/OR
+    /// PredicateBuilder - combina expresiones lambda con AND/OR
     /// para construir filtros dinámicos que EF Core traduce a SQL.
     /// Inspirado en el patrón LINQKit.
     /// </summary>

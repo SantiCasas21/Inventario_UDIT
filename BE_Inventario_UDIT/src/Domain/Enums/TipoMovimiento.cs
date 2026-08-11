@@ -4,6 +4,8 @@ namespace Domain.Enums
     {
         Ingreso = 1,
         Salida = 2,
-        Ajuste = 3
+        Ajuste = 3,
+        Unificacion = 4,
+        Traslado = 5
     }
 }

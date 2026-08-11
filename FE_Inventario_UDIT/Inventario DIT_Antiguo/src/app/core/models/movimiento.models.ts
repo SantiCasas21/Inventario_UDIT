@@ -7,10 +7,11 @@ export interface MovimientoDto {
   id: number;
   idInsumo: number;
   codigoFabrica: string;
-  tipoMovimiento: 'INGRESO' | 'SALIDA' | 'AJUSTE';
+  tipoMovimiento: 'INGRESO' | 'SALIDA' | 'AJUSTE' | 'UNIFICACION';
   cantidad: number;
   fecha: string; // ISO 8601
   precioUnitario: number | null;
+  moneda: string | null;
   observacion: string | null;
   // Relaciones opcionales según el tipo
   idProveedor: number | null;
@@ -29,13 +30,19 @@ export interface MovimientoRequest {
   idInsumo: number;
   cantidad: number;
   precioUnitario?: number;
+  moneda?: string;
   observacion?: string;
   // Para INGRESO
   idProveedor?: number;
   idTipoCompra?: number;
+  idUbicacion?: number;
   // Para SALIDA
   idProyecto?: number;
   idEstadoSalida?: number;
+  // Para AJUSTE con cambio de ubicación
+  idNuevaUbicacion?: number;
+  // Auditoría (se llena automáticamente desde el usuario autenticado)
+  usuarioRegistro?: string;
 }
 
 /** DTO para mostrar el stock calculado de un insumo. */

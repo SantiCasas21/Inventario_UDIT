@@ -9,3 +9,15 @@ export interface CatalogoDto {
 export interface CatalogoRequestDto {
   nombre: string;
 }
+
+/** DTO de Empaquetamiento con su familia asociada. */
+export interface EmpaquetamientoDto extends CatalogoDto {
+  idFamiliaEmpaquetamiento: number | null;
+  familiaEmpaquetamientoNombre: string | null;
+}
+
+/** DTO para crear/actualizar un Empaquetamiento (con familia). */
+export interface EmpaquetamientoRequestDto {
+  nombre: string;
+  idFamiliaEmpaquetamiento?: number | null;
+}

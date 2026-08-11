@@ -2,6 +2,7 @@ import { Route } from '@angular/router';
 import { initialDataResolver } from 'app/app.resolvers';
 import { AuthGuard } from 'app/core/auth/guards/auth.guard';
 import { NoAuthGuard } from 'app/core/auth/guards/noAuth.guard';
+import { RoleGuard } from 'app/core/auth/guards/role.guard';
 import { LayoutComponent } from 'app/layout/layout.component';
 
 export const appRoutes: Route[] = [
@@ -98,8 +99,9 @@ export const appRoutes: Route[] = [
   // ============================================================
   {
     path: '',
-    canActivate: [AuthGuard],
-    canActivateChild: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    canActivateChild: [AuthGuard, RoleGuard],
+    data: { roles: ['admin', 'developer'] },
     component: LayoutComponent,
     resolve: { initialData: initialDataResolver },
     children: [
@@ -112,6 +114,8 @@ export const appRoutes: Route[] = [
       { path: 'proyectos', loadChildren: () => import('app/modules/admin/apps/inventario/proyectos/proyectos.routes') },
       { path: 'tipocompra', loadChildren: () => import('app/modules/admin/apps/inventario/tipocompra/tipocompra.routes') },
       { path: 'ubicaciones', loadChildren: () => import('app/modules/admin/apps/inventario/ubicaciones/ubicaciones.routes') },
+      { path: 'unidades-medida', loadChildren: () => import('app/modules/admin/apps/inventario/unidad-medida/unidad-medida.routes') },
+      { path: 'auditoria', loadChildren: () => import('app/modules/admin/apps/auditoria/auditoria.routes') },
     ],
   },
 ];

@@ -4,6 +4,7 @@ using Application.Interfaces;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace API.Controllers
 {
@@ -29,6 +30,7 @@ namespace API.Controllers
         [Authorize(Roles = "Admin,Developer,Assistant")]
         public async Task<IActionResult> RegistrarIngreso([FromBody] MovimientoRequestDto request)
         {
+            request.UsuarioRegistro = User.FindFirst(ClaimTypes.Name)?.Value ?? User.Identity?.Name ?? "Sistema";
             var result = await _kardexService.RegistrarIngresoAsync(request);
             if (!result.Success)
                 return BadRequest(result);
@@ -45,6 +47,7 @@ namespace API.Controllers
         [Authorize(Roles = "Admin,Developer,Assistant")]
         public async Task<IActionResult> RegistrarSalida([FromBody] MovimientoRequestDto request)
         {
+            request.UsuarioRegistro = User.FindFirst(ClaimTypes.Name)?.Value ?? User.Identity?.Name ?? "Sistema";
             var result = await _kardexService.RegistrarSalidaAsync(request);
             if (!result.Success)
                 return BadRequest(result);
@@ -61,6 +64,7 @@ namespace API.Controllers
         [Authorize(Roles = "Admin,Developer,Assistant")]
         public async Task<IActionResult> RegistrarAjuste([FromBody] MovimientoRequestDto request)
         {
+            request.UsuarioRegistro = User.FindFirst(ClaimTypes.Name)?.Value ?? User.Identity?.Name ?? "Sistema";
             var result = await _kardexService.RegistrarAjusteAsync(request);
             if (!result.Success)
                 return BadRequest(result);

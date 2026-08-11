@@ -17,6 +17,7 @@ namespace Application.DTOs
         public int Cantidad { get; set; }
         public DateTime Fecha { get; set; }
         public decimal? PrecioUnitario { get; set; }
+        public string? Moneda { get; set; }
         public string? Observacion { get; set; }
 
         // Relaciones opcionales según el tipo
@@ -30,6 +31,14 @@ namespace Application.DTOs
         public string? EstadoSalidaNombre { get; set; }
 
         public string? InsumoUbicacion { get; set; }
+        
+        public int? IdUbicacion { get; set; }
+        public string? UbicacionNombre { get; set; }
+        
+        public int? IdUbicacionAnterior { get; set; }
+        public string? UbicacionAnteriorNombre { get; set; }
+        
+        public string? UsuarioRegistro { get; set; }
 
         /// <summary>
         /// Factory method: mapea de entidad a DTO.
@@ -48,11 +57,14 @@ namespace Application.DTOs
                     Domain.Enums.TipoMovimiento.Ingreso => "INGRESO",
                     Domain.Enums.TipoMovimiento.Salida => "SALIDA",
                     Domain.Enums.TipoMovimiento.Ajuste => "AJUSTE",
+                    Domain.Enums.TipoMovimiento.Unificacion => "UNIFICAR",
+                    Domain.Enums.TipoMovimiento.Traslado => "TRASLADO",
                     _ => "DESCONOCIDO"
                 },
                 Cantidad = m.Cantidad,
                 Fecha = m.Fecha,
                 PrecioUnitario = m.PrecioUnitario,
+                Moneda = m.Moneda,
                 Observacion = m.Observacion,
                 IdProveedor = m.IdProveedor,
                 ProveedorNombre = m.Proveedor?.Nombre,
@@ -62,7 +74,15 @@ namespace Application.DTOs
                 ProyectoNombre = m.Proyecto?.Nombre,
                 IdEstadoSalida = m.IdEstadoSalida,
                 EstadoSalidaNombre = m.EstadoSalida?.Nombre,
-                InsumoUbicacion = m.Insumo?.Ubicacion?.Nombre
+                // Priorizar la ubicación del movimiento, si no tiene, usar nulo (ya no hay ubicación legacy en insumo)
+                InsumoUbicacion = m.TipoMovimiento == Domain.Enums.TipoMovimiento.Unificacion
+                    ? "Consolidación Global"
+                    : m.Ubicacion?.Nombre ?? "Varias/Desconocida",
+                IdUbicacion = m.IdUbicacion,
+                UbicacionNombre = m.Ubicacion?.Nombre,
+                IdUbicacionAnterior = m.IdUbicacionAnterior,
+                UbicacionAnteriorNombre = m.UbicacionAnterior?.Nombre,
+                UsuarioRegistro = m.UsuarioRegistro
             };
         }
     }
@@ -75,6 +95,7 @@ namespace Application.DTOs
         public int IdInsumo { get; set; }
         public int Cantidad { get; set; }
         public decimal? PrecioUnitario { get; set; }
+        public string? Moneda { get; set; }
         public string? Observacion { get; set; }
 
         // Para INGRESO
@@ -84,6 +105,16 @@ namespace Application.DTOs
         // Para SALIDA
         public int? IdProyecto { get; set; }
         public int? IdEstadoSalida { get; set; }
+
+        // Para AJUSTE con cambio de ubicación (y ahora también para INGRESO opcional)
+        // El sistema guardará esta ubicación en el Kardex y actualizará el Insumo principal.
+        public int? IdNuevaUbicacion { get; set; }
+        
+        // Ubicación donde se registra el ingreso o de donde sale el stock
+        public int? IdUbicacion { get; set; }
+        
+        // El usuario que realiza la operación (se suele sacar del token)
+        public string? UsuarioRegistro { get; set; }
     }
 
     /// <summary>

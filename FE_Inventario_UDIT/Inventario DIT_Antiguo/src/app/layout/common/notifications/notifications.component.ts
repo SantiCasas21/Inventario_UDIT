@@ -5,6 +5,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { MatButton, MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { NotificationsService } from 'app/layout/common/notifications/notifications.service';
 import { Notification } from 'app/layout/common/notifications/notifications.types';
@@ -17,7 +18,7 @@ import { Subject, takeUntil } from 'rxjs';
     changeDetection: ChangeDetectionStrategy.OnPush,
     exportAs       : 'notifications',
     standalone     : true,
-    imports        : [MatButtonModule, NgIf, MatIconModule, MatTooltipModule, NgFor, NgClass, NgTemplateOutlet, RouterLink, DatePipe],
+    imports        : [MatButtonModule, NgIf, MatIconModule, MatTooltipModule, NgFor, NgClass, NgTemplateOutlet, RouterLink, DatePipe, MatSnackBarModule],
 })
 export class NotificationsComponent implements OnInit, OnDestroy
 {
@@ -26,6 +27,7 @@ export class NotificationsComponent implements OnInit, OnDestroy
 
     notifications: Notification[];
     unreadCount: number = 0;
+    currentFilter: 'all' | 'unread' | 'read' | 'low-stock' | 'no-stock' = 'all';
     private _overlayRef: OverlayRef;
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
@@ -37,6 +39,7 @@ export class NotificationsComponent implements OnInit, OnDestroy
         private _notificationsService: NotificationsService,
         private _overlay: Overlay,
         private _viewContainerRef: ViewContainerRef,
+        private _snackBar: MatSnackBar
     )
     {
     }
@@ -122,6 +125,7 @@ export class NotificationsComponent implements OnInit, OnDestroy
     {
         // Mark all as read
         this._notificationsService.markAllAsRead().subscribe();
+        this._snackBar.open('Todas las notificaciones marcadas como leídas', 'Cerrar', { duration: 3000 });
     }
 
     /**
@@ -134,6 +138,7 @@ export class NotificationsComponent implements OnInit, OnDestroy
 
         // Update the notification
         this._notificationsService.update(notification.id, notification).subscribe();
+        this._snackBar.open(notification.read ? 'Notificación marcada como leída' : 'Notificación marcada como no leída', 'Cerrar', { duration: 3000 });
     }
 
     /**
@@ -143,6 +148,7 @@ export class NotificationsComponent implements OnInit, OnDestroy
     {
         // Delete the notification
         this._notificationsService.delete(notification.id).subscribe();
+        this._snackBar.open('Notificación eliminada', 'Cerrar', { duration: 3000 });
     }
 
     /**
@@ -154,6 +160,42 @@ export class NotificationsComponent implements OnInit, OnDestroy
     trackByFn(index: number, item: any): any
     {
         return item.id || index;
+    }
+
+    /**
+     * Copy text to clipboard
+     */
+    copyCode(code: string, event: Event): void
+    {
+        event.preventDefault();
+        event.stopPropagation();
+        navigator.clipboard.writeText(code).then(() => {
+            this._snackBar.open('Se copió el código en el portapapeles', 'Cerrar', { duration: 3000 });
+        }).catch(err => {
+            console.error('Failed to copy code: ', err);
+            this._snackBar.open('Error al copiar el código', 'Cerrar', { duration: 3000 });
+        });
+    }
+
+    /**
+     * Filter notifications
+     */
+    setFilter(filter: 'all' | 'unread' | 'read' | 'low-stock' | 'no-stock'): void
+    {
+        this.currentFilter = filter;
+        this._changeDetectorRef.markForCheck();
+    }
+
+    get filteredNotifications(): Notification[]
+    {
+        if (!this.notifications) return [];
+        switch (this.currentFilter) {
+            case 'unread': return this.notifications.filter(n => !n.read);
+            case 'read': return this.notifications.filter(n => n.read);
+            case 'low-stock': return this.notifications.filter(n => n.id.startsWith('low-stock'));
+            case 'no-stock': return this.notifications.filter(n => n.id.startsWith('no-stock'));
+            default: return this.notifications;
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------

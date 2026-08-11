@@ -27,10 +27,26 @@ namespace Application.Interfaces
         Task<int> GetStockByInsumoAsync(int insumoId);
 
         /// <summary>
+        /// Calcula el stock segregado por ubicación física para un insumo.
+        /// </summary>
+        Task<List<StockUbicacionResult>> GetStockPorUbicacionAsync(int insumoId);
+
+        /// <summary>
+        /// Calcula el stock segregado por ubicación física para múltiples insumos.
+        /// </summary>
+        Task<Dictionary<int, List<StockUbicacionResult>>> GetStockPorUbicacionPorInsumosAsync(int[] insumoIds);
+
+        /// <summary>
         /// Búsqueda paginada de movimientos con filtros compuestos
         /// (multi-select, rangos, texto, ordenamiento).
         /// </summary>
         Task<PagedResult<MovimientoInventario>> FilterPagedAsync(MovimientoFilterDto filter);
+
+        /// <summary>
+        /// Migra de forma masiva los movimientos de un grupo de insumos hacia uno nuevo.
+        /// Útil para unificar duplicados.
+        /// </summary>
+        Task MigrateMovimientosAsync(int[] oldInsumoIds, int newInsumoId);
     }
 
     /// <summary>
@@ -43,5 +59,15 @@ namespace Application.Interfaces
         public int StockActual { get; set; }
         public int TotalIngresos { get; set; }
         public int TotalSalidas { get; set; }
+    }
+
+    /// <summary>
+    /// Resultado de la consulta agregada de stock por ubicación.
+    /// </summary>
+    public class StockUbicacionResult
+    {
+        public int IdUbicacion { get; set; }
+        public string UbicacionNombre { get; set; } = string.Empty;
+        public int Stock { get; set; }
     }
 }

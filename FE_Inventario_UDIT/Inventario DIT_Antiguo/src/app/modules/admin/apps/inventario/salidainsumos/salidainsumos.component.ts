@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ViewChild, OnInit } from '@angular/core';
+﻿import { AfterViewInit, Component, ViewChild, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MovimientoDto, MovimientoFilter } from '@app/core/models';
@@ -58,3 +58,4 @@ export class SalidainsumosComponent implements OnInit, AfterViewInit {
     })
   }
 }
+

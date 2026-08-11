@@ -38,6 +38,7 @@ namespace Domain.Entities
         /// Precio unitario del insumo en el momento del movimiento.
         /// </summary>
         public decimal? PrecioUnitario { get; set; }
+        public string? Moneda { get; set; } = "COP";
 
         /// <summary>
         /// Observación opcional sobre el movimiento.
@@ -61,5 +62,16 @@ namespace Domain.Entities
 
         public int? IdEstadoSalida { get; set; }
         public EstadoSalida? EstadoSalida { get; set; }
+
+        // Ubicación del movimiento
+        public int? IdUbicacion { get; set; }
+        public Ubicacion? Ubicacion { get; set; }
+
+        // Ubicación anterior (solo para traslados/ajustes de ubicación)
+        public int? IdUbicacionAnterior { get; set; }
+        public Ubicacion? UbicacionAnterior { get; set; }
+
+        // Auditoría
+        public string? UsuarioRegistro { get; set; }
     }
 }

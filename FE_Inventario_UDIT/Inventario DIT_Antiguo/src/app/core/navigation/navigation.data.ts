@@ -42,10 +42,12 @@ export const NAVIGATION_ITEMS: FuseNavigationItem[] = [
       { id: 'estadoproyecto', title: 'Estado Proyecto', type: 'basic', link: '/estadoproyecto' },
       { id: 'estadosalida', title: 'Estado Salida', type: 'basic', link: '/estadosalida' },
       { id: 'categorias', title: 'Categorías', type: 'basic', link: '/categorias' },
+      { id: 'unidades-medida', title: 'Unidades Medida', type: 'basic', link: '/unidades-medida' },
       { id: 'proveedores', title: 'Proveedores', type: 'basic', link: '/proveedores' },
       { id: 'proyectos', title: 'Proyectos', type: 'basic', link: '/proyectos' },
       { id: 'tipocompra', title: 'Tipo Compra', type: 'basic', link: '/tipocompra' },
       { id: 'ubicaciones', title: 'Ubicaciones', type: 'basic', link: '/ubicaciones' },
+      { id: 'auditoria', title: 'Auditoría / Logs', type: 'basic', link: '/auditoria' },
     ],
   },
 ];

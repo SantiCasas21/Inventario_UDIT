@@ -3,6 +3,8 @@ export interface OperationResult<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
+  /** Código de error opcional (ej: "DUPLICATE_CODE") para manejo específico en frontend */
+  code?: string;
 }
 
 /** Resultado paginado para endpoints con filtro. */

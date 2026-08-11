@@ -20,13 +20,16 @@ namespace Application.Services
     {
         private readonly IMovimientoRepository _movRepo;
         private readonly IBaseRepository<Insumo> _insumoRepo;
+        private readonly IAuditoriaService _auditoriaService;
 
         public KardexService(
             IMovimientoRepository movRepo,
-            IBaseRepository<Insumo> insumoRepo)
+            IBaseRepository<Insumo> insumoRepo,
+            IAuditoriaService auditoriaService)
         {
             _movRepo = movRepo;
             _insumoRepo = insumoRepo;
+            _auditoriaService = auditoriaService;
         }
 
         // ==========================================
@@ -35,11 +38,32 @@ namespace Application.Services
         public async Task<OperationResult<MovimientoDto>> RegistrarIngresoAsync(MovimientoRequestDto request)
         {
             // Validar que el insumo existe
-            if (!await _insumoRepo.ExistsAsync(request.IdInsumo))
+            var insumo = await _insumoRepo.GetByIdAsync(request.IdInsumo);
+            if (insumo == null)
                 return OperationResult<MovimientoDto>.Fail("El insumo especificado no existe");
 
             if (request.Cantidad <= 0)
                 return OperationResult<MovimientoDto>.Fail("La cantidad debe ser mayor a 0");
+
+            if (request.IdUbicacion == null)
+                return OperationResult<MovimientoDto>.Fail("Debe especificar la ubicación para el ingreso");
+
+            // Calcular stock actual previo al ingreso para Costo Promedio Ponderado
+            int stockActual = await CalcularStockAsync(insumo.Id);
+            if (request.PrecioUnitario.HasValue && request.PrecioUnitario.Value > 0)
+            {
+                decimal precioActual = insumo.PrecioReferencia ?? 0m;
+                if (stockActual > 0 && precioActual > 0)
+                {
+                    decimal nuevoPrecioRef = ((stockActual * precioActual) + (request.Cantidad * request.PrecioUnitario.Value)) / (stockActual + request.Cantidad);
+                    insumo.PrecioReferencia = Math.Round(nuevoPrecioRef, 2);
+                }
+                else
+                {
+                    insumo.PrecioReferencia = request.PrecioUnitario.Value;
+                }
+                await _insumoRepo.UpdateAsync(insumo);
+            }
 
             var movimiento = new MovimientoInventario
             {
@@ -47,14 +71,19 @@ namespace Application.Services
                 TipoMovimiento = TipoMovimiento.Ingreso,
                 Cantidad = request.Cantidad,
                 Fecha = DateTime.UtcNow,
-                PrecioUnitario = request.PrecioUnitario,
+                PrecioUnitario = request.PrecioUnitario ?? insumo.PrecioReferencia,
+                Moneda = request.Moneda,
                 Observacion = request.Observacion,
                 IdProveedor = request.IdProveedor,
-                IdTipoCompra = request.IdTipoCompra
+                IdTipoCompra = request.IdTipoCompra,
+                IdUbicacion = request.IdUbicacion,
+                UsuarioRegistro = request.UsuarioRegistro
             };
 
             var created = await _movRepo.AddAsync(movimiento);
             var dto = await MapToDtoAsync(created);
+            
+            await _auditoriaService.LogAsync("INGRESO", "Movimientos", $"Se ingresaron {request.Cantidad} unidades al insumo ID {request.IdInsumo} en la ubicación {request.IdUbicacion}", request.UsuarioRegistro);
 
             return OperationResult<MovimientoDto>.Ok(dto, "Ingreso registrado exitosamente");
         }
@@ -70,11 +99,16 @@ namespace Application.Services
             if (request.Cantidad <= 0)
                 return OperationResult<MovimientoDto>.Fail("La cantidad debe ser mayor a 0");
 
-            // Validar stock suficiente
-            var stockActual = await CalcularStockAsync(request.IdInsumo);
-            if (stockActual < request.Cantidad)
+            if (request.IdUbicacion == null)
+                return OperationResult<MovimientoDto>.Fail("Debe especificar de qué ubicación sale el insumo");
+
+            // Validar stock suficiente en ESA ubicación
+            var ubicacionesStock = await _movRepo.GetStockPorUbicacionAsync(request.IdInsumo);
+            var stockEnUbicacion = ubicacionesStock.FirstOrDefault(u => u.IdUbicacion == request.IdUbicacion)?.Stock ?? 0;
+            
+            if (stockEnUbicacion < request.Cantidad)
                 return OperationResult<MovimientoDto>.Fail(
-                    $"Stock insuficiente. Disponible: {stockActual}, solicitado: {request.Cantidad}");
+                    $"Stock insuficiente en la ubicación seleccionada. Disponible: {stockEnUbicacion}, solicitado: {request.Cantidad}");
 
             if (request.IdProyecto == null)
                 return OperationResult<MovimientoDto>.Fail("Una salida debe estar asociada a un proyecto");
@@ -90,11 +124,15 @@ namespace Application.Services
                 Fecha = DateTime.UtcNow,
                 Observacion = request.Observacion,
                 IdProyecto = request.IdProyecto,
-                IdEstadoSalida = request.IdEstadoSalida
+                IdEstadoSalida = request.IdEstadoSalida,
+                IdUbicacion = request.IdUbicacion,
+                UsuarioRegistro = request.UsuarioRegistro
             };
 
             var created = await _movRepo.AddAsync(movimiento);
             var dto = await MapToDtoAsync(created);
+
+            await _auditoriaService.LogAsync("SALIDA", "Movimientos", $"Se sacaron {request.Cantidad} unidades del insumo ID {request.IdInsumo}", request.UsuarioRegistro);
 
             return OperationResult<MovimientoDto>.Ok(dto, "Salida registrada exitosamente");
         }
@@ -104,38 +142,76 @@ namespace Application.Services
         // ==========================================
         public async Task<OperationResult<MovimientoDto>> RegistrarAjusteAsync(MovimientoRequestDto request)
         {
-            if (!await _insumoRepo.ExistsAsync(request.IdInsumo))
+            // Cargar el insumo completo (necesitamos IdUbicacion actual)
+            var insumo = await _insumoRepo.GetByIdAsync(request.IdInsumo);
+            if (insumo == null)
                 return OperationResult<MovimientoDto>.Fail("El insumo especificado no existe");
 
-            if (request.Cantidad == 0)
-                return OperationResult<MovimientoDto>.Fail("La cantidad del ajuste no puede ser 0");
+            if (request.Cantidad == 0 && !request.IdNuevaUbicacion.HasValue)
+                return OperationResult<MovimientoDto>.Fail("La cantidad del ajuste no puede ser 0 a menos que sea un traslado (cambio de ubicación)");
 
             if (string.IsNullOrWhiteSpace(request.Observacion))
                 return OperationResult<MovimientoDto>.Fail("Un ajuste requiere una observación");
 
-            // Si la cantidad es negativa, verificar stock suficiente
-            if (request.Cantidad < 0)
+            if (request.IdUbicacion == null)
+                return OperationResult<MovimientoDto>.Fail("Debe especificar la ubicación donde se realizará el ajuste");
+
+            var ubicacionesStock = await _movRepo.GetStockPorUbicacionAsync(request.IdInsumo);
+            var stockEnOrigen = ubicacionesStock.FirstOrDefault(u => u.IdUbicacion == request.IdUbicacion)?.Stock ?? 0;
+
+            if (request.Cantidad < 0 && Math.Abs(request.Cantidad) > stockEnOrigen)
             {
-                var stockActual = await CalcularStockAsync(request.IdInsumo);
-                var cantidadAjuste = Math.Abs(request.Cantidad);
-                if (stockActual < cantidadAjuste)
-                    return OperationResult<MovimientoDto>.Fail(
-                        $"Stock insuficiente para el ajuste. Disponible: {stockActual}");
+                return OperationResult<MovimientoDto>.Fail($"Stock insuficiente en la ubicación origen. Disponible: {stockEnOrigen}");
             }
 
-            var movimiento = new MovimientoInventario
+            var fechaActual = DateTime.UtcNow;
+            MovimientoInventario? createdAjuste = null;
+            MovimientoInventario? createdTraslado = null;
+
+            // 1. Registrar Ajuste de Cantidad (si hay cantidad)
+            if (request.Cantidad != 0)
             {
-                IdInsumo = request.IdInsumo,
-                TipoMovimiento = TipoMovimiento.Ajuste,
-                Cantidad = request.Cantidad, // negativo = reduce stock, positivo = aumenta
-                Fecha = DateTime.UtcNow,
-                Observacion = request.Observacion
-            };
+                var movimientoAjuste = new MovimientoInventario
+                {
+                    IdInsumo = request.IdInsumo,
+                    TipoMovimiento = TipoMovimiento.Ajuste,
+                    Cantidad = request.Cantidad,
+                    Fecha = fechaActual,
+                    Observacion = request.Observacion,
+                    IdUbicacion = request.IdUbicacion,
+                    UsuarioRegistro = request.UsuarioRegistro
+                };
+                createdAjuste = await _movRepo.AddAsync(movimientoAjuste);
+                await _auditoriaService.LogAsync("AJUSTE", "Movimientos", $"Se ajustó {request.Cantidad} unidades en el insumo ID {request.IdInsumo}", request.UsuarioRegistro);
+            }
 
-            var created = await _movRepo.AddAsync(movimiento);
-            var dto = await MapToDtoAsync(created);
+            // 2. Registrar Traslado (si hay IdNuevaUbicacion)
+            if (request.IdNuevaUbicacion.HasValue)
+            {
+                var stockMover = stockEnOrigen + request.Cantidad;
 
-            return OperationResult<MovimientoDto>.Ok(dto, "Ajuste registrado exitosamente");
+                if (stockMover > 0)
+                {
+                    var movimientoTraslado = new MovimientoInventario
+                    {
+                        IdInsumo = request.IdInsumo,
+                        TipoMovimiento = TipoMovimiento.Traslado,
+                        Cantidad = stockMover,
+                        Fecha = fechaActual.AddSeconds(1),
+                        Observacion = "Traslado de ubicación " + request.Observacion,
+                        IdUbicacion = request.IdNuevaUbicacion.Value,
+                        IdUbicacionAnterior = request.IdUbicacion,
+                        UsuarioRegistro = request.UsuarioRegistro
+                    };
+                    createdTraslado = await _movRepo.AddAsync(movimientoTraslado);
+                    await _auditoriaService.LogAsync("TRASLADO", "Movimientos", $"Se trasladó TODO el stock ({stockMover} unidades) del insumo ID {request.IdInsumo} a la ubicación ID {request.IdNuevaUbicacion.Value} (anterior ID {request.IdUbicacion})", request.UsuarioRegistro);
+                }
+            }
+
+            // Mapear a DTO (devolvemos el principal)
+            var dto = await MapToDtoAsync(createdTraslado ?? createdAjuste!);
+
+            return OperationResult<MovimientoDto>.Ok(dto, "Ajuste/Traslado registrado exitosamente");
         }
 
         // ==========================================

@@ -1,4 +1,7 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { inject } from '@angular/core';
+import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { Component, Inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -21,54 +24,42 @@ import { Observable, startWith, map } from 'rxjs';
   styleUrl: './popup-insumos.component.scss'
 })
 export class PopupInsumosComponent implements OnInit {
+  fuseConfirmation = inject(FuseConfirmationService);
+
   form: FormGroup;
   categorias: CatalogoDto[] = [];
   empaquetamientos: CatalogoDto[] = [];
-  ubicaciones: CatalogoDto[] = [];
+  todasLasUnidades: any[] = [];
 
   filteredCategorias!: Observable<CatalogoDto[]>;
   filteredEmpaquetamientos!: Observable<CatalogoDto[]>;
-  filteredUbicaciones!: Observable<CatalogoDto[]>;
 
-  unidadesPorCategoria: { [key: string]: string[] } = {
-    'resistencia': ['OHM', 'KOHM', 'MOHM'],
-    'condensador': ['PF', 'NF', 'UF', 'MF', 'F'],
-    'inductor': ['NH', 'UH', 'MH', 'H'],
-    'bobina': ['NH', 'UH', 'MH', 'H'],
-    'transistor': ['NPN', 'PNP', 'MOSFET'],
-    'diodo': ['V', 'A', 'W'],
-    'bateria': ['V', 'MAH', 'AH'],
-    'pila': ['V', 'MAH', 'AH'],
-    'motor': ['RPM', 'V', 'W'],
-    'display': ['PULGADAS', 'PIXELES', 'CARACTERES'],
-    'pantalla': ['PULGADAS', 'PIXELES', 'CARACTERES'],
-    'cable': ['M', 'CM', 'MM', 'AWG', 'CALIBRE'],
-    'microcontrolador': ['BITS', 'MHZ', 'KB', 'MB'],
-    'integrado': ['PINS', 'BITS', 'MHZ'],
-    'potenciometro': ['OHM', 'KOHM', 'MOHM']
-  };
   unidadesDisponibles: string[] = [];
+
+  monedasOpciones: string[] = ['COP', 'USD', 'EUR'];
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: any,
     private ref: MatDialogRef<PopupInsumosComponent>,
     private fb: FormBuilder,
     private insumoService: InsumoService,
-    private catalogoService: CatalogoService
+    private catalogoService: CatalogoService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     this.form = this.fb.group({
       idCategoria: ['', Validators.required],
       codigoFabrica: ['', Validators.required],
       idEmpaquetamiento: ['', Validators.required],
-      idUbicacion: ['', Validators.required],
-      descripcion: [''],
+      descripcion: ['', [Validators.maxLength(500)]],
       precioReferencia: [null],
+      moneda: ['COP'],
+      // Dimensiones físicas (condicional)
       valorMedida: [null],
-      unidadMedida: [null],
+      unidadMedida: [''],
       // Helpers for Autocomplete display
       categoriaObj: [''],
-      empaquetamientoObj: [''],
-      ubicacionObj: [''],
+      empaquetamientoObj: ['']
     });
   }
 
@@ -82,24 +73,48 @@ export class PopupInsumosComponent implements OnInit {
       this.empaquetamientos = r;
       this.initEmpaquetamientosFilter();
       this.patchInitialData('Empaquetamiento', this.empaquetamientos);
+
+      // En modo edición, filtrar los empaquetamientos por la categoría ya cargada
+      const idCat = this.form.get('idCategoria')?.value;
+      if (idCat) {
+        this.actualizarEmpaquetamientosDisponiblesPorId(idCat);
+      }
     });
-    this.catalogoService.getAll('ubicacion').subscribe(r => {
-      this.ubicaciones = r;
-      this.initUbicacionesFilter();
-      this.patchInitialData('Ubicacion', this.ubicaciones);
+    this.catalogoService.getAll('unidad-medida').subscribe((r: any[]) => {
+      this.todasLasUnidades = r;
+      const idCat = this.form.get('idCategoria')?.value;
+      if (idCat) {
+        this.actualizarUnidadesDisponiblesPorId(idCat);
+      }
     });
 
     if (this.data?.data) {
       this.form.patchValue(this.data.data);
+      if (!this.data.data.moneda) {
+        this.form.get('moneda')?.setValue('COP');
+      }
     }
   }
 
   private patchInitialData(fieldSuffix: string, list: CatalogoDto[]) {
     if (this.data?.data) {
-      const id = this.data.data[`id${fieldSuffix}`];
+      // Intentar leer tanto en camelCase como en PascalCase por si el backend serializa distinto
+      const rawData = this.data.data as any;
+      const id = rawData[`id${fieldSuffix}`] || rawData[`Id${fieldSuffix}`];
+      
+      console.log(`Patching ${fieldSuffix}... ID from data:`, id, 'List count:', list.length);
       if (id) {
-        const obj = list.find(x => x.id === id);
-        if (obj) this.form.get(`${fieldSuffix.toLowerCase()}Obj`)?.setValue(obj);
+        const obj = list.find(x => x.id === id || x.id == id);
+        console.log(`Found obj for ${fieldSuffix}:`, obj);
+        if (obj) {
+          // Set value without emitting event to avoid triggering _filter unnecessarily
+          this.form.get(`${fieldSuffix.toLowerCase()}Obj`)?.setValue(obj, { emitEvent: false });
+          // Ensure the ID control is explicitly set to valid
+          this.form.get(`id${fieldSuffix}`)?.setValue(id);
+          this.cdr.detectChanges(); // Fix Angular Material floating label overlap
+        } else {
+          console.warn(`Object not found in list for ${fieldSuffix} with ID ${id}`);
+        }
       }
     }
   }
@@ -107,89 +122,78 @@ export class PopupInsumosComponent implements OnInit {
   initCategoriasFilter() {
     this.filteredCategorias = this.form.get('categoriaObj')!.valueChanges.pipe(
       startWith(''),
-      map(val => {
-        const results = this._filter(val, this.categorias, 'idCategoria');
-        this.actualizarUnidadesDisponibles(val);
-        return results;
-      })
+      map(val => this._filter(val, this.categorias))
     );
+    this.setupControlSync('categoriaObj', 'idCategoria', this.categorias, true);
   }
 
-  actualizarUnidadesDisponibles(val: string | CatalogoDto | null) {
-    let catName = '';
-    if (val && typeof val !== 'string' && val.nombre) {
-      catName = val.nombre;
-    } else if (this.form.get('categoriaObj')?.value?.nombre) {
-       catName = this.form.get('categoriaObj')?.value?.nombre;
-    }
-
-    if (catName) {
-      const lowerCatName = catName.toLowerCase();
-      // Buscar coincidencia parcial (ej. "Resistencias de precisión" debe coincidir con "resistencia")
-      // Primero intenta coincidencia directa, luego por keywords parciales
-      const key = Object.keys(this.unidadesPorCategoria).find(k => lowerCatName.includes(k));
-      // Si no hay coincidencia directa, intentar con keywords adicionales
-      const extendedKey = !key ? this._findExtendedKey(lowerCatName) : key;
-      this.unidadesDisponibles = extendedKey ? this.unidadesPorCategoria[extendedKey] : ['UN', 'M', 'CM', 'MM', 'G', 'KG', 'L', 'ML', 'V', 'A', 'W', 'HZ'];
+  actualizarUnidadesDisponiblesPorId(idCategoria: number | null) {
+    if (idCategoria) {
+      this.unidadesDisponibles = this.todasLasUnidades
+        .filter(u => u.idCategoria === idCategoria)
+        .map(u => u.nombre);
     } else {
       this.unidadesDisponibles = [];
     }
 
-    // Limpiar si la unidad actual ya no está disponible
     const currentUnidad = this.form.get('unidadMedida')?.value;
     if (currentUnidad && this.unidadesDisponibles.length > 0 && !this.unidadesDisponibles.includes(currentUnidad)) {
       this.form.get('unidadMedida')?.setValue(null);
     }
   }
 
+  /** Carga los empaquetamientos válidos para la categoría seleccionada. */
+  actualizarEmpaquetamientosDisponiblesPorId(idCategoria: number | null) {
+    const cargar = (list: any[]) => {
+      // En modo edición, conservar el empaquetamiento actual aunque no esté en la lista filtrada
+      const currentEmp = this.form.get('idEmpaquetamiento')?.value;
+      if (currentEmp && !list.find(x => x.id === currentEmp)) {
+        const cur = { id: currentEmp, nombre: this.data?.data?.empaquetamientoNombre || ('Empaque ' + currentEmp) };
+        list = [...list, cur];
+      }
+      this.empaquetamientos = list;
+      this.initEmpaquetamientosFilter();
+    };
+
+    if (idCategoria) {
+      this.catalogoService.getByCategoria('empaquetamiento', idCategoria).subscribe(cargar);
+    } else {
+      this.catalogoService.getAll('empaquetamiento').subscribe(cargar);
+    }
+  }
+
   initEmpaquetamientosFilter() {
     this.filteredEmpaquetamientos = this.form.get('empaquetamientoObj')!.valueChanges.pipe(
       startWith(''),
-      map(val => this._filter(val, this.empaquetamientos, 'idEmpaquetamiento'))
+      map(val => this._filter(val, this.empaquetamientos))
     );
+    this.setupControlSync('empaquetamientoObj', 'idEmpaquetamiento', this.empaquetamientos);
   }
 
-  initUbicacionesFilter() {
-    this.filteredUbicaciones = this.form.get('ubicacionObj')!.valueChanges.pipe(
-      startWith(''),
-      map(val => this._filter(val, this.ubicaciones, 'idUbicacion'))
-    );
-  }
-
-  /** Buscar keywords extendidos para coincidencia parcial con nombres de categorías */
-  private _findExtendedKey(lowerCatName: string): string | undefined {
-    const extendedKeywords: { keywords: string[]; target: string }[] = [
-      { keywords: ['resist', 'potenciomet'], target: 'resistencia' },
-      { keywords: ['condens', 'capacit'], target: 'condensador' },
-      { keywords: ['induct', 'bobina'], target: 'inductor' },
-      { keywords: ['transist'], target: 'transistor' },
-      { keywords: ['diodo', 'led'], target: 'diodo' },
-      { keywords: ['bateria', 'pila', 'battery'], target: 'bateria' },
-      { keywords: ['motor'], target: 'motor' },
-      { keywords: ['display', 'pantalla', 'lcd', 'oled'], target: 'display' },
-      { keywords: ['cable', 'alambre', 'wire'], target: 'cable' },
-      { keywords: ['microcontro', 'mcu', 'arduino', 'esp'], target: 'microcontrolador' },
-      { keywords: ['integrado', 'ic', 'chip'], target: 'integrado' },
-    ];
-    for (const entry of extendedKeywords) {
-      if (entry.keywords.some(kw => lowerCatName.includes(kw))) {
-        return entry.target;
+  private setupControlSync(objControlName: string, idControlName: string, list: CatalogoDto[], isCategoria = false) {
+    this.form.get(objControlName)!.valueChanges.subscribe(val => {
+      let matchedId = null;
+      if (typeof val === 'string') {
+        const exactMatch = list.find(x => x.nombre.toLowerCase() === val.toLowerCase().trim());
+        if (exactMatch) matchedId = exactMatch.id;
+      } else if (val && val.id) {
+        matchedId = val.id;
       }
-    }
-    return undefined;
+
+      const currentId = this.form.get(idControlName)?.value;
+      if (currentId !== matchedId) {
+        this.form.get(idControlName)?.setValue(matchedId);
+        if (isCategoria) {
+          this.actualizarUnidadesDisponiblesPorId(matchedId);
+          this.actualizarEmpaquetamientosDisponiblesPorId(matchedId);
+        }
+      }
+    });
   }
 
-  private _filter(val: string | CatalogoDto, list: CatalogoDto[], targetControl: string): CatalogoDto[] {
-    let name = '';
-    if (typeof val === 'string') {
-      name = val;
-      if (name === '') this.form.get(targetControl)?.setValue(null); // Clear ID if text is empty
-    } else if (val && val.nombre) {
-      name = val.nombre;
-      this.form.get(targetControl)?.setValue(val.id); // Set ID
-    }
-
-    const filterValue = name.toLowerCase();
+  private _filter(val: string | CatalogoDto, list: CatalogoDto[]): CatalogoDto[] {
+    const text = typeof val === 'string' ? val : (val?.nombre || '');
+    const filterValue = text.toLowerCase().trim();
     return list.filter(option => option.nombre.toLowerCase().includes(filterValue));
   }
 
@@ -202,21 +206,78 @@ export class PopupInsumosComponent implements OnInit {
   }
 
   guardarInsumo(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.mostrarCamposRequeridos();
+      return;
+    }
     const req: InsumoRequest = this.form.value;
     this.insumoService.create(req).subscribe({
       next: () => this.ref.close(true),
-      error: (err) => console.error('Error al guardar insumo:', err)
+      error: (err: any) => this.mostrarErrorValidacion(err)
     });
   }
 
   actualizarInsumo(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.mostrarCamposRequeridos();
+      return;
+    }
     const id = this.data.data.id;
     const req: InsumoRequest = this.form.value;
     this.insumoService.update(id, req).subscribe({
       next: () => this.ref.close(true),
-      error: (err) => console.error('Error al actualizar insumo:', err)
+      error: (err: any) => this.mostrarErrorValidacion(err)
     });
+  }
+
+  private mostrarCamposRequeridos(): void {
+    this.form.markAllAsTouched();
+    const invalidControls: string[] = [];
+    Object.keys(this.form.controls).forEach(key => {
+      if (this.form.controls[key].invalid) {
+        invalidControls.push(key);
+      }
+    });
+    console.log('Controles inválidos:', invalidControls, this.form.value);
+
+    this.fuseConfirmation.open({
+      title: 'Formulario Incompleto',
+      message: 'Por favor completa todos los campos requeridos y selecciona opciones válidas del buscador. Campos faltantes: ' + invalidControls.join(', '),
+      icon: { show: true, name: 'heroicons_outline:exclamation-circle', color: 'warn' },
+      actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
+    });
+  }
+
+  private mostrarErrorValidacion(err: any): void {
+    console.error('Error de validación:', err);
+    const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'Ocurrió un error al guardar el registro.');
+    
+    // Si es error de duplicado
+    if (msg.toLowerCase().includes('ya existe') || msg.toLowerCase().includes('duplicado')) {
+      const dialogRef = this.fuseConfirmation.open({
+        title: 'Código de Fábrica Duplicado',
+        message: msg + '<br/><br/>¿Deseas ir a la sección de Ingresos para registrar stock de este insumo?',
+        icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
+        actions: { 
+          confirm: { show: true, label: 'Ir a ingresos', color: 'primary' }, 
+          cancel: { show: true, label: 'Entendido' } 
+        }
+      });
+
+      dialogRef.afterClosed().subscribe((result) => {
+        if (result === 'confirmed') {
+          this.ref.close();
+          const codigo = this.form.get('codigoFabrica')?.value;
+          this.router.navigate(['/movimientos'], { queryParams: { tab: 'ingresos', q: codigo } });
+        }
+      });
+    } else {
+      this.fuseConfirmation.open({
+        title: 'Error de validación',
+        message: msg,
+        icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
+        actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
+      });
+    }
   }
 }

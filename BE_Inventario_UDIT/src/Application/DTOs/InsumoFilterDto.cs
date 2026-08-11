@@ -14,11 +14,17 @@ namespace Application.DTOs
         /// <summary>Filtrar por una o varias categorías (IDs)</summary>
         public List<int>? IdsCategoria { get; set; }
 
+        /// <summary>Filtrar por insumos específicos (IDs)</summary>
+        public List<int>? IdsInsumo { get; set; }
+
         /// <summary>Filtrar por uno o varios empaquetamientos (IDs)</summary>
         public List<int>? IdsEmpaquetamiento { get; set; }
 
         /// <summary>Filtrar por una o varias ubicaciones (IDs)</summary>
         public List<int>? IdsUbicacion { get; set; }
+
+        /// <summary>Filtrar por unidad de medida (nombres como "V", "A", etc)</summary>
+        public List<string>? UnidadesMedida { get; set; }
 
         // ==========================================
         // Rangos

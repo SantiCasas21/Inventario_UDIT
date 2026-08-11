@@ -12,10 +12,12 @@ namespace Application.Services
     public class ProveedorService : IProveedorService
     {
         private readonly IBaseRepository<Proveedor> _repository;
+        private readonly IAuditoriaService _auditoriaService;
 
-        public ProveedorService(IBaseRepository<Proveedor> repository)
+        public ProveedorService(IBaseRepository<Proveedor> repository, IAuditoriaService auditoriaService)
         {
             _repository = repository;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task<OperationResult<IEnumerable<ProveedorFullDto>>> GetAllAsync()
@@ -39,6 +41,12 @@ namespace Application.Services
             if (string.IsNullOrWhiteSpace(request.Nombre))
                 return OperationResult<ProveedorFullDto>.Fail("El nombre es obligatorio");
 
+            var allProveedores = await _repository.GetAllAsync();
+            if (allProveedores.Any(p => string.Equals(p.Nombre?.Trim(), request.Nombre?.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                return OperationResult<ProveedorFullDto>.Fail($"Ya existe un proveedor con el nombre '{request.Nombre}'");
+            }
+
             var entity = new Proveedor
             {
                 Nombre = request.Nombre,
@@ -47,6 +55,9 @@ namespace Application.Services
             };
 
             var created = await _repository.AddAsync(entity);
+            
+            await _auditoriaService.LogAsync("CREAR", "Proveedor", $"Se creó el proveedor '{request.Nombre}' con ID {created.Id}");
+            
             return OperationResult<ProveedorFullDto>.Ok(MapToDto(created), "Proveedor creado exitosamente");
         }
 
@@ -54,6 +65,12 @@ namespace Application.Services
         {
             if (string.IsNullOrWhiteSpace(request.Nombre))
                 return OperationResult<ProveedorFullDto>.Fail("El nombre es obligatorio");
+
+            var allProveedores = await _repository.GetAllAsync();
+            if (allProveedores.Any(p => p.Id != id && string.Equals(p.Nombre?.Trim(), request.Nombre?.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                return OperationResult<ProveedorFullDto>.Fail($"Ya existe un proveedor con el nombre '{request.Nombre}'");
+            }
 
             var entity = await _repository.GetByIdAsync(id);
             if (entity == null)
@@ -64,16 +81,36 @@ namespace Application.Services
             entity.Direccion = request.Direccion;
 
             await _repository.UpdateAsync(entity);
+            
+            await _auditoriaService.LogAsync("EDITAR", "Proveedor", $"Se editó el proveedor '{request.Nombre}' con ID {entity.Id}");
+            
             return OperationResult<ProveedorFullDto>.Ok(MapToDto(entity), "Proveedor actualizado exitosamente");
         }
 
         public async Task<OperationResult> DeleteAsync(int id)
         {
-            if (!await _repository.ExistsAsync(id))
-                return OperationResult.Fail("Proveedor no encontrado");
+            try
+            {
+                if (!await _repository.ExistsAsync(id))
+                    return OperationResult.Fail("Proveedor no encontrado");
 
-            await _repository.DeleteAsync(id);
-            return OperationResult.Ok("Proveedor eliminado exitosamente");
+                var entity = await _repository.GetByIdAsync(id);
+                string nombre = entity?.Nombre ?? id.ToString();
+                
+                await _repository.DeleteAsync(id);
+                
+                await _auditoriaService.LogAsync("ELIMINAR", "Proveedor", $"Se eliminó el proveedor '{nombre}' con ID {id}");
+                
+                return OperationResult.Ok("Proveedor eliminado exitosamente");
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+            {
+                return OperationResult.Fail("No se puede eliminar este Proveedor porque está asociado a movimientos en el sistema.");
+            }
+            catch (Exception ex)
+            {
+                return OperationResult.Fail($"Ocurrió un error al eliminar: {ex.Message}");
+            }
         }
 
         private static ProveedorFullDto MapToDto(Proveedor p) => new()

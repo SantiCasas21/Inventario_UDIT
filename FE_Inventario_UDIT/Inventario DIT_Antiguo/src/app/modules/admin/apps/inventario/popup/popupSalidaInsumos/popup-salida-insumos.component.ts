@@ -1,3 +1,5 @@
+import { inject } from '@angular/core';
+import { FuseConfirmationService } from '@fuse/services/confirmation';
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -19,6 +21,8 @@ import { MatNativeDateModule } from '@angular/material/core';
   styleUrl: './popup-salida-insumos.component.scss'
 })
 export class PopupSalidaInsumosComponent implements OnInit {
+  fuseConfirmation = inject(FuseConfirmationService);
+
   inputData:any;
   form:FormGroup;
   proyectos: CatalogoDto[] = [];
@@ -57,6 +61,15 @@ export class PopupSalidaInsumosComponent implements OnInit {
     this.movimientoService.registrarSalida(this.form.value).subscribe({
       next:() => {
         this.cerrarPopup();
+      },
+      error: (err:any) => {
+        const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'Ocurri\u00f3 un error al guardar el registro.');
+        this.fuseConfirmation.open({
+          title: 'Error de validaci\u00f3n',
+          message: msg,
+          icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
+          actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
+        });
       }
     });
   }

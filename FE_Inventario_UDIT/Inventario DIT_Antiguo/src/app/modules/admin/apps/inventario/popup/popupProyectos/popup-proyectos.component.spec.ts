@@ -1,3 +1,5 @@
+import { inject } from '@angular/core';
+import { FuseConfirmationService } from '@fuse/services/confirmation';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PopupProyectosComponent } from './popup-proyectos.component';

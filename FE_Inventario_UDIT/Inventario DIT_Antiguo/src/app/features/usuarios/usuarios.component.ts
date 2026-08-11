@@ -9,6 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatCardModule } from '@angular/material/card';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthService } from 'app/core/auth/auth.service';
 import { UserManagementService } from '@app/core/services/user-management.service';
@@ -21,7 +22,7 @@ import { FuseConfirmationService } from '@fuse/services/confirmation';
   imports: [
     CommonModule, ReactiveFormsModule,
     MatTableModule, MatButtonModule, MatIconModule, MatInputModule,
-    MatSelectModule, MatFormFieldModule, MatSnackBarModule, MatCardModule,
+    MatSelectModule, MatFormFieldModule, MatSnackBarModule, MatCardModule, MatTooltipModule
   ],
   templateUrl: './usuarios.component.html',
   styleUrls: ['./usuarios.component.scss']

@@ -12,6 +12,9 @@ namespace Application.Common.Models
         /// <summary>Mensaje descriptivo (error o confirmación)</summary>
         public string Message { get; set; } = string.Empty;
 
+        /// <summary>Código del error (opcional, para manejo específico en frontend)</summary>
+        public string? Code { get; set; }
+
         /// <summary>Los datos devueltos (null si falló)</summary>
         public T? Data { get; set; }
 
@@ -20,8 +23,8 @@ namespace Application.Common.Models
         public static OperationResult<T> Ok(T data, string message = "Operación exitosa")
             => new() { Success = true, Message = message, Data = data };
 
-        public static OperationResult<T> Fail(string message)
-            => new() { Success = false, Message = message, Data = default };
+        public static OperationResult<T> Fail(string message, string? code = null)
+            => new() { Success = false, Message = message, Code = code, Data = default };
     }
 
     /// <summary>
@@ -32,10 +35,13 @@ namespace Application.Common.Models
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
 
+        /// <summary>Código del error (opcional, para manejo específico en frontend)</summary>
+        public string? Code { get; set; }
+
         public static OperationResult Ok(string message = "Operación exitosa")
             => new() { Success = true, Message = message };
 
-        public static OperationResult Fail(string message)
-            => new() { Success = false, Message = message };
+        public static OperationResult Fail(string message, string? code = null)
+            => new() { Success = false, Message = message, Code = code };
     }
 }

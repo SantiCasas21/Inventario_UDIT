@@ -17,6 +17,23 @@ export class CatalogoService {
     return this.api.get<CatalogoDto[]>(endpoint);
   }
 
+  /**
+   * Obtiene los registros de un catálogo filtrados por categoría.
+   * Ej: getByCategoria('empaquetamiento', 3) → GET empaquetamiento/por-categoria/3
+   */
+  getByCategoria(endpoint: string, idCategoria: number): Observable<CatalogoDto[]> {
+    return this.api.get<CatalogoDto[]>(`${endpoint}/por-categoria/${idCategoria}`);
+  }
+
+  /**
+   * Obtiene los registros de un catálogo filtrados por múltiples categorías.
+   * Ej: getByCategorias('empaquetamiento', [1, 2]) -> GET empaquetamiento/por-categorias?ids=1&ids=2
+   */
+  getByCategorias(endpoint: string, idsCategoria: number[]): Observable<CatalogoDto[]> {
+    const params = idsCategoria.map(id => `ids=${id}`).join('&');
+    return this.api.get<CatalogoDto[]>(`${endpoint}/por-categorias?${params}`);
+  }
+
   getById(endpoint: string, id: number): Observable<CatalogoDto> {
     return this.api.get<CatalogoDto>(`${endpoint}/${id}`);
   }

@@ -41,11 +41,11 @@ namespace API.Controllers
         public async Task<IActionResult> Create([FromBody] CatalogoRequestDto request)
         {
             if (request == null)
-                return BadRequest(Application.Common.Models.OperationResult.Fail("El cuerpo de la solicitud no puede estar vacío"));
+                return new ContentResult { StatusCode = 400, Content = "{\"message\":\"" + "El cuerpo de la solicitud no puede estar vacío" + "\"}", ContentType = "application/json" };
 
             var result = await _service.CreateAsync(request);
             if (!result.Success)
-                return BadRequest(result);
+                return new ContentResult { StatusCode = 400, Content = "{\"message\":\"" + result.Message + "\"}", ContentType = "application/json" };
 
             return CreatedAtAction(nameof(GetById), new { id = result.Data?.Id }, result);
         }
@@ -56,14 +56,14 @@ namespace API.Controllers
         public async Task<IActionResult> Update(int id, [FromBody] CatalogoRequestDto request)
         {
             if (request == null)
-                return BadRequest(Application.Common.Models.OperationResult.Fail("El cuerpo de la solicitud no puede estar vacío"));
+                return new ContentResult { StatusCode = 400, Content = "{\"message\":\"" + "El cuerpo de la solicitud no puede estar vacío" + "\"}", ContentType = "application/json" };
 
             var result = await _service.UpdateAsync(id, request);
             if (!result.Success)
             {
                 if (result.Message.Contains("no encontrado"))
                     return NotFound(result);
-                return BadRequest(result);
+                return new ContentResult { StatusCode = 400, Content = "{\"message\":\"" + result.Message + "\"}", ContentType = "application/json" };
             }
 
             return Ok(result);
@@ -76,7 +76,7 @@ namespace API.Controllers
         {
             var result = await _service.DeleteAsync(id);
             if (!result.Success)
-                return NotFound(result);
+                return new ContentResult { StatusCode = 400, Content = "{\"message\":\"" + result.Message + "\"}", ContentType = "application/json" };
 
             return Ok(result);
         }

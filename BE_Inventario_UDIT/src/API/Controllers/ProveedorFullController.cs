@@ -42,7 +42,7 @@ namespace API.Controllers
 
             var result = await _service.CreateAsync(request);
             if (!result.Success)
-                return BadRequest(result);
+                return new ContentResult { StatusCode = 400, Content = "{\"message\":\"" + result.Message + "\"}", ContentType = "application/json" };
 
             return CreatedAtAction(nameof(GetById), new { id = result.Data?.Id }, result);
         }
@@ -59,7 +59,7 @@ namespace API.Controllers
             {
                 if (result.Message.Contains("no encontrado"))
                     return NotFound(result);
-                return BadRequest(result);
+                return new ContentResult { StatusCode = 400, Content = "{\"message\":\"" + result.Message + "\"}", ContentType = "application/json" };
             }
             return Ok(result);
         }
@@ -70,7 +70,7 @@ namespace API.Controllers
         {
             var result = await _service.DeleteAsync(id);
             if (!result.Success)
-                return NotFound(result);
+                return new ContentResult { StatusCode = 400, Content = "{\"message\":\"" + result.Message + "\"}", ContentType = "application/json" };
             return Ok(result);
         }
     }

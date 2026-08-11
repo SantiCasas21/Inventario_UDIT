@@ -63,12 +63,15 @@
   border: 1px solid #ffcdd2;
 }
 
-/* Admin pages shared styles */
+/* Admin pages shared styles — flex column for vertical fill + centered via parent flex justify-content */
 .admin-page {
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  max-width: 1100px;
+  max-width: 1920px;
   margin: 0 auto;
   padding: 24px;
+  min-height: calc(100vh - 48px);
 }
 .admin-page .page-header {
   margin-bottom: 20px;
@@ -126,4 +129,377 @@
   border: 1px solid #f0f0f0;
   margin-bottom: 16px;
   overflow: hidden;
+}
+
+/* ==========================================================================
+   Premium UI Global Classes (Glassmorphism, Gradients, Badges, Animations)
+   ========================================================================== */
+
+/* Backgrounds & Cards */
+.premium-bg {
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+}
+.glass-card {
+    background: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07) !important;
+}
+
+/* Text */
+.gradient-text {
+    background: linear-gradient(to right, var(--udit-blue-dark), var(--udit-blue-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Animations */
+.table-row-animate {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.table-row-animate:hover {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    z-index: 10;
+    position: relative;
+}
+
+/* Global Table Overrides for Premium look */
+.mat-mdc-table.premium-table {
+    background: transparent !important;
+}
+.premium-table .mat-mdc-header-cell {
+    color: #4b5563 !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e5e7eb !important;
+    background: rgba(255,255,255,0.8) !important;
+    white-space: normal !important;
+    word-break: normal !important;
+}
+.premium-table .mat-mdc-cell {
+    border-bottom: 1px solid rgba(229, 231, 235, 0.5) !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    white-space: normal !important;
+    word-break: normal !important;
+}
+
+/* Protegemos columnas clave para que NO se partan ni se envuelvan */
+.premium-table .mat-column-id,
+.premium-table .mat-column-fecha,
+.premium-table .mat-column-tipoMovimiento,
+.premium-table .mat-column-stockActual,
+.premium-table .mat-column-cantidadAfectada,
+.premium-table .mat-column-codigoFabrica {
+    white-space: nowrap !important;
+    width: 1%;
+}
+
+/* Status Badges */
+.badge {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.badge-crear, .badge-ingreso, .badge-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3); }
+.badge-ajuste, .badge-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3); }
+.badge-editar { background: linear-gradient(135deg, #64748b 0%, #475569 100%); color: white; box-shadow: 0 2px 6px rgba(100, 116, 139, 0.3); }
+.badge-eliminar, .badge-salida, .badge-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3); }
+.badge-unificar { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: white; box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3); }
+.badge-traslado { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; box-shadow: 0 2px 6px rgba(14, 165, 233, 0.3); }
+
+
+/* Avatar / Initials */
+.avatar-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    color: var(--udit-blue-dark);
+    font-weight: 700;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 4px rgba(67, 56, 202, 0.15);
+}
+
+.avatar-admin { background: linear-gradient(135deg, #fecaca 0%, #f87171 100%); color: #7f1d1d; }
+.avatar-developer { background: linear-gradient(135deg, #bfdbfe 0%, #60a5fa 100%); color: #1e3a8a; }
+.avatar-assistant { background: linear-gradient(135deg, #fef08a 0%, #fcd34d 100%); color: #713f12; }
+.avatar-user { background: linear-gradient(135deg, #bbf7d0 0%, #4ade80 100%); color: #14532d; }
+
+/* Centrado de tablas para que no se acumulen a un lado */
+.premium-table {
+    width: 100%;
+}
+.premium-table .mat-mdc-header-cell, 
+.premium-table .mat-mdc-cell {
+    text-align: center !important;
+    vertical-align: middle;
+}
+/* Alinear a la izquierda específicamente el nombre si es necesario */
+.premium-table .text-left {
+    text-align: left !important;
+}
+
+/* Tooltip truncation for details */
+.details-cell {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+    color: #4b5563;
+}
+
+/* ==========================================================================
+   Enhanced Premium Badges — Categorías con colores variados
+   ========================================================================== */
+
+/* Badge de categoría — con gradiente suave y sombra */
+.badge-categoria {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    /* Fallback visible si no hay variante de color */
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* Variantes de color para categorías de insumos (Mucha variedad y vida) */
+.badge-cat-resistencia   { background: linear-gradient(135deg, #eff6ff 0%, #bfdbfe 100%); color: #1e3a8a; border: 1px solid #93c5fd; } /* Blue */
+.badge-cat-condensador   { background: linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%); color: #831843; border: 1px solid #f9a8d4; } /* Pink */
+.badge-cat-inductor      { background: linear-gradient(135deg, #ecfdf5 0%, #a7f3d0 100%); color: #064e3b; border: 1px solid #6ee7b7; } /* Emerald */
+.badge-cat-transistor    { background: linear-gradient(135deg, #fffbeb 0%, #fde68a 100%); color: #78350f; border: 1px solid #fcd34d; } /* Amber */
+.badge-cat-diodo         { background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); color: #7c2d12; border: 1px solid #fdba74; } /* Orange */
+.badge-cat-cable         { background: linear-gradient(135deg, #eef2ff 0%, #c7d2fe 100%); color: #312e81; border: 1px solid #a5b4fc; } /* Indigo */
+.badge-cat-micro         { background: linear-gradient(135deg, #f5f3ff 0%, #ddd6fe 100%); color: #4c1d95; border: 1px solid #c4b5fd; } /* Violet */
+.badge-cat-herramienta   { background: linear-gradient(135deg, #faf5ff 0%, #e9d5ff 100%); color: #581c87; border: 1px solid #d8b4fe; } /* Purple */
+.badge-cat-otro          { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); color: #0f172a; border: 1px solid #cbd5e1; } /* Slate */
+
+/* Badges de Familia de Empaquetamiento (Armonizadas con las categorías que agrupan) */
+/* Pasivos SMD -> Combina con Resistencia/Condensador (Azul/Rosa) -> Usamos un Cyan vibrante */
+.badge-familia-pasivos    { background: linear-gradient(135deg, #ecfeff 0%, #a5f3fc 100%); color: #164e63; border: 1px solid #67e8f9; }
+/* THT General -> Combina con Inductor (Esmeralda) -> Usamos un Teal profundo */
+.badge-familia-tht        { background: linear-gradient(135deg, #f0fdfa 0%, #99f6e4 100%); color: #134e4a; border: 1px solid #5eead4; }
+/* Discretos -> Combina con Transistor/Diodo (Naranja) -> Usamos un Naranja rojizo */
+.badge-familia-discretos  { background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); color: #7f1d1d; border: 1px solid #fca5a5; }
+/* ICs -> Combina con Micro (Violeta) -> Usamos un Fucsia/Púrpura fuerte */
+.badge-familia-ics        { background: linear-gradient(135deg, #fdf4ff 0%, #f5d0fe 100%); color: #701a75; border: 1px solid #e879f9; }
+/* Genéricos -> Gris elegante */
+.badge-familia-genericos  { background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%); color: #1e293b; border: 1px solid #94a3b8; }
+
+/* ==========================================================================
+   Stock Badges con efecto GLOSS / Brillo premium
+   ========================================================================== */
+
+.stock-badge {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 800;
+    border-radius: 9999px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Barrido de brillo animado en los badges de stock */
+.stock-badge::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -50%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
+    transform: skewX(-20deg);
+    animation: gloss-sweep 3s ease-in-out infinite;
+}
+
+@keyframes gloss-sweep {
+    0%, 100% { left: -50%; }
+    50% { left: 100%; }
+}
+
+.stock-badge.disponible {
+    background: linear-gradient(135deg, #636F03 0%, #7a8804 50%, #636F03 100%);
+    color: white;
+}
+
+.stock-badge.critico {
+    background: linear-gradient(135deg, #B11F16 0%, #d4251a 50%, #B11F16 100%);
+    color: white;
+}
+
+.stock-badge.agotado {
+    background: linear-gradient(135deg, #6b7280 0%, #9ca3af 50%, #6b7280 100%);
+    color: white;
+}
+
+/* ==========================================================================
+   Botón Gloss / Premium — Efecto brillo en botones principales
+   ========================================================================== */
+
+.btn-gloss {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-gloss::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    transform: skewX(-20deg);
+    animation: gloss-btn-sweep 4s ease-in-out infinite;
+}
+
+@keyframes gloss-btn-sweep {
+    0%, 100% { left: -75%; }
+    50% { left: 150%; }
+}
+
+/* Botón primary con gloss — verde institucional */
+.mat-mdc-flat-button.mat-primary.btn-gloss,
+.mat-mdc-raised-button.mat-primary.btn-gloss {
+    background: linear-gradient(135deg, #636F03 0%, #7a8804 50%, #636F03 100%) !important;
+    box-shadow: 0 4px 15px rgba(99, 111, 3, 0.3) !important;
+}
+
+.mat-mdc-flat-button.mat-primary.btn-gloss:hover,
+.mat-mdc-raised-button.mat-primary.btn-gloss:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 111, 3, 0.4) !important;
+}
+
+/* Botón warn (rojo) con gloss */
+.mat-mdc-flat-button.mat-warn.btn-gloss,
+.mat-mdc-raised-button.mat-warn.btn-gloss {
+    background: linear-gradient(135deg, #B11F16 0%, #d4251a 50%, #B11F16 100%) !important;
+    box-shadow: 0 4px 15px rgba(177, 31, 22, 0.3) !important;
+}
+
+.mat-mdc-flat-button.mat-warn.btn-gloss:hover,
+.mat-mdc-raised-button.mat-warn.btn-gloss:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(177, 31, 22, 0.4) !important;
+}
+
+/* ==========================================================================
+   Tipo-Badge con gradiente y gloss (INGRESO, SALIDA, AJUSTE, UNIFICACIÓN)
+   ========================================================================== */
+.tipo-badge {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
+}
+.tipo-badge.ingreso {
+    background: linear-gradient(135deg, #ebf5e8 0%, #d4edda 100%);
+    color: #636F03;
+    box-shadow: 0 2px 8px rgba(99, 111, 3, 0.2);
+}
+.tipo-badge.salida {
+    background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+    color: #B11F16;
+    box-shadow: 0 2px 8px rgba(177, 31, 22, 0.2);
+}
+.tipo-badge.ajuste {
+    background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+    color: #E95D0F;
+    box-shadow: 0 2px 8px rgba(233, 93, 15, 0.2);
+}
+.tipo-badge.unificacion {
+    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+    color: #6b21a8;
+    box-shadow: 0 2px 8px rgba(107, 33, 168, 0.2);
+}
+
+/* ==========================================================================
+   Botones premium para el Filtro Paramétrico
+   ========================================================================== */
+.btn-apply {
+    position: relative;
+    overflow: hidden;
+    padding: 10px 28px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #636F03 0%, #7a8804 50%, #636F03 100%) !important;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(99, 111, 3, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.btn-apply::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    transform: skewX(-20deg);
+    animation: gloss-btn-sweep 4s ease-in-out infinite;
+}
+.btn-apply:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 111, 3, 0.4) !important;
+}
+.btn-reset-all {
+    position: relative;
+    overflow: hidden;
+    padding: 10px 24px;
+    border: 2px solid #ACAA00;
+    border-radius: 8px;
+    background: transparent;
+    color: #636F03;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.btn-reset-all:hover {
+    background: rgba(172, 170, 0, 0.08);
+    border-color: #636F03;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 111, 3, 0.15);
 }

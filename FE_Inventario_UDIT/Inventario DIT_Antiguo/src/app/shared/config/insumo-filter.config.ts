@@ -24,6 +24,9 @@ export const INSUMO_FILTER_CONFIG: ParametricFilterConfig = {
       label: 'Empaquetamiento',
       type: 'multi-select',
       optionsUrl: 'empaquetamiento',
+      // Las opciones de empaquetamiento se recargan según la categoría seleccionada
+      dependsOn: 'idsCategoria',
+      optionsByCategoriaUrl: 'empaquetamiento',
       searchable: true,
       searchPlaceholder: 'Buscar...',
     },
@@ -39,6 +42,15 @@ export const INSUMO_FILTER_CONFIG: ParametricFilterConfig = {
       key: 'valorMedidaRange',
       label: 'Valor Unidad',
       type: 'range-number',
+    },
+    {
+      key: 'unidadesMedida',
+      label: 'Unidad de Medida',
+      type: 'multi-select',
+      optionsUrl: 'unidad-medida', // calls CatalogoService.getAll('unidad-medida') or custom service handled by ParametricFilterComponent
+      optionsValueField: 'nombre',
+      searchable: true,
+      searchPlaceholder: 'Buscar unidad...',
     },
   ],
 };

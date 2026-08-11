@@ -110,7 +110,7 @@ namespace Application.Services
             int umbral = 10)
         {
             var stockGeneral = await _movRepo.GetStockGeneralDbAsync();
-            var insumos = await _insumoRepo.GetAllAsync("Categoria", "Ubicacion");
+            var insumos = await _insumoRepo.GetAllAsync("Categoria");
 
             var criticos = stockGeneral
                 .Where(s => s.StockActual <= umbral)
@@ -120,7 +120,7 @@ namespace Application.Services
                     CodigoFabrica = i.CodigoFabrica,
                     Descripcion = i.Descripcion,
                     Categoria = i.Categoria?.Nombre ?? "",
-                    Ubicacion = i.Ubicacion?.Nombre ?? "",
+                    Ubicacion = "Múltiples",
                     StockActual = s.StockActual,
                     Umbral = umbral
                 })
@@ -220,6 +220,10 @@ namespace Application.Services
             var proveedores = (await _proveedorRepo.GetAllAsync()).ToList();
             var stockBajoResult = await GetStockCriticoAsync(10);
 
+            // Obtener stock general para enriquecer datos de irregularidades
+            var stockGeneral = await _movRepo.GetStockGeneralDbAsync();
+            var stockDict = stockGeneral.ToDictionary(s => s.IdInsumo);
+
             // Solo los últimos 10 movimientos (con paginación en BD, no en memoria)
             var ultimosMovsPaged = await _movRepo.FilterPagedAsync(new MovimientoFilterDto
             {
@@ -253,7 +257,50 @@ namespace Application.Services
                     Tipo = "duplicado",
                     Descripcion = $"Código de fábrica '{grupo.Key}' aparece {grupo.Count()} veces (IDs: {ids})",
                     InsumoRef = grupo.Key,
-                    Severidad = "alta"
+                    Severidad = "alta",
+                    Detalles = grupo.Select(i => new InsumoIrregularidadDto
+                    {
+                        Id = i.Id,
+                        CodigoFabrica = i.CodigoFabrica,
+                        Stock = stockDict.GetValueOrDefault(i.Id)?.StockActual ?? 0,
+                        Ubicacion = "Varias"
+                    }).ToList()
+                });
+            }
+
+            // 1.5 Insumos Unificados (Resueltos)
+            var movsUnificacion = await _movRepo.FindAsync(m => m.TipoMovimiento == Domain.Enums.TipoMovimiento.Unificacion);
+            var unifiedIds = movsUnificacion.Select(m => m.IdInsumo).Distinct().ToHashSet();
+
+            foreach (var insumo in insumos.Where(i => unifiedIds.Contains(i.Id)))
+            {
+                var stocksPorUbi = await _movRepo.GetStockPorUbicacionAsync(insumo.Id);
+                var detalles = stocksPorUbi != null && stocksPorUbi.Any() 
+                    ? stocksPorUbi.Select(u => new InsumoIrregularidadDto
+                    {
+                        Id = insumo.Id,
+                        CodigoFabrica = insumo.CodigoFabrica,
+                        Stock = u.Stock,
+                        Ubicacion = u.UbicacionNombre
+                    }).ToList()
+                    : new List<InsumoIrregularidadDto> 
+                    { 
+                        new InsumoIrregularidadDto 
+                        { 
+                            Id = insumo.Id, 
+                            CodigoFabrica = insumo.CodigoFabrica, 
+                            Stock = 0, 
+                            Ubicacion = "Sin stock" 
+                        } 
+                    };
+
+                irregularidades.Add(new IrregularidadDto
+                {
+                    Tipo = "resuelto",
+                    Descripcion = $"Insumo '{insumo.CodigoFabrica}' (ID: {insumo.Id}) fue unificado exitosamente.",
+                    InsumoRef = insumo.CodigoFabrica,
+                    Severidad = "baja",
+                    Detalles = detalles
                 });
             }
 
@@ -265,7 +312,13 @@ namespace Application.Services
                     Tipo = "sin_descripcion",
                     Descripcion = $"Insumo '{insumo.CodigoFabrica}' no tiene descripción",
                     InsumoRef = insumo.CodigoFabrica,
-                    Severidad = "media"
+                    Severidad = "media",
+                    Detalles = new List<InsumoIrregularidadDto>
+                    {
+                        new() { Id = insumo.Id, CodigoFabrica = insumo.CodigoFabrica,
+                                Stock = stockDict.GetValueOrDefault(insumo.Id)?.StockActual ?? 0,
+                                Ubicacion = "Varias" }
+                    }
                 });
             }
 
@@ -277,23 +330,35 @@ namespace Application.Services
                     Tipo = "precio_cero",
                     Descripcion = $"Insumo '{insumo.CodigoFabrica}' tiene precio {insumo.PrecioReferencia?.ToString() ?? "sin definir"}",
                     InsumoRef = insumo.CodigoFabrica,
-                    Severidad = "media"
+                    Severidad = "media",
+                    Detalles = new List<InsumoIrregularidadDto>
+                    {
+                        new() { Id = insumo.Id, CodigoFabrica = insumo.CodigoFabrica,
+                                Stock = stockDict.GetValueOrDefault(insumo.Id)?.StockActual ?? 0,
+                                Ubicacion = "Varias" }
+                    }
                 });
             }
 
             // 4. Stock negativo (consultar stock general)
             try
             {
-                var stockGeneral = await _movRepo.GetStockGeneralDbAsync();
                 var stocksNegativos = stockGeneral.Where(s => s.StockActual < 0).ToList();
                 foreach (var st in stocksNegativos)
                 {
+                    var insumoNeg = insumos.FirstOrDefault(i => i.Id == st.IdInsumo);
                     irregularidades.Add(new IrregularidadDto
                     {
                         Tipo = "stock_negativo",
-                        Descripcion = $"Insumo ID {st.IdInsumo} tiene stock negativo: {st.StockActual}",
+                        Descripcion = $"Insumo '{insumoNeg?.CodigoFabrica ?? "ID " + st.IdInsumo}' tiene stock negativo: {st.StockActual}",
                         InsumoRef = st.IdInsumo.ToString(),
-                        Severidad = "alta"
+                        Severidad = "alta",
+                        Detalles = new List<InsumoIrregularidadDto>
+                        {
+                            new() { Id = st.IdInsumo, CodigoFabrica = insumoNeg?.CodigoFabrica ?? "",
+                                    Stock = st.StockActual,
+                                    Ubicacion = "Varias" }
+                        }
                     });
                 }
             }

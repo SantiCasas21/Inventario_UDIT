@@ -21,12 +21,10 @@ namespace Domain.Entities
         public int IdEmpaquetamiento { get; set; }
         public Empaquetamiento Empaquetamiento { get; set; } = null!;
 
-        public int IdUbicacion { get; set; }
-        public Ubicacion Ubicacion { get; set; } = null!;
-
         public string? Descripcion { get; set; }
 
         public decimal? PrecioReferencia { get; set; }
+        public string? Moneda { get; set; } = "COP";
 
         public decimal? ValorMedida { get; set; }
         public string? UnidadMedida { get; set; }

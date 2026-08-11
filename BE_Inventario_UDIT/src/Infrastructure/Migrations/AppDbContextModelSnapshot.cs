@@ -97,6 +97,69 @@ namespace Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Auditoria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Accion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Detalles")
+                        .IsRequired()
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Modulo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Usuario")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "Fecha" }, "IX_Auditoria_Fecha");
+
+                    b.HasIndex(new[] { "Modulo" }, "IX_Auditoria_Modulo");
+
+                    b.ToTable("Auditoria", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.Catalogos.CategoriaFamiliaEmpaquetamiento", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("IdCategoria")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdFamiliaEmpaquetamiento")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdFamiliaEmpaquetamiento");
+
+                    b.HasIndex(new[] { "IdCategoria", "IdFamiliaEmpaquetamiento" }, "IX_CategoriaFamiliaEmpaquetamiento_Cat_Familia")
+                        .IsUnique();
+
+                    b.ToTable("CategoriaFamiliaEmpaquetamiento", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Catalogos.CategoriaInsumo", b =>
                 {
                     b.Property<int>("Id")
@@ -123,12 +186,17 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("IdFamiliaEmpaquetamiento")
+                        .HasColumnType("int");
+
                     b.Property<string>("Tipo")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex(new[] { "IdFamiliaEmpaquetamiento" }, "IX_Empaquetamiento_IdFamiliaEmpaquetamiento");
 
                     b.ToTable("Empaquetamiento", (string)null);
                 });
@@ -167,6 +235,27 @@ namespace Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("EstadoSalida", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.Catalogos.FamiliaEmpaquetamiento", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "Nombre" }, "IX_FamiliaEmpaquetamiento_Nombre")
+                        .IsUnique();
+
+                    b.ToTable("FamiliaEmpaquetamiento", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Catalogos.Personal", b =>
@@ -253,6 +342,29 @@ namespace Infrastructure.Migrations
                     b.ToTable("Ubicacion", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Catalogos.UnidadMedida", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("IdCategoria")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdCategoria");
+
+                    b.ToTable("UnidadMedida", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Insumo", b =>
                 {
                     b.Property<int>("Id")
@@ -276,8 +388,8 @@ namespace Infrastructure.Migrations
                     b.Property<int>("IdEmpaquetamiento")
                         .HasColumnType("int");
 
-                    b.Property<int>("IdUbicacion")
-                        .HasColumnType("int");
+                    b.Property<string>("Moneda")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("PrecioReferencia")
                         .HasColumnType("decimal(18,2)")
@@ -289,7 +401,7 @@ namespace Infrastructure.Migrations
                         .HasColumnName("UnidadMedida");
 
                     b.Property<decimal?>("ValorMedida")
-                        .HasColumnType("decimal(18,2)")
+                        .HasColumnType("decimal(18,6)")
                         .HasColumnName("ValorMedida");
 
                     b.HasKey("Id");
@@ -297,8 +409,6 @@ namespace Infrastructure.Migrations
                     b.HasIndex("IdCategoria");
 
                     b.HasIndex("IdEmpaquetamiento");
-
-                    b.HasIndex("IdUbicacion");
 
                     b.HasIndex(new[] { "CodigoFabrica" }, "IX_Insumo_CodigoFabrica");
 
@@ -336,6 +446,15 @@ namespace Infrastructure.Migrations
                     b.Property<int?>("IdTipoCompra")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdUbicacion")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdUbicacionAnterior")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Moneda")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Observacion")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -348,6 +467,10 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<string>("UsuarioRegistro")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("IdEstadoSalida");
@@ -357,6 +480,10 @@ namespace Infrastructure.Migrations
                     b.HasIndex("IdProyecto");
 
                     b.HasIndex("IdTipoCompra");
+
+                    b.HasIndex("IdUbicacion");
+
+                    b.HasIndex("IdUbicacionAnterior");
 
                     b.HasIndex(new[] { "Fecha" }, "IX_MovimientoInventario_Fecha");
 
@@ -534,6 +661,46 @@ namespace Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Catalogos.CategoriaFamiliaEmpaquetamiento", b =>
+                {
+                    b.HasOne("Domain.Entities.Catalogos.CategoriaInsumo", "Categoria")
+                        .WithMany()
+                        .HasForeignKey("IdCategoria")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Catalogos.FamiliaEmpaquetamiento", "FamiliaEmpaquetamiento")
+                        .WithMany("CategoriaFamilias")
+                        .HasForeignKey("IdFamiliaEmpaquetamiento")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Categoria");
+
+                    b.Navigation("FamiliaEmpaquetamiento");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Catalogos.Empaquetamiento", b =>
+                {
+                    b.HasOne("Domain.Entities.Catalogos.FamiliaEmpaquetamiento", "FamiliaEmpaquetamiento")
+                        .WithMany("Empaquetamientos")
+                        .HasForeignKey("IdFamiliaEmpaquetamiento")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("FamiliaEmpaquetamiento");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Catalogos.UnidadMedida", b =>
+                {
+                    b.HasOne("Domain.Entities.Catalogos.CategoriaInsumo", "Categoria")
+                        .WithMany()
+                        .HasForeignKey("IdCategoria")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Categoria");
+                });
+
             modelBuilder.Entity("Domain.Entities.Insumo", b =>
                 {
                     b.HasOne("Domain.Entities.Catalogos.CategoriaInsumo", "Categoria")
@@ -548,17 +715,9 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Catalogos.Ubicacion", "Ubicacion")
-                        .WithMany("Insumos")
-                        .HasForeignKey("IdUbicacion")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Categoria");
 
                     b.Navigation("Empaquetamiento");
-
-                    b.Navigation("Ubicacion");
                 });
 
             modelBuilder.Entity("Domain.Entities.MovimientoInventario", b =>
@@ -566,7 +725,7 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Catalogos.EstadoSalida", "EstadoSalida")
                         .WithMany("Movimientos")
                         .HasForeignKey("IdEstadoSalida")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.Insumo", "Insumo")
                         .WithMany("Movimientos")
@@ -577,17 +736,27 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Catalogos.Proveedor", "Proveedor")
                         .WithMany("Movimientos")
                         .HasForeignKey("IdProveedor")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.Proyecto", "Proyecto")
                         .WithMany("Movimientos")
                         .HasForeignKey("IdProyecto")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.Catalogos.TipoCompra", "TipoCompra")
                         .WithMany("Movimientos")
                         .HasForeignKey("IdTipoCompra")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.Catalogos.Ubicacion", "Ubicacion")
+                        .WithMany()
+                        .HasForeignKey("IdUbicacion")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.Catalogos.Ubicacion", "UbicacionAnterior")
+                        .WithMany()
+                        .HasForeignKey("IdUbicacionAnterior")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("EstadoSalida");
 
@@ -598,6 +767,10 @@ namespace Infrastructure.Migrations
                     b.Navigation("Proyecto");
 
                     b.Navigation("TipoCompra");
+
+                    b.Navigation("Ubicacion");
+
+                    b.Navigation("UbicacionAnterior");
                 });
 
             modelBuilder.Entity("Domain.Entities.Proyecto", b =>
@@ -682,6 +855,13 @@ namespace Infrastructure.Migrations
                     b.Navigation("Movimientos");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Catalogos.FamiliaEmpaquetamiento", b =>
+                {
+                    b.Navigation("CategoriaFamilias");
+
+                    b.Navigation("Empaquetamientos");
+                });
+
             modelBuilder.Entity("Domain.Entities.Catalogos.Proveedor", b =>
                 {
                     b.Navigation("Movimientos");
@@ -690,11 +870,6 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Catalogos.TipoCompra", b =>
                 {
                     b.Navigation("Movimientos");
-                });
-
-            modelBuilder.Entity("Domain.Entities.Catalogos.Ubicacion", b =>
-                {
-                    b.Navigation("Insumos");
                 });
 
             modelBuilder.Entity("Domain.Entities.Insumo", b =>

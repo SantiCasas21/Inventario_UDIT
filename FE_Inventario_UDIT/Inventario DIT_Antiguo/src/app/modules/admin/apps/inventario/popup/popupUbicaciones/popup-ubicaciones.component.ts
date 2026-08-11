@@ -1,3 +1,5 @@
+import { inject } from '@angular/core';
+import { FuseConfirmationService } from '@fuse/services/confirmation';
 import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,6 +16,8 @@ import { MatButtonModule } from '@angular/material/button';
   styleUrl: './popup-ubicaciones.component.scss'
 })
 export class PopupUbicacionesComponent {
+  fuseConfirmation = inject(FuseConfirmationService);
+
   inputData:any;
   form:FormGroup;
 
@@ -40,6 +44,15 @@ export class PopupUbicacionesComponent {
     this.service.create(endpoint, { nombre: this.form.value.nombre }).subscribe({
       next:() => {
         this.cerrarPopup();
+      },
+      error: (err:any) => {
+        const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'Ocurri\u00f3 un error al guardar el registro.');
+        this.fuseConfirmation.open({
+          title: 'Error de validaci\u00f3n',
+          message: msg,
+          icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
+          actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
+        });
       }
     });
   }
@@ -50,6 +63,15 @@ export class PopupUbicacionesComponent {
     this.service.update(endpoint, id, { nombre: this.form.value.nombre }).subscribe({
       next:() => {
         this.cerrarPopup();
+      },
+      error: (err:any) => {
+        const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'Ocurri\u00f3 un error al guardar el registro.');
+        this.fuseConfirmation.open({
+          title: 'Error de validaci\u00f3n',
+          message: msg,
+          icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
+          actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
+        });
       }
     });
   }

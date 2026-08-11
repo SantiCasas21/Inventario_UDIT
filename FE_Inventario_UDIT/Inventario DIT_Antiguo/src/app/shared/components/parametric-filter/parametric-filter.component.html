@@ -4,10 +4,7 @@
     <span class="results-label">Resultados:</span>
     <span class="results-count">{{ resultCount }}</span>
   </div>
-  <div class="smart-filter-toggle" *ngIf="config.showSmartFilterToggle">
-    <input type="checkbox" id="smartFilter" [(ngModel)]="smartFilter" />
-    <label for="smartFilter" class="smart-filter-label">{{ config.smartFilterLabel || 'Filtrado inteligente' }}</label>
-  </div>
+
   <div class="loading-indicator" *ngIf="loading">
     <span>Cargando...</span>
   </div>

@@ -1,192 +1,247 @@
-<div class="dashboard-container">
-  <!-- Header -->
-  <div class="dashboard-header">
-    <div>
-      <h1 class="dashboard-title">Dashboard</h1>
-      <p class="dashboard-subtitle">Resumen general del inventario</p>
+<div class="premium-bg min-h-screen">
+  <div class="admin-page">
+    <div class="dashboard-container">
+      <!-- Header -->
+      <div class="dashboard-header">
+        <div class="transform transition duration-500 hover:scale-105">
+          <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 mb-1">
+            <span class="gradient-text">Dashboard</span>
+          </h1>
+          <p class="text-sm font-medium text-gray-500">Resumen general del inventario</p>
+        </div>
+        <button mat-flat-button color="primary" class="shadow-lg shadow-indigo-200 btn-gloss rounded-full px-6" (click)="loadDashboard()" [disabled]="loading">
+          <mat-icon>refresh</mat-icon>
+          Actualizar
+        </button>
+      </div>
+
+      <!-- Loading / Error premium -->
+      <div *ngIf="loading" class="flex items-center justify-center p-8 text-gray-500">
+        <mat-icon class="animate-spin text-udit-verde mr-3">sync</mat-icon> Cargando dashboard...
+      </div>
+      <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 font-medium mb-6 rounded-r-lg shadow-sm">
+        <div class="flex items-center gap-2">
+          <mat-icon>error_outline</mat-icon>
+          {{ error }}
+        </div>
+      </div>
+
+      <!-- Dashboard content -->
+      <ng-container *ngIf="dashboard && !loading">
+        <!-- Stat cards with glassmorphism -->
+        <div class="stat-cards">
+          <div class="stat-card glass-card border-none hover:shadow-xl transition-shadow duration-300">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af;"><mat-icon>inventory_2</mat-icon></div>
+            <div class="stat-info">
+              <span class="stat-value">{{ dashboard.totalInsumos }}</span>
+              <span class="stat-label">Insumos</span>
+            </div>
+          </div>
+          <div class="stat-card glass-card border-none hover:shadow-xl transition-shadow duration-300">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46;"><mat-icon>assignment</mat-icon></div>
+            <div class="stat-info">
+              <span class="stat-value">{{ dashboard.totalProyectos }}</span>
+              <span class="stat-label">Proyectos</span>
+            </div>
+          </div>
+          <div class="stat-card glass-card border-none hover:shadow-xl transition-shadow duration-300">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); color: #6b21a8;"><mat-icon>local_shipping</mat-icon></div>
+            <div class="stat-info">
+              <span class="stat-value">{{ dashboard.totalProveedores }}</span>
+              <span class="stat-label">Proveedores</span>
+            </div>
+          </div>
+          <div class="stat-card glass-card border-none hover:shadow-xl transition-shadow duration-300">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%); color: #9a3412;"><mat-icon>sync_alt</mat-icon></div>
+            <div class="stat-info">
+              <span class="stat-value">{{ dashboard.totalMovimientos }}</span>
+              <span class="stat-label">Movimientos</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's activity -->
+        <div class="section-title">Actividad Reciente</div>
+        <div class="stat-cards small">
+          <div class="stat-card glass-card border-none hover:shadow-lg transition-shadow duration-300">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #059669;"><mat-icon>trending_up</mat-icon></div>
+            <div class="stat-info">
+              <span class="stat-value">{{ dashboard.ingresosHoy }}</span>
+              <span class="stat-label">Ingresos Hoy</span>
+            </div>
+          </div>
+          <div class="stat-card glass-card border-none hover:shadow-lg transition-shadow duration-300">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #dc2626;"><mat-icon>trending_down</mat-icon></div>
+            <div class="stat-info">
+              <span class="stat-value">{{ dashboard.salidasHoy }}</span>
+              <span class="stat-label">Salidas Hoy</span>
+            </div>
+          </div>
+          <div class="stat-card glass-card border-none hover:shadow-lg transition-shadow duration-300">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); color: #4f46e5;"><mat-icon>today</mat-icon></div>
+            <div class="stat-info">
+              <span class="stat-value">{{ dashboard.movimientosHoy }}</span>
+              <span class="stat-label">Total Hoy</span>
+            </div>
+          </div>
+          <div class="stat-card glass-card border-none hover:shadow-lg transition-shadow duration-300">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); color: #7c3aed;"><mat-icon>insert_chart</mat-icon></div>
+            <div class="stat-info">
+              <span class="stat-value">{{ dashboard.movimientosEsteMes }}</span>
+              <span class="stat-label">Este Mes</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Bajo (paginado) — tabla premium -->
+        <div class="section-title">
+          Stock Bajo ({{ dashboard.stockBajoCount }} insumo(s))
+        </div>
+        <div *ngIf="dashboard.stockBajo.length === 0" class="empty-msg">No hay insumos con stock bajo.</div>
+        <div *ngIf="dashboard.stockBajo.length > 0" class="glass-card border-none overflow-hidden mb-6">
+          <div class="overflow-x-auto w-full">
+            <table class="w-full premium-table">
+              <thead>
+                <tr class="premium-table-header">
+                  <th class="premium-th">Cód. Fábrica</th>
+                  <th class="premium-th">Descripción</th>
+                  <th class="premium-th">Categoría</th>
+                  <th class="premium-th">Ubicación</th>
+                  <th class="premium-th">Stock</th>
+                  <th class="premium-th">Umbral</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of stockPageItems" class="table-row-animate" style="border-bottom: 1px solid rgba(229, 231, 235, 0.5);">
+                  <td class="premium-td font-mono font-bold text-gray-800">{{ item.codigoFabrica }}</td>
+                  <td class="premium-td text-gray-600">{{ item.descripcion || '-' }}</td>
+                  <td class="premium-td">
+                    <span class="badge-categoria" [ngClass]="item.categoria | categoriaBadge">{{ item.categoria }}</span>
+                  </td>
+                  <td class="premium-td text-gray-600">{{ item.ubicacion }}</td>
+                  <td class="premium-td">
+                    <span class="stock-badge critico">{{ item.stockActual }}</span>
+                  </td>
+                  <td class="premium-td text-gray-600">{{ item.umbral }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-center gap-3 p-3 border-t border-gray-100">
+            <button class="page-btn" (click)="prevStockPage()" [disabled]="stockPage === 0">
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+            <span class="text-sm text-gray-500 font-medium">Página {{ stockPage + 1 }} de {{ stockPages }}</span>
+            <button class="page-btn" (click)="nextStockPage()" [disabled]="stockPage >= stockPages - 1">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Últimos Movimientos — tabla premium -->
+        <div class="section-title">Últimos 10 Movimientos</div>
+        <div *ngIf="dashboard.ultimosMovimientos.length === 0" class="empty-msg">No hay movimientos registrados.</div>
+        <div *ngIf="dashboard.ultimosMovimientos.length > 0" class="glass-card border-none overflow-hidden mb-6">
+          <div class="overflow-x-auto w-full">
+            <table class="w-full premium-table">
+              <thead>
+                <tr class="premium-table-header">
+                  <th class="premium-th">Fecha</th>
+                  <th class="premium-th">Tipo</th>
+                  <th class="premium-th">Insumo</th>
+                  <th class="premium-th">Cantidad</th>
+                  <th class="premium-th">Proveedor / Proyecto</th>
+                  <th class="premium-th">Observación</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let m of dashboard.ultimosMovimientos" class="table-row-animate" style="border-bottom: 1px solid rgba(229, 231, 235, 0.5);">
+                  <td class="premium-td whitespace-nowrap">{{ m.fecha | date:'short' }}</td>
+                  <td class="premium-td">
+                    <span class="badge" [ngClass]="m.tipoMovimiento | tipoMovimientoBadge">
+                      {{ m.tipoMovimiento }}
+                    </span>
+                  </td>
+                  <td class="premium-td font-semibold text-gray-800">{{ m.codigoFabrica }}</td>
+                  <td class="premium-td">
+                    <span class="badge" [ngClass]="m.tipoMovimiento | tipoMovimientoCantidad">
+                      {{ m.tipoMovimiento === 'SALIDA' ? '-' : (m.tipoMovimiento === 'INGRESO' ? '+' : '') }}{{ m.cantidad }}
+                    </span>
+                  </td>
+                  <td class="premium-td text-gray-600">{{ m.proveedorNombre || m.proyectoNombre || '-' }}</td>
+                  <td class="premium-td text-gray-500 max-w-[200px] truncate">{{ m.observacion || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Irregularidades -->
+        <div class="section-title" *ngIf="dashboard.irregularidades && dashboard.irregularidades.length > 0">
+          ⚠️ Irregularidades Detectadas ({{ countActiveIrregularities() }})
+        </div>
+        <div *ngIf="dashboard.irregularidades && dashboard.irregularidades.length > 0" class="glass-card border-none overflow-hidden mb-6">
+          <div class="p-4">
+            <div class="severity-filters mb-4 flex gap-2">
+              <button class="px-4 py-1.5 rounded-full text-sm font-bold transition-all shadow-sm border border-gray-200" [ngClass]="severityFilter === 'todas' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'" (click)="filterSeverity('todas')">Todas</button>
+              <button class="px-4 py-1.5 rounded-full text-sm font-bold transition-all shadow-sm border border-red-200" [ngClass]="severityFilter === 'alta' ? 'bg-red-600 text-white' : 'bg-white text-red-600 hover:bg-red-50'" (click)="filterSeverity('alta')">🔴 Alta</button>
+              <button class="px-4 py-1.5 rounded-full text-sm font-bold transition-all shadow-sm border border-yellow-200" [ngClass]="severityFilter === 'media' ? 'bg-yellow-500 text-white' : 'bg-white text-yellow-600 hover:bg-yellow-50'" (click)="filterSeverity('media')">🟡 Media</button>
+              <button class="px-4 py-1.5 rounded-full text-sm font-bold transition-all shadow-sm border border-blue-200" [ngClass]="severityFilter === 'info' ? 'bg-blue-500 text-white' : 'bg-white text-blue-600 hover:bg-blue-50'" (click)="filterSeverity('info')">🟢 Info</button>
+              <button class="px-4 py-1.5 rounded-full text-sm font-bold transition-all shadow-sm border border-green-200" [ngClass]="severityFilter === 'baja' ? 'bg-green-500 text-white' : 'bg-white text-green-600 hover:bg-green-50'" (click)="filterSeverity('baja')">✅ Resueltos</button>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div *ngFor="let irr of filteredIrregularidades; let i = index" class="irregularidad-item" [class.sev-alta]="irr.severidad === 'alta'" [class.sev-media]="irr.severidad === 'media'" [class.sev-info]="irr.severidad === 'info'" [class.sev-baja]="irr.severidad === 'baja'" [class.expanded]="expandedIndex === i">
+                <!-- Cabecera clickeable -->
+                <div class="irr-header p-4 bg-white/50 border border-white/60 hover:bg-white/80 transition-colors flex items-center gap-3 cursor-pointer rounded-lg" (click)="toggleExpand(i)">
+                  <span class="sev-icon text-xl">{{ irr.severidad === 'alta' ? '🔴' : irr.severidad === 'media' ? '🟡' : irr.severidad === 'baja' ? '✅' : '🟢' }}</span>
+                  <span class="badge shadow-sm" [ngClass]="{'badge-error': irr.severidad === 'alta', 'badge-warning': irr.severidad === 'media', 'badge-info': irr.severidad === 'info', 'badge-success': irr.severidad === 'baja'}">{{ irr.tipo }}</span>
+                  <span class="irr-desc font-medium text-gray-700 flex-grow">{{ irr.descripcion }}</span>
+                  <span class="irr-ref font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm" *ngIf="irr.insumoRef">{{ irr.insumoRef }}</span>
+                  <mat-icon class="expand-icon text-gray-400">{{ expandedIndex === i ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </div>
+
+                <!-- Detalle expandible -->
+                <div class="irr-detail" *ngIf="expandedIndex === i">
+                  <table class="irr-detail-table" *ngIf="irr.detalles?.length > 0">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Cód. Fábrica</th>
+                        <th>Stock</th>
+                        <th>Ubicación</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let det of irr.detalles">
+                        <td><code class="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">{{ det.id }}</code></td>
+                        <td><strong>{{ det.codigoFabrica }}</strong></td>
+                        <td>
+                          <span class="stock-badge" [ngClass]="det.stock <= 0 ? 'agotado' : 'critico'">{{ det.stock }}</span>
+                        </td>
+                        <td>{{ det.ubicacion || '—' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div *ngIf="!irr.detalles?.length" class="text-gray-400 text-sm py-2 text-center">No hay información detallada disponible.</div>
+                  <div class="irr-detail-actions" *ngIf="irr.tipo === 'duplicado'">
+                    <button mat-raised-button color="primary" class="btn-gloss shadow-lg" (click)="abrirUnificarModal(irr)">
+                      <mat-icon>merge_type</mat-icon> Unificar Duplicados
+                    </button>
+                  </div>
+                  <div class="irr-detail-actions" *ngIf="irr.tipo !== 'duplicado'">
+                    <a mat-button color="primary" [routerLink]="'/insumos'" class="text-udit-verde">
+                      <mat-icon>visibility</mat-icon> Ver en Insumos
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="filteredIrregularidades.length === 0" class="text-center text-gray-400 py-4 text-sm">
+              Ninguna irregularidad de esta severidad.
+            </div>
+          </div>
+        </div>
+      </ng-container>
     </div>
-    <button class="refresh-btn" (click)="loadDashboard()" [disabled]="loading">
-      <mat-icon>refresh</mat-icon>
-      Actualizar
-    </button>
   </div>
-
-  <!-- Loading / Error -->
-  <div *ngIf="loading" class="loading-msg">Cargando dashboard...</div>
-  <div *ngIf="error" class="error-msg">{{ error }}</div>
-
-  <!-- Dashboard content -->
-  <ng-container *ngIf="dashboard && !loading">
-    <!-- Stat cards -->
-    <div class="stat-cards">
-      <div class="stat-card">
-        <div class="stat-icon bg-blue"><mat-icon>circle-stack</mat-icon></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ dashboard.totalInsumos }}</span>
-          <span class="stat-label">Insumos</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon bg-green"><mat-icon>folder</mat-icon></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ dashboard.totalProyectos }}</span>
-          <span class="stat-label">Proyectos</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon bg-purple"><mat-icon>truck</mat-icon></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ dashboard.totalProveedores }}</span>
-          <span class="stat-label">Proveedores</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon bg-orange"><mat-icon>arrows-right-left</mat-icon></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ dashboard.totalMovimientos }}</span>
-          <span class="stat-label">Movimientos</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Today's activity -->
-    <div class="section-title">Actividad Reciente</div>
-    <div class="stat-cards small">
-      <div class="stat-card">
-        <div class="stat-icon bg-green-light"><mat-icon>arrow-up</mat-icon></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ dashboard.ingresosHoy }}</span>
-          <span class="stat-label">Ingresos Hoy</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon bg-red-light"><mat-icon>arrow-down</mat-icon></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ dashboard.salidasHoy }}</span>
-          <span class="stat-label">Salidas Hoy</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon bg-blue-light"><mat-icon>calendar</mat-icon></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ dashboard.movimientosHoy }}</span>
-          <span class="stat-label">Total Hoy</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon bg-indigo-light"><mat-icon>chart-bar</mat-icon></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ dashboard.movimientosEsteMes }}</span>
-          <span class="stat-label">Este Mes</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stock Bajo (paginado) -->
-    <div class="section-title">
-      Stock Bajo ({{ dashboard.stockBajoCount }} insumo(s))
-    </div>
-    <div *ngIf="dashboard.stockBajo.length === 0" class="empty-msg">No hay insumos con stock bajo.</div>
-    <div *ngIf="dashboard.stockBajo.length > 0" class="stock-bajo-card">
-      <table class="data-table no-margin">
-        <thead>
-          <tr>
-            <th>Código Fabrica</th>
-            <th>Descripción</th>
-            <th>Categoría</th>
-            <th>Ubicación</th>
-            <th>Stock</th>
-            <th>Umbral</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of stockPageItems" class="critical-row">
-            <td><strong>{{ item.codigoFabrica }}</strong></td>
-            <td>{{ item.descripcion || '-' }}</td>
-            <td>{{ item.categoria }}</td>
-            <td>{{ item.ubicacion }}</td>
-            <td>
-              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-udit-rojo text-white">
-                {{ item.stockActual }}
-              </span>
-            </td>
-            <td>{{ item.umbral }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="pagination-controls">
-        <button class="page-btn" (click)="prevStockPage()" [disabled]="stockPage === 0">
-          <mat-icon>chevron_left</mat-icon>
-        </button>
-        <span class="page-info">Página {{ stockPage + 1 }} de {{ stockPages }}</span>
-        <button class="page-btn" (click)="nextStockPage()" [disabled]="stockPage >= stockPages - 1">
-          <mat-icon>chevron_right</mat-icon>
-        </button>
-      </div>
-    </div>
-
-    <!-- Últimos Movimientos -->
-    <div class="section-title">Últimos Movimientos</div>
-    <div *ngIf="dashboard.ultimosMovimientos.length === 0" class="empty-msg">No hay movimientos registrados.</div>
-    <table *ngIf="dashboard.ultimosMovimientos.length > 0" class="data-table">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Tipo</th>
-          <th>Insumo</th>
-          <th>Cantidad</th>
-          <th>Proveedor / Proyecto</th>
-          <th>Observación</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let m of dashboard.ultimosMovimientos">
-          <td>{{ m.fecha | date:'short' }}</td>
-          <td>
-            <span class="tipo-badge" [class.ingreso]="m.tipoMovimiento === 'INGRESO'" [class.salida]="m.tipoMovimiento === 'SALIDA'" [class.ajuste]="m.tipoMovimiento === 'AJUSTE'">
-              {{ m.tipoMovimiento }}
-            </span>
-          </td>
-          <td>{{ m.codigoFabrica }}</td>
-          <td>
-            <span class="px-2 py-1 rounded-full text-xs font-semibold"
-                  [ngClass]="m.tipoMovimiento === 'INGRESO' ? 'bg-udit-verde text-white' :
-                             (m.tipoMovimiento === 'SALIDA' ? 'bg-udit-rojo text-white' :
-                              'bg-udit-teal text-white')">
-              {{ m.cantidad }}
-            </span>
-          </td>
-          <td>{{ m.proveedorNombre || m.proyectoNombre || '-' }}</td>
-          <td>{{ m.observacion || '-' }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <!-- Irregularidades -->
-    <div class="section-title" *ngIf="dashboard.irregularidades && dashboard.irregularidades.length > 0">
-      ⚠️ Irregularidades Detectadas ({{ dashboard.irregularidades.length }})
-    </div>
-    <div *ngIf="dashboard.irregularidades && dashboard.irregularidades.length > 0" class="irregularidades-section">
-      <div class="severity-filters">
-        <button class="sev-btn sev-all" (click)="filterSeverity('todas')" [class.active]="severityFilter === 'todas'">Todas</button>
-        <button class="sev-btn sev-alta" (click)="filterSeverity('alta')" [class.active]="severityFilter === 'alta'">🔴 Alta</button>
-        <button class="sev-btn sev-media" (click)="filterSeverity('media')" [class.active]="severityFilter === 'media'">🟡 Media</button>
-        <button class="sev-btn sev-info" (click)="filterSeverity('info')" [class.active]="severityFilter === 'info'">🟢 Info</button>
-      </div>
-      <div class="irregularidades-list">
-        <div *ngFor="let irr of filteredIrregularidades" class="irregularidad-item" [class.sev-alta]="irr.severidad === 'alta'" [class.sev-media]="irr.severidad === 'media'" [class.sev-info]="irr.severidad === 'info'">
-          <span class="sev-icon">
-            {{ irr.severidad === 'alta' ? '🔴' : irr.severidad === 'media' ? '🟡' : '🟢' }}
-          </span>
-          <span class="sev-badge" [class.bg-red]="irr.severidad === 'alta'" [class.bg-yellow]="irr.severidad === 'media'" [class.bg-blue]="irr.severidad === 'info'">
-            {{ irr.tipo }}
-          </span>
-          <span class="irr-desc">{{ irr.descripcion }}</span>
-          <span class="irr-ref" *ngIf="irr.insumoRef">{{ irr.insumoRef }}</span>
-        </div>
-      </div>
-      <div *ngIf="filteredIrregularidades.length === 0" class="empty-msg">
-        Ninguna irregularidad de esta severidad.
-      </div>
-    </div>
-  </ng-container>
 </div>

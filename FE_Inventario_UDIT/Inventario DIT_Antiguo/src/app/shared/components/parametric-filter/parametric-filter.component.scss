@@ -86,31 +86,12 @@
   justify-content: flex-end;
 }
 .btn-reset-all {
-  padding: 8px 20px;
-  border: 1px solid #ACAA00;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 13px;
   cursor: pointer;
-  color: #555;
-}
-.btn-reset-all:hover {
-  background: #F3E7CE;
 }
 .btn-apply {
-  padding: 8px 24px;
-  border: none;
-  border-radius: 6px;
-  background: #636F03;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
   cursor: pointer;
 }
-.btn-apply:hover {
-  background: #4f5902;
-}
 .btn-apply:disabled {
-  background: #bdbdbd;
+  opacity: 0.6;
   cursor: not-allowed;
 }

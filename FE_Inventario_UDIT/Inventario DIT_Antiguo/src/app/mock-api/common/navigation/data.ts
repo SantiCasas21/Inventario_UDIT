@@ -93,6 +93,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
                 type : 'basic',
                 icon : 'heroicons_outline:map-pin',
                 link : '/ubicaciones'
+            },
+            {
+                id   : 'auditoria',
+                title: 'Auditoría / Logs',
+                type : 'basic',
+                icon : 'heroicons_outline:clipboard-document-list',
+                link : '/auditoria'
             }
         ]
     }

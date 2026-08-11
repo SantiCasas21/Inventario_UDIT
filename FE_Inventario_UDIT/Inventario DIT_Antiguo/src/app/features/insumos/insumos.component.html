@@ -1,105 +1,156 @@
-<div class="admin-page">
-  <div class="page-header flex items-center justify-between mb-4">
-    <div>
-      <h1 class="page-title text-2xl font-bold text-udit-negro">Insumos</h1>
-      <p class="page-subtitle text-sm text-gray-500">Gestión de insumos del inventario</p>
+<div class="premium-bg min-h-screen">
+  <div class="admin-page">
+    <!-- Encabezado -->
+    <div class="flex items-center justify-between mb-8">
+      <div class="transform transition duration-500 hover:scale-105">
+        <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 mb-1">
+          <span class="gradient-text">Insumos</span>
+        </h1>
+        <p class="text-sm font-medium text-gray-500 flex items-center gap-2">
+          <mat-icon class="text-indigo-400" style="font-size: 18px; width: 18px; height: 18px;">inventory_2</mat-icon>
+          Gestión de insumos del inventario
+        </p>
+      </div>
+      @if (userService.hasRole(['admin', 'developer', 'assistant'])) {
+        <div>
+          <button mat-flat-button color="primary" class="rounded-full px-6 shadow-lg shadow-indigo-200 transition-transform hover:scale-105 btn-gloss" (click)="crearInsumo()">
+            <mat-icon>add</mat-icon> Nuevo Insumo
+          </button>
+        </div>
+      }
     </div>
-    <div *ngIf="userRole !== 'User'">
-      <button mat-raised-button color="primary" (click)="crearInsumo()" class="shadow-sm">
-        <mat-icon class="mr-1">add</mat-icon> Nuevo Insumo
-      </button>
+
+    <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 font-medium mb-6 rounded-r-lg shadow-sm">
+      <div class="flex items-center gap-2">
+        <mat-icon>error_outline</mat-icon>
+        {{ error }}
+      </div>
     </div>
+
+    <!-- Tarjeta Principal -->
+    <mat-card class="glass-card shadow-sm border-0 flex flex-col">
+      <mat-card-header class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white/40">
+        <div>
+          <mat-card-title class="text-lg font-bold text-gray-800">Listado de Insumos</mat-card-title>
+          <mat-card-subtitle class="text-xs font-medium text-gray-500 mt-1">{{ totalCount }} insumo(s) registrados</mat-card-subtitle>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content class="p-4 flex flex-col">
+        <!-- Filtro paramétrico -->
+        <div class="filter-section mb-4">
+          <app-parametric-filter [config]="filterConfig" [resultCount]="totalCount" (filterChange)="onFilterChange($event)"></app-parametric-filter>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="loading && !error" class="loading-msg p-6 text-center text-gray-500">
+          <mat-icon class="animate-spin text-udit-verde mr-2">sync</mat-icon> Cargando insumos...
+        </div>
+
+        <!-- Tabla -->
+        <div class="overflow-auto" *ngIf="!loading && data.length > 0">
+          <table mat-table [dataSource]="data" class="w-full premium-table">
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef (click)="onSort('id')" class="sortable">#</th>
+              <td mat-cell *matCellDef="let el">
+                <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-mono font-bold">{{ el.id }}</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="codigoFabrica">
+              <th mat-header-cell *matHeaderCellDef (click)="onSort('codigoFabrica')" class="sortable">Cód. Fábrica</th>
+              <td mat-cell *matCellDef="let el">
+                <span class="font-mono font-bold text-udit-negro">{{ el.codigoFabrica }}</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="categoriaNombre">
+              <th mat-header-cell *matHeaderCellDef>Categoría</th>
+              <td mat-cell *matCellDef="let el">
+                <span class="badge-categoria" [ngClass]="el.categoriaNombre | categoriaBadge">
+                  {{ el.categoriaNombre }}
+                </span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="descripcion">
+              <th mat-header-cell *matHeaderCellDef>Descripción</th>
+              <td mat-cell *matCellDef="let el" class="text-gray-600">{{ el.descripcion || '-' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="empaquetamientoNombre">
+              <th mat-header-cell *matHeaderCellDef>Empaque</th>
+              <td mat-cell *matCellDef="let el" class="text-gray-600">{{ el.empaquetamientoNombre }}</td>
+            </ng-container>
+            <ng-container matColumnDef="ubicaciones">
+              <th mat-header-cell *matHeaderCellDef>Ubicación</th>
+              <td mat-cell *matCellDef="let el" class="text-gray-600">
+                <ng-container *ngIf="el.ubicacionesStock && el.ubicacionesStock.length > 0; else noUbi">
+                  <span *ngFor="let ubi of el.ubicacionesStock; let last = last">
+                    {{ ubi.ubicacionNombre }}<span *ngIf="!last">, </span>
+                  </span>
+                </ng-container>
+                <ng-template #noUbi>-</ng-template>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="valorMedida">
+              <th mat-header-cell *matHeaderCellDef (click)="onSort('valorMedida')" class="sortable">Valor / Unidad</th>
+              <td mat-cell *matCellDef="let el">
+                <span *ngIf="el.valorMedida" class="font-semibold text-gray-800">{{ el.valorMedida }} {{ el.unidadMedida }}</span>
+                <span *ngIf="!el.valorMedida" class="text-gray-400">-</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="precioReferencia">
+              <th mat-header-cell *matHeaderCellDef (click)="onSort('precioReferencia')" class="sortable">Precio Ref.</th>
+              <td mat-cell *matCellDef="let el" class="text-gray-700">{{ el.precioReferencia | currency }}</td>
+            </ng-container>
+            <ng-container matColumnDef="moneda">
+              <th mat-header-cell *matHeaderCellDef>Moneda</th>
+              <td mat-cell *matCellDef="let el">
+                <span *ngIf="el.moneda === 'COP'" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">COP</span>
+                <span *ngIf="el.moneda === 'USD'" class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">USD</span>
+                <span *ngIf="el.moneda === 'EUR'" class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">EUR</span>
+                <span *ngIf="!el.moneda" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-400">-</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="cantidad">
+              <th mat-header-cell *matHeaderCellDef>Stock (Cant.)</th>
+              <td mat-cell *matCellDef="let el">
+                <span class="stock-badge"
+                      [ngClass]="el.cantidad > 0 ? 'disponible' : 'agotado'">
+                  {{ el.cantidad }}
+                </span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="acciones">
+              <th mat-header-cell *matHeaderCellDef style="width:100px;">Acción</th>
+              <td mat-cell *matCellDef="let el">
+                @if (userService.hasRole(['admin', 'developer', 'assistant'])) {
+                  <button mat-icon-button color="primary" (click)="editarInsumo(el)" matTooltip="Editar insumo" aria-label="Editar insumo"><mat-icon>edit</mat-icon></button>
+                }
+                @if (userService.hasRole('admin')) {
+                  <button mat-icon-button color="warn" (click)="eliminarInsumo(el)" matTooltip="Eliminar insumo" aria-label="Eliminar insumo"><mat-icon>delete</mat-icon></button>
+                }
+                @if (!userService.hasRole(['admin', 'developer', 'assistant'])) {
+                  <span class="text-gray-400 italic text-xs">Solo lectura</span>
+                }
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row-animate"></tr>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="!loading && data.length === 0" class="py-12 text-center text-gray-500 bg-gray-50/50 rounded-lg border border-dashed border-gray-200 my-4">
+          <mat-icon class="text-gray-400 mb-2" style="font-size: 48px; width: 48px; height: 48px;">search_off</mat-icon>
+          <p class="text-base font-semibold text-gray-700">No se encontraron insumos</p>
+          <p class="text-xs text-gray-500 mt-1">Intenta ajustar los criterios de búsqueda o limpia los filtros activos.</p>
+        </div>
+
+        <mat-paginator
+          [length]="totalCount" [pageSize]="pageSize" [pageIndex]="page - 1"
+          [pageSizeOptions]="[10, 20, 50]" (page)="onPageChange($event)" showFirstLastButtons
+          class="bg-transparent border-t border-gray-100">
+        </mat-paginator>
+      </mat-card-content>
+    </mat-card>
   </div>
-
-  <mat-card class="section-card shadow-sm rounded-xl overflow-hidden border border-gray-100">
-    <mat-card-header class="bg-gray-50/50 pb-3 border-b border-gray-100">
-      <mat-card-title class="text-lg font-semibold text-udit-negro">Listado de Insumos</mat-card-title>
-      <mat-card-subtitle class="text-xs text-gray-500">{{ totalCount }} insumo(s) registrados</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content class="p-4">
-      <!-- Parametric Filter -->
-      <div class="filter-section mb-4">
-        <app-parametric-filter [config]="filterConfig" [resultCount]="totalCount" (filterChange)="onFilterChange($event)"></app-parametric-filter>
-      </div>
-
-      <div *ngIf="error" class="error-msg mb-4">{{ error }}</div>
-      <div *ngIf="loading && !error" class="loading-msg p-6 text-center text-gray-500">
-        <mat-icon class="animate-spin text-udit-verde mr-2">sync</mat-icon> Cargando insumos...
-      </div>
-
-      <div class="overflow-x-auto" *ngIf="!loading && data.length > 0">
-        <table mat-table [dataSource]="data" class="data-table w-full">
-          <ng-container matColumnDef="id">
-            <th mat-header-cell *matHeaderCellDef (click)="onSort('id')" class="sortable">#</th>
-            <td mat-cell *matCellDef="let el"><code class="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">{{ el.id }}</code></td>
-          </ng-container>
-          <ng-container matColumnDef="codigoFabrica">
-            <th mat-header-cell *matHeaderCellDef (click)="onSort('codigoFabrica')" class="sortable">Cód. Fábrica</th>
-            <td mat-cell *matCellDef="let el"><span class="font-mono font-bold text-udit-negro">{{ el.codigoFabrica }}</span></td>
-          </ng-container>
-          <ng-container matColumnDef="categoriaNombre">
-            <th mat-header-cell *matHeaderCellDef>Categoría</th>
-            <td mat-cell *matCellDef="let el"><span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800">{{ el.categoriaNombre }}</span></td>
-          </ng-container>
-          <ng-container matColumnDef="descripcion">
-            <th mat-header-cell *matHeaderCellDef>Descripción</th>
-            <td mat-cell *matCellDef="let el" class="text-gray-600">{{ el.descripcion || '-' }}</td>
-          </ng-container>
-          <ng-container matColumnDef="empaquetamientoNombre">
-            <th mat-header-cell *matHeaderCellDef>Empaque</th>
-            <td mat-cell *matCellDef="let el" class="text-gray-600">{{ el.empaquetamientoNombre }}</td>
-          </ng-container>
-          <ng-container matColumnDef="ubicacionNombre">
-            <th mat-header-cell *matHeaderCellDef>Ubicación</th>
-            <td mat-cell *matCellDef="let el" class="text-gray-600">{{ el.ubicacionNombre }}</td>
-          </ng-container>
-          <ng-container matColumnDef="valorMedida">
-            <th mat-header-cell *matHeaderCellDef (click)="onSort('valorMedida')" class="sortable">Valor / Unidad</th>
-            <td mat-cell *matCellDef="let el">
-              <span *ngIf="el.valorMedida" class="font-semibold text-gray-800">{{ el.valorMedida }} {{ el.unidadMedida }}</span>
-              <span *ngIf="!el.valorMedida" class="text-gray-400">-</span>
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="precioReferencia">
-            <th mat-header-cell *matHeaderCellDef (click)="onSort('precioReferencia')" class="sortable">Precio Ref.</th>
-            <td mat-cell *matCellDef="let el" class="text-gray-700">{{ el.precioReferencia | currency }}</td>
-          </ng-container>
-          <ng-container matColumnDef="cantidad">
-            <th mat-header-cell *matHeaderCellDef>Stock (Cant.)</th>
-            <td mat-cell *matCellDef="let el">
-              <span class="px-2.5 py-1 rounded-full text-xs font-semibold shadow-xs"
-                    [ngClass]="el.cantidad > 0 ? 'bg-udit-verde text-white' : 'bg-udit-rojo text-white'">
-                {{ el.cantidad }}
-              </span>
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="acciones">
-            <th mat-header-cell *matHeaderCellDef style="width:100px;">Acción</th>
-            <td mat-cell *matCellDef="let el">
-              <ng-container *ngIf="userRole !== 'User'">
-                <button mat-icon-button color="primary" (click)="editarInsumo(el)" matTooltip="Editar insumo" aria-label="Editar insumo"><mat-icon>edit</mat-icon></button>
-                <button mat-icon-button color="warn" (click)="eliminarInsumo(el)" matTooltip="Eliminar insumo" aria-label="Eliminar insumo"><mat-icon>delete</mat-icon></button>
-              </ng-container>
-              <span *ngIf="userRole === 'User'" class="text-gray-400 italic text-xs">Solo lectura</span>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-udit-beige/40 transition-colors duration-150"></tr>
-        </table>
-      </div>
-
-      <!-- Empty State -->
-      <div *ngIf="!loading && data.length === 0" class="py-12 text-center text-gray-500 bg-gray-50/50 rounded-lg border border-dashed border-gray-200 my-4">
-        <mat-icon class="text-gray-400 mb-2" style="font-size: 48px; width: 48px; height: 48px;">search_off</mat-icon>
-        <p class="text-base font-semibold text-gray-700">No se encontraron insumos</p>
-        <p class="text-xs text-gray-500 mt-1">Intenta ajustar los criterios de búsqueda o limpia los filtros activos.</p>
-      </div>
-
-      <mat-paginator
-        [length]="totalCount" [pageSize]="pageSize" [pageIndex]="page - 1"
-        [pageSizeOptions]="[10, 20, 50]" (page)="onPageChange($event)" showFirstLastButtons class="border-t border-gray-100">
-      </mat-paginator>
-    </mat-card-content>
-  </mat-card>
 </div>

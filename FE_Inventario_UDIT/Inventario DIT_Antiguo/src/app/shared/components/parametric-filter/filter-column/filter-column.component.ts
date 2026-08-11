@@ -47,7 +47,7 @@ import { FilterColumnConfig, SelectOption } from '../parametric-filter.types';
           class="range-input"
           [placeholder]="'Min' + (config.unit ? ' (' + config.unit + ')' : '')"
           [(ngModel)]="rangeMin"
-          (change)="onRangeChange()"
+          (input)="onRangeChange()"
         />
         <span class="range-sep">–</span>
         <input
@@ -55,7 +55,7 @@ import { FilterColumnConfig, SelectOption } from '../parametric-filter.types';
           class="range-input"
           [placeholder]="'Max' + (config.unit ? ' (' + config.unit + ')' : '')"
           [(ngModel)]="rangeMax"
-          (change)="onRangeChange()"
+          (input)="onRangeChange()"
         />
         <div class="range-buttons">
           <button class="range-btn" (click)="selectLessEq()" title="Menor o igual">≤</button>
@@ -215,6 +215,16 @@ export class FilterColumnComponent implements OnInit, OnDestroy {
       this.config.options$.pipe(takeUntil(this.destroy$)).subscribe(opts => {
         this.allOptions = opts;
         this.filteredOptions = [...this.allOptions];
+        
+        // Limpiar valores seleccionados que ya no existen en las nuevas opciones
+        if (this.selectedValues.length > 0) {
+          const validValues = this.allOptions.map(o => o.value);
+          const newSelected = this.selectedValues.filter(v => validValues.includes(v));
+          if (newSelected.length !== this.selectedValues.length) {
+            this.selectedValues = newSelected;
+            this.emitMultiSelect();
+          }
+        }
       });
     }
   }
@@ -260,20 +270,20 @@ export class FilterColumnComponent implements OnInit, OnDestroy {
 
   selectLessEq(): void {
     if (this.rangeMax) {
-      // Selecciona máximo = valor actual (para que sea ≤)
+      // Preservar el rango completo actual (no perder el min si ya estaba definido)
       this.valueChange.emit({
         key: this.config.key,
-        value: { max: this.rangeMax }
+        value: { min: this.rangeMin || undefined, max: this.rangeMax }
       });
     }
   }
 
   selectGreaterEq(): void {
     if (this.rangeMin) {
-      // Selecciona mínimo = valor actual (para que sea ≥)
+      // Preservar el rango completo actual (no perder el max si ya estaba definido)
       this.valueChange.emit({
         key: this.config.key,
-        value: { min: this.rangeMin }
+        value: { min: this.rangeMin, max: this.rangeMax || undefined }
       });
     }
   }
@@ -284,12 +294,14 @@ export class FilterColumnComponent implements OnInit, OnDestroy {
   }
 
   // Reset
-  reset(): void {
+  reset(emitEvent = true): void {
     this.selectedValues = [];
     this.rangeMin = '';
     this.rangeMax = '';
     this.searchText = '';
     this.filteredOptions = [...this.allOptions];
-    this.valueChange.emit({ key: this.config.key, value: [] });
+    if (emitEvent) {
+      this.valueChange.emit({ key: this.config.key, value: [] });
+    }
   }
 }

@@ -14,13 +14,16 @@ namespace Application.DTOs
         public string CodigoFabrica { get; set; } = string.Empty;
         public int IdEmpaquetamiento { get; set; }
         public string EmpaquetamientoNombre { get; set; } = string.Empty;
-        public int IdUbicacion { get; set; }
-        public string UbicacionNombre { get; set; } = string.Empty;
+        
+        // Ubicaciones y stock dinámico
+        public List<StockUbicacionDto> UbicacionesStock { get; set; } = new List<StockUbicacionDto>();
+        public int Cantidad { get; set; } // Stock Total
+
         public string? Descripcion { get; set; }
         public decimal? PrecioReferencia { get; set; }
+        public string? Moneda { get; set; }
         public decimal? ValorMedida { get; set; }
         public string? UnidadMedida { get; set; }
-        public int Cantidad { get; set; }
     }
 
     /// <summary>
@@ -31,10 +34,20 @@ namespace Application.DTOs
         public int IdCategoria { get; set; }
         public string CodigoFabrica { get; set; } = string.Empty;
         public int IdEmpaquetamiento { get; set; }
-        public int IdUbicacion { get; set; }
         public string? Descripcion { get; set; }
         public decimal? PrecioReferencia { get; set; }
+        public string? Moneda { get; set; }
         public decimal? ValorMedida { get; set; }
         public string? UnidadMedida { get; set; }
+    }
+
+    /// <summary>
+    /// DTO para el stock de un insumo en una ubicación específica.
+    /// </summary>
+    public class StockUbicacionDto
+    {
+        public int IdUbicacion { get; set; }
+        public string UbicacionNombre { get; set; } = string.Empty;
+        public int Stock { get; set; }
     }
 }

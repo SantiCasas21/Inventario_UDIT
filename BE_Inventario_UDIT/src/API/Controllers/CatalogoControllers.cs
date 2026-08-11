@@ -16,10 +16,13 @@ namespace API.Controllers
         public CategoriaInsumoController(ICatalogoService<CategoriaInsumo> service) : base(service) { }
     }
 
-    [Route("api/empaquetamiento")]
-    public class EmpaquetamientoController : BaseCatalogoController<Empaquetamiento>
+    // NOTA: Empaquetamiento usa un controller dedicado (EmpaquetamientoController)
+    // con clasificación inteligente y filtrado por categoría.
+
+    [Route("api/familia-empaquetamiento")]
+    public class FamiliaEmpaquetamientoController : BaseCatalogoController<FamiliaEmpaquetamiento>
     {
-        public EmpaquetamientoController(ICatalogoService<Empaquetamiento> service) : base(service) { }
+        public FamiliaEmpaquetamientoController(ICatalogoService<FamiliaEmpaquetamiento> service) : base(service) { }
     }
 
     [Route("api/ubicacion")]

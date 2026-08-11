@@ -1,11 +1,10 @@
-import { Component, EventEmitter, Input, Output, OnInit, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, ViewChildren, QueryList } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subject, takeUntil, debounceTime } from 'rxjs';
+import { Subject, takeUntil, debounceTime, BehaviorSubject, Observable, map } from 'rxjs';
 import { ParametricFilterConfig, AppliedFilter, FilterColumnConfig, SelectOption } from './parametric-filter.types';
 import { FilterColumnComponent } from './filter-column/filter-column.component';
 import { CatalogoService } from '@app/core/services/catalogo.service';
 import { CatalogoDto } from '@app/core/models';
-import { map } from 'rxjs';
 
 @Component({
   selector: 'app-parametric-filter',
@@ -25,6 +24,8 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
   loading = false;
   smartColumns: FilterColumnConfig[] = [];
 
+  @ViewChildren(FilterColumnComponent) filterColumns!: QueryList<FilterColumnComponent>;
+
   private destroy$ = new Subject<void>();
   private currentFilter: Record<string, unknown> = {};
   private filterSubject = new Subject<Record<string, unknown>>();
@@ -34,11 +35,13 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.smartColumns = this.config.columns.map(col => {
       if (col.optionsUrl && !col.options) {
-        // Cargar opciones desde API de catálogo
-        const colWithOptions = { ...col };
-        colWithOptions.options$ = this.catalogoService.getAll(col.optionsUrl).pipe(
-          map((catalogos: CatalogoDto[]) => catalogos.map(c => ({ label: c.nombre, value: c.id } as SelectOption)))
-        );
+        // Cargar opciones desde API de catálogo en un BehaviorSubject
+        // (permite refrescar las opciones si la columna depende de otra)
+        const colWithOptions: FilterColumnConfig & { optionsSubject?: BehaviorSubject<SelectOption[]> } = { ...col };
+        const subject = new BehaviorSubject<SelectOption[]>([]);
+        colWithOptions.optionsSubject = subject;
+        colWithOptions.options$ = subject.asObservable();
+        this.cargarOpcionesPorCategoria(colWithOptions).subscribe(opts => subject.next(opts));
         return colWithOptions;
       }
       return col;
@@ -55,6 +58,39 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
       });
   }
 
+  /**
+   * Carga las opciones de una columna. Si la columna depende de una categoría
+   * (dependsOn='idsCategoria' + optionsByCategoriaUrl), filtra por las categorías
+   * seleccionadas; si no hay categorías o no depende, carga todas.
+   */
+  private cargarOpcionesPorCategoria(col: FilterColumnConfig): Observable<SelectOption[]> {
+    const toOptions = (catalogos: CatalogoDto[]) => catalogos.map(c => ({
+      label: c.nombre,
+      value: col.optionsValueField === 'nombre' ? c.nombre : c.id
+    } as SelectOption));
+
+    if (col.dependsOn && col.optionsByCategoriaUrl) {
+      const categoriaIds = (this.currentFilter[col.dependsOn] as number[]) || [];
+      if (categoriaIds.length > 0) {
+        return this.catalogoService.getByCategorias(col.optionsByCategoriaUrl, categoriaIds).pipe(map(toOptions));
+      }
+    }
+
+    return this.catalogoService.getAll(col.optionsUrl!).pipe(map(toOptions));
+  }
+
+  /** Recarga las opciones de las columnas que dependen de la clave que cambió. */
+  private reloadDependentColumns(changedKey: string): void {
+    for (const col of this.smartColumns) {
+      if (col.dependsOn === changedKey) {
+        const subject = (col as any).optionsSubject as BehaviorSubject<SelectOption[]> | undefined;
+        if (subject) {
+          this.cargarOpcionesPorCategoria(col).subscribe(opts => subject.next(opts));
+        }
+      }
+    }
+  }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -62,6 +98,10 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
 
   onColumnChange(event: { key: string; value: unknown }): void {
     this.currentFilter[event.key] = event.value;
+
+    // Si otra columna depende de esta (ej: empaquetamiento depende de categoría),
+    // recargar sus opciones antes de emitir el filtro
+    this.reloadDependentColumns(event.key);
 
     // Actualizar breadcrumbs de filtros aplicados
     this.updateAppliedFilters();
@@ -97,11 +137,29 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
       if (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
         continue;
       }
-      const col = this.config.columns.find(c => c.key === key);
+      const col = this.smartColumns.find(c => c.key === key);
       const label = col?.label || key;
       let displayValue = '';
       if (Array.isArray(value)) {
-        displayValue = value.map(v => String(v)).join(', ');
+        // Mapear los valores seleccionados a sus etiquetas si están en las opciones de la columna
+        displayValue = value.map(v => {
+          let label = String(v);
+          if (col) {
+            // Intentar buscar en options estáticas
+            let opt = col.options?.find(o => o.value === v);
+            if (!opt) {
+              // Intentar buscar en optionsSubject (opciones dinámicas)
+              const subject = (col as any).optionsSubject as BehaviorSubject<SelectOption[]> | undefined;
+              if (subject) {
+                opt = subject.getValue().find(o => o.value === v);
+              }
+            }
+            if (opt) {
+              label = opt.label;
+            }
+          }
+          return label;
+        }).join(', ');
       } else if (typeof value === 'object') {
         const range = value as { min?: string; max?: string };
         const parts: string[] = [];
@@ -130,6 +188,9 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
   resetAll(): void {
     this.currentFilter = {};
     this.appliedFilters = [];
+    if (this.filterColumns) {
+      this.filterColumns.forEach(col => col.reset(false));
+    }
     this.filterChange.emit({});
   }
 }

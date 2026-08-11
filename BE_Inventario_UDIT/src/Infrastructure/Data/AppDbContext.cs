@@ -25,6 +25,9 @@ namespace Infrastructure.Data
         public DbSet<EstadoProyecto> EstadosProyecto => Set<EstadoProyecto>();
         public DbSet<Proveedor> Proveedores => Set<Proveedor>();
         public DbSet<Personal> Personal => Set<Personal>();
+        public DbSet<UnidadMedida> UnidadesMedida => Set<UnidadMedida>();
+        public DbSet<FamiliaEmpaquetamiento> FamiliasEmpaquetamiento => Set<FamiliaEmpaquetamiento>();
+        public DbSet<CategoriaFamiliaEmpaquetamiento> CategoriaFamiliasEmpaquetamiento => Set<CategoriaFamiliaEmpaquetamiento>();
 
         // ==========================================
         // DbSet Transaccionales
@@ -36,6 +39,7 @@ namespace Infrastructure.Data
         // DbSet Kardex
         // ==========================================
         public DbSet<MovimientoInventario> MovimientosInventario => Set<MovimientoInventario>();
+        public DbSet<Auditoria> Auditorias => Set<Auditoria>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -57,6 +61,41 @@ namespace Infrastructure.Data
                 entity.ToTable("Empaquetamiento");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Tipo).IsRequired().HasMaxLength(50);
+
+                // Relación opcional con FamiliaEmpaquetamiento
+                entity.HasOne(e => e.FamiliaEmpaquetamiento)
+                      .WithMany(e => e.Empaquetamientos)
+                      .HasForeignKey(e => e.IdFamiliaEmpaquetamiento)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.IdFamiliaEmpaquetamiento, "IX_Empaquetamiento_IdFamiliaEmpaquetamiento");
+            });
+
+            modelBuilder.Entity<FamiliaEmpaquetamiento>(entity =>
+            {
+                entity.ToTable("FamiliaEmpaquetamiento");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(60);
+                entity.HasIndex(e => e.Nombre, "IX_FamiliaEmpaquetamiento_Nombre").IsUnique();
+            });
+
+            modelBuilder.Entity<CategoriaFamiliaEmpaquetamiento>(entity =>
+            {
+                entity.ToTable("CategoriaFamiliaEmpaquetamiento");
+                entity.HasKey(e => e.Id);
+
+                entity.HasOne(e => e.Categoria)
+                      .WithMany()
+                      .HasForeignKey(e => e.IdCategoria)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.FamiliaEmpaquetamiento)
+                      .WithMany(e => e.CategoriaFamilias)
+                      .HasForeignKey(e => e.IdFamiliaEmpaquetamiento)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Evitar vínculos duplicados
+                entity.HasIndex(e => new { e.IdCategoria, e.IdFamiliaEmpaquetamiento }, "IX_CategoriaFamiliaEmpaquetamiento_Cat_Familia").IsUnique();
             });
 
             modelBuilder.Entity<Ubicacion>(entity =>
@@ -104,6 +143,18 @@ namespace Infrastructure.Data
                 entity.Property(e => e.Cargo).HasMaxLength(100);
             });
 
+            modelBuilder.Entity<UnidadMedida>(entity =>
+            {
+                entity.ToTable("UnidadMedida");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(20);
+
+                entity.HasOne(e => e.Categoria)
+                      .WithMany() // No need for reverse navigation if not defined
+                      .HasForeignKey(e => e.IdCategoria)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
             // ==========================================
             // Configuración de Proyecto
             // ==========================================
@@ -143,7 +194,7 @@ namespace Infrastructure.Data
                       .HasColumnName("PrecioReferencia");
 
                 entity.Property(e => e.ValorMedida)
-                      .HasColumnType("decimal(18,2)")
+                      .HasColumnType("decimal(18,6)")
                       .HasColumnName("ValorMedida");
 
                 entity.Property(e => e.UnidadMedida)
@@ -160,12 +211,6 @@ namespace Infrastructure.Data
                 entity.HasOne(e => e.Empaquetamiento)
                       .WithMany(e => e.Insumos)
                       .HasForeignKey(e => e.IdEmpaquetamiento)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                // Relación con Ubicacion
-                entity.HasOne(e => e.Ubicacion)
-                      .WithMany(e => e.Insumos)
-                      .HasForeignKey(e => e.IdUbicacion)
                       .OnDelete(DeleteBehavior.Restrict);
 
                 // Índice para búsqueda y ordenamiento por código de fábrica
@@ -201,22 +246,34 @@ namespace Infrastructure.Data
                 entity.HasOne(e => e.Proveedor)
                       .WithMany(e => e.Movimientos)
                       .HasForeignKey(e => e.IdProveedor)
-                      .OnDelete(DeleteBehavior.SetNull);
+                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.TipoCompra)
                       .WithMany(e => e.Movimientos)
                       .HasForeignKey(e => e.IdTipoCompra)
-                      .OnDelete(DeleteBehavior.SetNull);
+                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Proyecto)
                       .WithMany(e => e.Movimientos)
                       .HasForeignKey(e => e.IdProyecto)
-                      .OnDelete(DeleteBehavior.SetNull);
+                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.EstadoSalida)
                       .WithMany(e => e.Movimientos)
                       .HasForeignKey(e => e.IdEstadoSalida)
-                      .OnDelete(DeleteBehavior.SetNull);
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Ubicacion)
+                      .WithMany()
+                      .HasForeignKey(e => e.IdUbicacion)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.UbicacionAnterior)
+                      .WithMany()
+                      .HasForeignKey(e => e.IdUbicacionAnterior)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(e => e.UsuarioRegistro).HasMaxLength(255);
 
                 // Índice para consultas frecuentes por insumo
                 entity.HasIndex(e => e.IdInsumo, "IX_MovimientoInventario_IdInsumo");
@@ -225,6 +282,23 @@ namespace Infrastructure.Data
                 entity.HasIndex(e => e.Fecha, "IX_MovimientoInventario_Fecha");
                 entity.HasIndex(e => e.TipoMovimiento, "IX_MovimientoInventario_TipoMovimiento");
                 entity.HasIndex(e => new { e.IdInsumo, e.Fecha }, "IX_MovimientoInventario_IdInsumo_Fecha");
+            });
+
+            // ==========================================
+            // Configuración de Auditoría
+            // ==========================================
+            modelBuilder.Entity<Auditoria>(entity =>
+            {
+                entity.ToTable("Auditoria");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Usuario).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Accion).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Modulo).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Detalles).HasColumnType("varchar(max)");
+                
+                // Índices para búsquedas rápidas
+                entity.HasIndex(e => e.Fecha, "IX_Auditoria_Fecha");
+                entity.HasIndex(e => e.Modulo, "IX_Auditoria_Modulo");
             });
         }
     }
@@ -239,9 +313,13 @@ namespace Infrastructure.Data
             : base(
                 v => v == TipoMovimiento.Ingreso ? "INGRESO"
                    : v == TipoMovimiento.Salida ? "SALIDA"
+                   : v == TipoMovimiento.Unificacion ? "UNIFICAR"
+                   : v == TipoMovimiento.Traslado ? "TRASLADO"
                    : "AJUSTE",
                 v => v == "INGRESO" ? TipoMovimiento.Ingreso
                    : v == "SALIDA" ? TipoMovimiento.Salida
+                   : v == "UNIFICAR" ? TipoMovimiento.Unificacion
+                   : v == "TRASLADO" ? TipoMovimiento.Traslado
                    : TipoMovimiento.Ajuste)
         {
         }

@@ -1,0 +1,33 @@
+﻿<div class="flex flex-col bg-white rounded-lg">
+  <!-- Header -->
+  <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-udit-verde text-white">
+    <h2 class="m-0 text-xl font-bold flex items-center shadow-text">
+      <mat-icon class="mr-2">{{ data.estado === 1 ? 'add_circle' : 'edit' }}</mat-icon>
+      {{ data.estado === 1 ? 'Crear Registro' : 'Editar Registro' }}
+    </h2>
+    <button mat-icon-button (click)="cerrar()" class="text-white hover:bg-white/20 transition-colors">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <mat-dialog-content class="p-6">
+    <form [formGroup]="form" class="flex flex-col gap-2">
+
+    </form>
+  </mat-dialog-content>
+
+  <!-- Actions -->
+  <mat-dialog-actions class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
+    <button mat-button (click)="cerrar()" class="rounded-full text-gray-600 hover:bg-gray-200">Cancelar</button>
+    <button mat-raised-button color="primary" class="btn-gloss shadow-md" 
+            (click)="data.estado === 1 ? cerrar() : cerrar()" 
+            [disabled]="form.invalid">
+      <mat-icon class="mr-1">{{ data.estado === 1 ? 'save' : 'update' }}</mat-icon>
+      {{ data.estado === 1 ? 'Crear' : 'Guardar Cambios' }}
+    </button>
+  </mat-dialog-actions>
+</div>
+
+
+

@@ -83,7 +83,42 @@ namespace API.Controllers
         {
             var result = await _service.DeleteAsync(id);
             if (!result.Success)
-                return NotFound(result);
+                return new ContentResult { StatusCode = 400, Content = "{\"message\":\"" + result.Message + "\"}", ContentType = "application/json" };
+            return Ok(result);
+        }
+
+        // ==========================================
+        // UBICACIONES DISPONIBLES
+        // GET /api/insumo/ubicaciones-disponibles
+        // ==========================================
+        /// <summary>
+        /// Retorna solo las ubicaciones que están vacías (sin insumos con stock > 0).
+        /// Útil para el formulario de creación de insumos.
+        /// </summary>
+        [HttpGet("ubicaciones-disponibles")]
+        public async Task<IActionResult> GetUbicacionesDisponibles()
+        {
+            var ubicaciones = await _service.GetUbicacionesDisponiblesAsync();
+            return Ok(Application.Common.Models.OperationResult<List<CatalogoDto>>.Ok(ubicaciones));
+        }
+
+        public class UnificarRequest
+        {
+            public string CodigoFabrica { get; set; } = string.Empty;
+            public int IdInsumoPrincipal { get; set; }
+        }
+
+        // POST /api/insumo/unificar
+        [HttpPost("unificar")]
+        [Authorize(Roles = "Admin,Developer")]
+        public async Task<IActionResult> UnificarDuplicados([FromBody] UnificarRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.CodigoFabrica))
+                return BadRequest(Application.Common.Models.OperationResult.Fail("Datos inválidos"));
+
+            var result = await _service.UnificarDuplicadosAsync(request.CodigoFabrica, request.IdInsumoPrincipal);
+            if (!result.Success)
+                return BadRequest(result);
             return Ok(result);
         }
     }

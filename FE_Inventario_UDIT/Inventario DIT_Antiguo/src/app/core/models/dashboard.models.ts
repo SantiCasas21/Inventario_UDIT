@@ -22,10 +22,20 @@ export interface DashboardDto {
   irregularidades: IrregularidadDto[];
 }
 
+/** Detalle de un insumo dentro de una irregularidad. */
+export interface InsumoIrregularidadDto {
+  id: number;
+  codigoFabrica: string;
+  stock: number;
+  ubicacion: string;
+}
+
 /** DTO para una irregularidad o anomalía detectada. */
 export interface IrregularidadDto {
   tipo: string;
   descripcion: string;
   insumoRef: string | null;
   severidad: string; // "alta", "media", "info"
+  /** Detalle de cada insumo involucrado (para duplicados, lista completa) */
+  detalles: InsumoIrregularidadDto[];
 }

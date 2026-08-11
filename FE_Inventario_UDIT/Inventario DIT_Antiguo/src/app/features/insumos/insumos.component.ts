@@ -18,21 +18,23 @@ import { INSUMO_FILTER_CONFIG } from '@shared/config/insumo-filter.config';
 import { PopupInsumosComponent } from 'app/modules/admin/apps/inventario/popup/popupInsumos/popup-insumos.component';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
 import { UserService } from '@app/core/user/user.service';
+import { CategoriaBadgePipe } from '@app/shared/pipes/categoria-badge.pipe';
 
 @Component({
   selector: 'app-insumos',
   standalone: true,
   imports: [
     CommonModule, FormsModule,
-    MatTableModule, MatPaginatorModule, MatButtonModule, MatIconModule, MatInputModule,
-    MatCardModule, MatTooltipModule, MatSnackBarModule,
-    ParametricFilterComponent,
+    MatTableModule, MatPaginatorModule, MatButtonModule,
+    MatIconModule, MatInputModule, MatCardModule,
+    MatTooltipModule, MatSnackBarModule, ParametricFilterComponent,
+    CategoriaBadgePipe
   ],
   templateUrl: './insumos.component.html',
   styleUrls: ['./insumos.component.scss']
 })
 export class InsumosComponent implements OnInit, OnDestroy {
-  displayedColumns = ['codigoFabrica', 'categoriaNombre', 'descripcion', 'empaquetamientoNombre', 'ubicacionNombre', 'valorMedida', 'precioReferencia', 'cantidad', 'acciones'];
+  displayedColumns = ['id', 'codigoFabrica', 'categoriaNombre', 'descripcion', 'empaquetamientoNombre', 'ubicaciones', 'valorMedida', 'precioReferencia', 'moneda', 'cantidad', 'acciones'];
   data: InsumoDto[] = [];
   totalCount = 0;
   page = 1;
@@ -45,6 +47,7 @@ export class InsumosComponent implements OnInit, OnDestroy {
   currentFilter: InsumoFilter = { page: 1, pageSize: 20 };
 
   @ViewChild(MatPaginator) paginator?: MatPaginator;
+  @ViewChild(ParametricFilterComponent) filterComponent?: ParametricFilterComponent;
 
   private destroy$ = new Subject<void>();
 
@@ -53,12 +56,13 @@ export class InsumosComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private fuseConfirmation: FuseConfirmationService,
-    private userService: UserService,
+    public userService: UserService,
   ) {}
 
   get userRole(): string {
     return this.userService.currentUser?.role || '';
   }
+
 
   ngOnInit(): void {
     this.loadData();
@@ -67,6 +71,32 @@ export class InsumosComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  resetFilters(): void {
+    if (this.filterComponent) {
+      this.filterComponent.resetAll();
+    }
+  }
+
+  getCategoriaBadgeClass(categoria: string): string {
+    if (!categoria) return 'badge-categoria';
+    const cat = categoria.toLowerCase();
+    if (cat.includes('resisten')) return 'badge-cat-resistencia';
+    if (cat.includes('condensa') || cat.includes('capaci')) return 'badge-cat-condensador';
+    if (cat.includes('induct') || cat.includes('bobin')) return 'badge-cat-inductor';
+    if (cat.includes('transist')) return 'badge-cat-transistor';
+    if (cat.includes('diodo') || cat.includes('bater')) return 'badge-cat-diodo';
+    if (cat.includes('cable') || cat.includes('alambre')) return 'badge-cat-cable';
+    if (cat.includes('micro') || cat.includes('integrado')) return 'badge-cat-micro';
+    if (cat.includes('herramienta')) return 'badge-cat-herramienta';
+    
+    // Hash category string to a consistent color class if it doesn't match known ones
+    const colors = ['resistencia', 'condensador', 'inductor', 'transistor', 'diodo', 'cable', 'micro', 'herramienta'];
+    let hash = 0;
+    for (let i = 0; i < categoria.length; i++) hash = categoria.charCodeAt(i) + ((hash << 5) - hash);
+    const index = Math.abs(hash) % colors.length;
+    return `badge-categoria badge-cat-${colors[index]}`;
   }
 
   loadData(): void {
@@ -99,6 +129,9 @@ export class InsumosComponent implements OnInit, OnDestroy {
     }
     if (filter['idsUbicacion'] && Array.isArray(filter['idsUbicacion']) && (filter['idsUbicacion'] as number[]).length > 0) {
       f.idsUbicacion = filter['idsUbicacion'] as number[];
+    }
+    if (filter['unidadesMedida'] && Array.isArray(filter['unidadesMedida']) && (filter['unidadesMedida'] as string[]).length > 0) {
+      f.unidadesMedida = filter['unidadesMedida'] as string[];
     }
     if (filter['valorMedidaRange']) {
       const range = filter['valorMedidaRange'] as { min?: string; max?: string };

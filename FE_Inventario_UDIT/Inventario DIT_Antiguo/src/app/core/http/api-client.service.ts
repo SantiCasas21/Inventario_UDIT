@@ -67,13 +67,18 @@ export class ApiClientService {
 
   private unwrap<T>(response: OperationResult<T>): T {
     if (!response.success) {
-      throw new Error(response.message || 'Error del servidor');
+      const error = new Error(response.message || 'Error del servidor');
+      if (response.code) {
+        (error as any).code = response.code;
+      }
+      throw error;
     }
     return response.data as T;
   }
 
   private handleError(error: unknown): Observable<never> {
     let message: string;
+    let errorCode: string | undefined;
 
     if (error && typeof error === 'object') {
       const err = error as Record<string, unknown>;
@@ -82,10 +87,11 @@ export class ApiClientService {
       if (err['name'] === 'TimeoutError') {
         message = 'El servidor no responde. Verifica que el backend esté corriendo.';
       }
-      // HTTP error
+      // HTTP error (ej: 400 BadRequest con OperationResult en el body)
       else if ('status' in err) {
         const status = err['status'] as number;
-        const body = err['error'] as { message?: string } | undefined;
+        const body = err['error'] as { message?: string; code?: string } | undefined;
+        errorCode = body?.code || undefined;
         switch (status) {
           case 0: message = 'No hay conexión con el servidor. ¿Está corriendo el backend?'; break;
           case 401: message = 'Credenciales inválidas o sesión expirada.'; break;
@@ -95,9 +101,10 @@ export class ApiClientService {
           default: message = `Error del servidor [${status}]: ${body?.message || 'Error desconocido'}`;
         }
       }
-      // Error lanzado por unwrap()
+      // Error lanzado por unwrap() — puede incluir code si OperationResult lo traía
       else if (err['message']) {
         message = err['message'] as string;
+        errorCode = (err as any)['code'] || undefined;
       } else {
         message = 'Error de conexión al servidor.';
       }
@@ -106,6 +113,13 @@ export class ApiClientService {
     }
 
     console.error(`[ApiClient] ${message}`, error);
-    return throwError(() => new Error(message));
+
+    // Preservar el código de error para que componentes puedan manejarlo
+    // (ej: código 'DUPLICATE_CODE' para redirigir a Ingreso)
+    const errorObj = new Error(message);
+    if (errorCode) {
+      (errorObj as any).code = errorCode;
+    }
+    return throwError(() => errorObj);
   }
 }

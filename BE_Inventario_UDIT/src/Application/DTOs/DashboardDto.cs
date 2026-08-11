@@ -38,5 +38,19 @@ namespace Application.DTOs
         public string Descripcion { get; set; } = "";
         public string? InsumoRef { get; set; }
         public string Severidad { get; set; } = "info"; // "alta", "media", "info"
+
+        /// <summary>Detalle de cada insumo involucrado (para duplicados, lista completa)</summary>
+        public List<InsumoIrregularidadDto> Detalles { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Detalle de un insumo dentro de una irregularidad.
+    /// </summary>
+    public class InsumoIrregularidadDto
+    {
+        public int Id { get; set; }
+        public string CodigoFabrica { get; set; } = "";
+        public int Stock { get; set; }
+        public string Ubicacion { get; set; } = "";
     }
 }

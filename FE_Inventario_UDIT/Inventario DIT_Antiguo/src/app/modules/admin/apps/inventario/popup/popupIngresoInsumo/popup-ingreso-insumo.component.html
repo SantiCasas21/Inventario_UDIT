@@ -48,13 +48,23 @@
         <mat-datepicker #pickerInicio></mat-datepicker>
     </mat-form-field>
 
-    <mat-form-field class="example-full-width">
-        <mat-label>Precio Unitario</mat-label>
-        <input matInput formControlName="precioUnitario" type="number">
-    </mat-form-field>
+    <div class="flex gap-4 w-full">
+        <mat-form-field class="w-1/2">
+            <mat-label>Precio Unitario</mat-label>
+            <input matInput formControlName="precioUnitario" type="number" step="0.01">
+        </mat-form-field>
+        <mat-form-field class="w-1/2">
+            <mat-label>Moneda</mat-label>
+            <mat-select formControlName="moneda">
+                @for (m of monedasOpciones; track m) {
+                    <mat-option [value]="m">{{m}}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+    </div>
 
     <mat-form-field class="example-full-width">
-        <mat-label>Observación</mat-label>
+        <mat-label>Observaci&oacute;n</mat-label>
         <input matInput formControlName="observacion">
     </mat-form-field>
 

@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Notification } from 'app/layout/common/notifications/notifications.types';
-import { map, Observable, ReplaySubject, switchMap, take, tap } from 'rxjs';
+import { map, Observable, ReplaySubject, switchMap, take, tap, catchError, of } from 'rxjs';
+import { environment } from 'environments/environment';
 
 @Injectable({providedIn: 'root'})
 export class NotificationsService
@@ -36,11 +37,15 @@ export class NotificationsService
      */
     getAll(): Observable<Notification[]>
     {
-        return this._httpClient.get<Notification[]>('api/common/notifications').pipe(
+        return this._httpClient.get<Notification[]>(`${environment.API_BASE_URL}/common/notifications`).pipe(
             tap((notifications) =>
             {
                 this._notifications.next(notifications);
             }),
+            catchError(() => {
+                this._notifications.next([]);
+                return of([]);
+            })
         );
     }
 

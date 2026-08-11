@@ -6,7 +6,15 @@
 <form [formGroup]="form">
     <mat-form-field class="example-full-width">
         <mat-label>Nombre</mat-label>
-        <input matInput formControlName="nombre">
+        <input matInput formControlName="nombre" (input)="onNombreInput()" placeholder="Ej: TSSOP-28, 0805, SOT-23...">
+        <mat-hint *ngIf="data.estado == 1">La familia se auto-selecciona al escribir (puedes cambiarla).</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field class="example-full-width">
+        <mat-label>Familia de Empaquetamiento</mat-label>
+        <mat-select formControlName="idFamiliaEmpaquetamiento">
+            <mat-option *ngFor="let f of familias" [value]="f.id">{{ f.nombre }}</mat-option>
+        </mat-select>
     </mat-form-field>
 
     <div mat-dialog-actions>

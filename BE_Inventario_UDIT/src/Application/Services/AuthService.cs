@@ -16,15 +16,18 @@ namespace Application.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
+        private readonly IAuditoriaService _auditoriaService;
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IAuditoriaService auditoriaService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _configuration = configuration;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task<OperationResult<LoginResponseDto>> LoginAsync(LoginRequestDto request)
@@ -83,6 +86,8 @@ namespace Application.Services
 
             var roles = new List<string> { request.Role };
             var token = await GenerateJwtToken(user, roles);
+
+            await _auditoriaService.LogAsync("CREAR", "Usuario", $"Se registró el nuevo usuario '{user.UserName}' con Rol '{request.Role}'");
 
             return OperationResult<LoginResponseDto>.Ok(new LoginResponseDto
             {

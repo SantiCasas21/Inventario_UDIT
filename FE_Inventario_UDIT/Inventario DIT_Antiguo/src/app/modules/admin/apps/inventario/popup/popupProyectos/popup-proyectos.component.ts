@@ -1,3 +1,5 @@
+import { inject } from '@angular/core';
+import { FuseConfirmationService } from '@fuse/services/confirmation';
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -19,6 +21,8 @@ import { MatNativeDateModule } from '@angular/material/core';
   styleUrl: './popup-proyectos.component.scss'
 })
 export class PopupProyectosComponent implements OnInit {
+  fuseConfirmation = inject(FuseConfirmationService);
+
   inputData:any;
   form:FormGroup;
   estados: CatalogoDto[] = [];
@@ -65,6 +69,15 @@ export class PopupProyectosComponent implements OnInit {
     this.proyectoService.create(data).subscribe({
       next:() => {
         this.cerrarPopup();
+      },
+      error: (err:any) => {
+        const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'Ocurri\u00f3 un error al guardar el registro.');
+        this.fuseConfirmation.open({
+          title: 'Error de validaci\u00f3n',
+          message: msg,
+          icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
+          actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
+        });
       }
     });
   }
@@ -79,6 +92,15 @@ export class PopupProyectosComponent implements OnInit {
     this.proyectoService.update(id, data).subscribe({
       next:() => {
         this.cerrarPopup();
+      },
+      error: (err:any) => {
+        const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'Ocurri\u00f3 un error al guardar el registro.');
+        this.fuseConfirmation.open({
+          title: 'Error de validaci\u00f3n',
+          message: msg,
+          icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
+          actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
+        });
       }
     });
   }
