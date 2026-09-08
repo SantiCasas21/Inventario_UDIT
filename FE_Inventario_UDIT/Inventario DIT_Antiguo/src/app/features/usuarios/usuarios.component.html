@@ -1,223 +1,499 @@
 <div class="premium-bg min-h-screen">
   <div class="admin-page">
-  <!-- Encabezado -->
-  <div class="flex items-center justify-between mb-8">
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
       <div class="transform transition duration-500 hover:scale-105">
-          <h1 class="text-4xl font-black tracking-tight text-gray-900 mb-2 drop-shadow-sm">
-              <span class="gradient-text">Gestión de Usuarios</span>
-          </h1>
-          <p class="text-base font-medium text-gray-500 flex items-center gap-2">
-              <mat-icon class="text-indigo-400" style="font-size: 20px; width: 20px; height: 20px;">admin_panel_settings</mat-icon>
-              Administración de usuarios del sistema. Solo Admin puede gestionar usuarios.
-          </p>
+        <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-gray-900 mb-1 sm:mb-2 drop-shadow-sm">
+          <span class="gradient-text">Gestión de Usuarios</span>
+        </h1>
+        <p class="text-xs sm:text-base font-medium text-gray-500 flex items-center gap-2">
+          <mat-icon class="text-indigo-400" style="font-size: 20px; width: 20px; height: 20px;">admin_panel_settings</mat-icon>
+          Control centralizado de cuentas, roles RBAC y ciclo de vida de usuarios.
+        </p>
       </div>
-  </div>
 
-  <!-- Tips de Roles Glassmorphism -->
-  <mat-card class="glass-card mb-8 border-none">
-    <mat-card-header class="px-6 py-4 border-b border-gray-100 bg-white/40">
-      <mat-card-title class="text-xl font-bold text-gray-800 flex items-center gap-2">
-          <mat-icon class="text-indigo-500">lightbulb</mat-icon>
-          Roles del Sistema
-      </mat-card-title>
-      <mat-card-subtitle class="text-sm font-medium text-gray-500 mt-1">Cada rol tiene permisos específicos. Asígnale a cada usuario el rol que necesita.</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content class="p-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <div class="flex items-start gap-4 p-5 rounded-2xl bg-white/50 border border-white/60 hover:shadow-lg transition-shadow" *ngFor="let tip of roleTips">
-          <mat-icon [style.color]="tip.color" class="mt-1" style="transform: scale(1.2);">{{ tip.icon }}</mat-icon>
-          <div>
-            <span class="block font-bold text-base mb-1" [style.color]="tip.color">{{ tip.role }}</span>
-            <span class="text-sm text-gray-600 leading-tight">{{ tip.desc }}</span>
+      <!-- Acciones de Cabecera -->
+      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+        <button mat-flat-button color="primary" (click)="openCreateUserModal()"
+                class="flex items-center justify-center gap-2 shadow-md btn-gloss transition-transform hover:scale-105 flex-1 sm:flex-initial"
+                style="border-radius: 12px; padding: 0 20px; height: 44px;">
+          <mat-icon>person_add</mat-icon>
+          <span class="font-bold text-sm">Registrar Nuevo Usuario</span>
+        </button>
+
+        <!-- Enlace a Roles y Permisos -->
+        <button mat-stroked-button routerLink="/roles-permisos"
+                class="flex items-center justify-center gap-2 border-indigo-300 text-indigo-600 hover:bg-indigo-50 transition-colors shadow-sm flex-1 sm:flex-initial"
+                style="border-radius: 12px; padding: 0 18px; height: 44px;">
+          <mat-icon class="text-indigo-500">security</mat-icon>
+          <span class="font-bold text-sm">Gestionar Roles</span>
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ══ Tarjetas de Métricas y KPIs ══ -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      
+      <!-- Total Usuarios -->
+      <mat-card class="glass-card border-none p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Total Usuarios</span>
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+            <mat-icon>people</mat-icon>
           </div>
         </div>
-      </div>
-    </mat-card-content>
-  </mat-card>
+        <div class="mt-4">
+          <div class="text-3xl font-black text-gray-900">{{ totalUsers }}</div>
+          <span class="text-xs text-gray-500 font-medium">Registrados en la plataforma</span>
+        </div>
+      </mat-card>
 
-  <!-- Lista de Usuarios (Full Width) -->
-  <mat-card class="glass-card flex-grow overflow-hidden flex flex-col border-none mb-8">
-    <mat-card-header class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white/40">
-      <div>
-          <mat-card-title class="text-xl font-bold text-gray-800">Usuarios Registrados</mat-card-title>
-          <mat-card-subtitle class="text-sm font-medium text-gray-500 mt-1" *ngIf="!loading && !error">{{ users.length }} usuario(s) en el sistema</mat-card-subtitle>
+      <!-- Usuarios Activos -->
+      <mat-card class="glass-card border-none p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Usuarios Activos</span>
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-3xl font-black text-emerald-600">{{ activeUsers }}</div>
+          <span class="text-xs text-emerald-700 font-medium">Con acceso operativo al sistema</span>
+        </div>
+      </mat-card>
+
+      <!-- Inactivos con Regla 30 Días -->
+      <mat-card class="glass-card border-none p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Desactivados (30d)</span>
+          <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600"
+               matTooltip="Los usuarios desactivados se eliminan automáticamente tras 30 días si no se reactivan.">
+            <mat-icon>timer</mat-icon>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-3xl font-black text-amber-600">{{ inactiveUsers }}</div>
+          <span class="text-xs text-amber-700 font-medium">En período de gracia de 30 días</span>
+        </div>
+      </mat-card>
+
+      <!-- Distribución por Roles -->
+      <mat-card class="glass-card border-none p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Por Rol</span>
+          <mat-icon class="text-gray-400" style="font-size: 18px; width: 18px; height: 18px;">pie_chart</mat-icon>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="flex items-center justify-between p-1.5 rounded-lg bg-red-50/60 border border-red-100">
+            <span class="font-bold text-red-800">Admin</span>
+            <span class="font-extrabold text-red-900 bg-red-200/60 px-1.5 py-0.5 rounded text-[11px]">{{ adminCount }}</span>
+          </div>
+          <div class="flex items-center justify-between p-1.5 rounded-lg bg-blue-50/60 border border-blue-100">
+            <span class="font-bold text-blue-800">Developer</span>
+            <span class="font-extrabold text-blue-900 bg-blue-200/60 px-1.5 py-0.5 rounded text-[11px]">{{ developerCount }}</span>
+          </div>
+          <div class="flex items-center justify-between p-1.5 rounded-lg bg-amber-50/60 border border-amber-100">
+            <span class="font-bold text-amber-800">Assistant</span>
+            <span class="font-extrabold text-amber-900 bg-amber-200/60 px-1.5 py-0.5 rounded text-[11px]">{{ assistantCount }}</span>
+          </div>
+          <div class="flex items-center justify-between p-1.5 rounded-lg bg-emerald-50/60 border border-emerald-100">
+            <span class="font-bold text-emerald-800">User</span>
+            <span class="font-extrabold text-emerald-900 bg-emerald-200/60 px-1.5 py-0.5 rounded text-[11px]">{{ userCount }}</span>
+          </div>
+        </div>
+      </mat-card>
+
+    </div>
+
+    <!-- ══ Barra de Filtros y Búsqueda Interactiva ══ -->
+    <mat-card class="glass-card mb-6 border-none p-4">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        
+        <!-- Búsqueda en vivo -->
+        <div class="w-full md:w-96 relative">
+          <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+            <mat-icon matPrefix class="text-gray-400">search</mat-icon>
+            <input matInput [(ngModel)]="searchTerm" placeholder="Buscar por nombre, usuario o email..." />
+            <button mat-icon-button matSuffix *ngIf="searchTerm" (click)="searchTerm = ''" type="button">
+              <mat-icon class="text-gray-400">close</mat-icon>
+            </button>
+          </mat-form-field>
+        </div>
+
+        <!-- Filtros Rápidos -->
+        <div class="flex items-center gap-3 w-full md:w-auto flex-wrap">
+          
+          <!-- Filtro por Rol -->
+          <mat-form-field appearance="outline" class="w-44" subscriptSizing="dynamic">
+            <mat-label>Rol</mat-label>
+            <mat-select [(ngModel)]="roleFilter">
+              <mat-option value="ALL">Todos los roles</mat-option>
+              <mat-option value="Admin">Admin</mat-option>
+              <mat-option value="Developer">Developer</mat-option>
+              <mat-option value="Assistant">Assistant</mat-option>
+              <mat-option value="User">User</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Filtro por Estado -->
+          <mat-form-field appearance="outline" class="w-44" subscriptSizing="dynamic">
+            <mat-label>Estado</mat-label>
+            <mat-select [(ngModel)]="statusFilter">
+              <mat-option value="ALL">Todos</mat-option>
+              <mat-option value="ACTIVE">Solo Activos</mat-option>
+              <mat-option value="INACTIVE">Solo Inactivos</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Botón Refrescar -->
+          <button mat-icon-button (click)="loadUsers()" [disabled]="loading" matTooltip="Refrescar lista" class="text-gray-600 hover:bg-gray-100">
+            <mat-icon [ngClass]="{'animate-spin': loading}">refresh</mat-icon>
+          </button>
+        </div>
+
       </div>
-    </mat-card-header>
-    <mat-card-content class="p-0 flex-grow">
-      <div *ngIf="loading" class="p-8 text-center text-gray-500 font-medium">Cargando usuarios...</div>
-      <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 m-4 rounded-r-lg shadow-sm">
-        <div class="flex items-center gap-2">
+    </mat-card>
+
+    <!-- ══ Tabla de Usuarios Registrados ══ -->
+    <mat-card class="glass-card flex-grow overflow-hidden flex flex-col border-none mb-8">
+      <mat-card-header class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white/40">
+        <div>
+          <mat-card-title class="text-xl font-bold text-gray-800">Directorio de Usuarios</mat-card-title>
+          <mat-card-subtitle class="text-sm font-medium text-gray-500 mt-1" *ngIf="!loading && !error">
+            Mostrando {{ filteredUsers.length }} de {{ users.length }} usuario(s)
+          </mat-card-subtitle>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content class="p-0 flex-grow">
+        <div *ngIf="loading" class="p-12 text-center text-gray-500 font-medium flex flex-col items-center gap-3">
+          <mat-icon class="animate-spin text-indigo-500" style="font-size: 32px; width: 32px; height: 32px;">refresh</mat-icon>
+          <span>Cargando directorio de usuarios...</span>
+        </div>
+
+        <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 m-4 rounded-r-lg shadow-sm">
+          <div class="flex items-center gap-2">
             <mat-icon>error_outline</mat-icon>
             {{ error }}
+          </div>
         </div>
-      </div>
-      
-      <div class="overflow-auto" *ngIf="!loading && !error">
-        <table mat-table [dataSource]="users" class="w-full premium-table">
-          <ng-container matColumnDef="username">
-            <th mat-header-cell *matHeaderCellDef class="text-left" style="padding-left: 24px;">Usuario</th>
-            <td mat-cell *matCellDef="let u" class="text-left" style="padding-left: 24px;">
-                <div class="flex items-center gap-3 justify-start">
-                    <div class="avatar-circle" [ngClass]="{
-                        'avatar-admin': u.role === 'Admin',
-                        'avatar-developer': u.role === 'Developer',
-                        'avatar-assistant': u.role === 'Assistant',
-                        'avatar-user': u.role === 'User'
-                    }">
-                        {{ u.username.substring(0, 2).toUpperCase() }}
-                    </div>
-                    <strong class="text-gray-800 text-base">{{ u.username }}</strong>
+        
+        <div class="responsive-table-container overflow-auto" *ngIf="!loading && !error">
+          <table mat-table [dataSource]="filteredUsers" class="w-full premium-table">
+            
+            <!-- Columna Usuario -->
+            <ng-container matColumnDef="usuario">
+              <th mat-header-cell *matHeaderCellDef class="text-left" style="padding-left: 24px;">Usuario</th>
+              <td mat-cell *matCellDef="let u" class="text-left" style="padding-left: 24px;">
+                <div class="flex items-center gap-3 justify-start py-2">
+                  <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 border shadow-sm"
+                       [ngClass]="{
+                         'border-red-400 bg-red-50 text-red-700': u.role === 'Admin',
+                         'border-blue-400 bg-blue-50 text-blue-700': u.role === 'Developer',
+                         'border-amber-400 bg-amber-50 text-amber-700': u.role === 'Assistant',
+                         'border-emerald-400 bg-emerald-50 text-emerald-700': u.role === 'User'
+                       }">
+                    <img *ngIf="u.avatarUrl" [src]="u.avatarUrl" class="w-full h-full object-cover" [alt]="u.username">
+                    <span *ngIf="!u.avatarUrl" class="font-black text-xs">{{ getUserInitials(u) }}</span>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="font-bold text-gray-900 text-sm leading-tight">{{ u.nombreCompleto || u.username }}</span>
+                    <span class="text-xs text-gray-500 font-medium leading-tight mt-0.5">&#64;{{ u.username }}</span>
+                  </div>
                 </div>
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="email">
-            <th mat-header-cell *matHeaderCellDef>Email</th>
-            <td mat-cell *matCellDef="let u" class="text-gray-600 text-base">{{ u.email }}</td>
-          </ng-container>
-          <ng-container matColumnDef="nombreCompleto">
-            <th mat-header-cell *matHeaderCellDef>Nombre</th>
-            <td mat-cell *matCellDef="let u" class="font-medium text-base">{{ u.nombreCompleto }}</td>
-          </ng-container>
-          <ng-container matColumnDef="role">
-            <th mat-header-cell *matHeaderCellDef>Rol</th>
-            <td mat-cell *matCellDef="let u">
-              <span class="badge" 
-                    [ngClass]="{'badge-error': u.role === 'Admin', 'badge-info': u.role === 'Developer', 'badge-warning': u.role === 'Assistant', 'badge-success': u.role === 'User'}">
-                {{ u.role }}
-              </span>
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="activo">
-            <th mat-header-cell *matHeaderCellDef>Estado</th>
-            <td mat-cell *matCellDef="let u">
-              <span class="badge" [ngClass]="u.activo ? 'badge-success' : 'badge-error'">
-                {{ u.activo ? 'Activo' : 'Inactivo' }}
-              </span>
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="acciones">
-            <th mat-header-cell *matHeaderCellDef>Acciones</th>
-            <td mat-cell *matCellDef="let u">
-              <div class="flex items-center justify-center gap-1">
-                  <button *ngIf="u.activo" mat-icon-button color="warn" (click)="confirmDeactivate(u)" matTooltip="Desactivar usuario">
+              </td>
+            </ng-container>
+
+            <!-- Columna Contacto -->
+            <ng-container matColumnDef="contacto">
+              <th mat-header-cell *matHeaderCellDef class="text-left">Correo Electrónico</th>
+              <td mat-cell *matCellDef="let u" class="text-left">
+                <span class="text-gray-700 text-sm font-medium">{{ u.email || '—' }}</span>
+              </td>
+            </ng-container>
+
+            <!-- Columna Rol -->
+            <ng-container matColumnDef="role">
+              <th mat-header-cell *matHeaderCellDef>Rol Asignado</th>
+              <td mat-cell *matCellDef="let u">
+                <span class="user-role-badge" 
+                      [ngClass]="{
+                        'badge-role-admin': u.role === 'Admin', 
+                        'badge-role-developer': u.role === 'Developer', 
+                        'badge-role-assistant': u.role === 'Assistant', 
+                        'badge-role-user': u.role === 'User'
+                      }">
+                  <span class="w-1.5 h-1.5 rounded-full"
+                        [ngClass]="{
+                          'bg-red-500': u.role === 'Admin',
+                          'bg-blue-500': u.role === 'Developer',
+                          'bg-amber-500': u.role === 'Assistant',
+                          'bg-emerald-500': u.role === 'User'
+                        }"></span>
+                  {{ u.role }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Columna Estado con Regla 30d -->
+            <ng-container matColumnDef="estado">
+              <th mat-header-cell *matHeaderCellDef>Estado</th>
+              <td mat-cell *matCellDef="let u">
+                <div class="inline-flex flex-col items-center gap-1">
+                  <!-- Activo -->
+                  <span *ngIf="u.activo" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Activo
+                  </span>
+
+                  <!-- Inactivo con aviso de eliminación -->
+                  <div *ngIf="!u.activo" class="flex flex-col items-center gap-0.5">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      Inactivo
+                    </span>
+                    <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+                          [matTooltip]="'Este usuario se eliminará automáticamente tras cumplir 30 días desactivado si no se reactiva antes.'">
+                      ⏱ Expira en {{ u.diasRestantesEliminacion != null ? u.diasRestantesEliminacion : 30 }}d
+                    </span>
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Columna Fecha Creación -->
+            <ng-container matColumnDef="fechaCreacion">
+              <th mat-header-cell *matHeaderCellDef>Fecha Registro</th>
+              <td mat-cell *matCellDef="let u" class="text-xs text-gray-500 font-medium">
+                {{ u.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}
+              </td>
+            </ng-container>
+
+            <!-- Columna Acciones -->
+            <ng-container matColumnDef="acciones">
+              <th mat-header-cell *matHeaderCellDef>Acciones</th>
+              <td mat-cell *matCellDef="let u">
+                <div class="flex items-center justify-center gap-1.5">
+                  <!-- Cambiar rol -->
+                  <button mat-icon-button class="text-indigo-600 hover:bg-indigo-50" (click)="openEditRole(u)" matTooltip="Cambiar Rol">
+                    <mat-icon>manage_accounts</mat-icon>
+                  </button>
+
+                  <!-- Desactivar -->
+                  <button *ngIf="u.activo" mat-icon-button color="warn" (click)="confirmDeactivate(u)" matTooltip="Desactivar (Inicia plazo de 30 días para eliminación)">
                     <mat-icon>block</mat-icon>
                   </button>
-                  <button *ngIf="!u.activo" mat-icon-button color="primary" (click)="confirmActivate(u)" matTooltip="Activar usuario">
+
+                  <!-- Reactivar -->
+                  <button *ngIf="!u.activo" mat-icon-button color="primary" (click)="confirmActivate(u)" matTooltip="Reactivar usuario (Cancela eliminación)">
                     <mat-icon>check_circle</mat-icon>
                   </button>
-                  <button *ngIf="!u.activo" mat-icon-button color="warn" (click)="confirmDelete(u)" matTooltip="Eliminar permanentemente">
+
+                  <!-- Eliminar de inmediato -->
+                  <button *ngIf="!u.activo" mat-icon-button color="warn" (click)="confirmDelete(u)" matTooltip="Eliminar de inmediato (sin esperar 30 días)">
                     <mat-icon>delete_forever</mat-icon>
                   </button>
-              </div>
-            </td>
-          </ng-container>
+                </div>
+              </td>
+            </ng-container>
 
-          <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row-animate"></tr>
-        </table>
-      </div>
-    </mat-card-content>
-  </mat-card>
+            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row-animate"></tr>
+          </table>
 
-  <!-- Bottom Section: Grid for Form & Credentials -->
-  <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-    <!-- Panel de Registro -->
-    <mat-card class="glass-card border-none h-full">
-      <mat-card-header class="px-6 py-4 border-b border-gray-100 bg-white/40">
-        <mat-card-title class="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <mat-icon class="text-indigo-500">person_add</mat-icon>
-            Registrar Nuevo Usuario
-        </mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="p-6">
-        <form [formGroup]="registerForm" (ngSubmit)="registrarUsuario()" class="flex flex-col gap-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <mat-form-field appearance="outline" class="w-full">
-                    <mat-label>Usuario</mat-label>
-                    <input matInput formControlName="username" placeholder="Ej: developer1" />
-                    <mat-error *ngIf="registerForm.get('username')?.hasError('required')">Requerido</mat-error>
-                    <mat-error *ngIf="registerForm.get('username')?.hasError('minlength')">Mínimo 3 caracteres</mat-error>
-                </mat-form-field>
-        
-                <mat-form-field appearance="outline" class="w-full">
-                    <mat-label>Email</mat-label>
-                    <input matInput type="email" formControlName="email" placeholder="usuario@udit.com" />
-                    <mat-error *ngIf="registerForm.get('email')?.hasError('required')">Requerido</mat-error>
-                    <mat-error *ngIf="registerForm.get('email')?.hasError('email')">Email inválido</mat-error>
-                </mat-form-field>
-        
-                <mat-form-field appearance="outline" class="w-full">
-                    <mat-label>Contraseña</mat-label>
-                    <input matInput type="password" formControlName="password" placeholder="Mínimo 6 caracteres" />
-                    <mat-error *ngIf="registerForm.get('password')?.hasError('required')">Requerida</mat-error>
-                    <mat-error *ngIf="registerForm.get('password')?.hasError('minlength')">Mínimo 6 caracteres</mat-error>
-                </mat-form-field>
-        
-                <mat-form-field appearance="outline" class="w-full">
-                    <mat-label>Nombre Completo</mat-label>
-                    <input matInput formControlName="nombreCompleto" placeholder="Juan Pérez" />
-                    <mat-error *ngIf="registerForm.get('nombreCompleto')?.hasError('required')">Requerido</mat-error>
-                </mat-form-field>
-            </div>
-            
-            <mat-form-field appearance="outline" class="w-full">
-              <mat-label>Rol</mat-label>
-              <mat-select formControlName="role">
-                <mat-option value="Admin">Admin</mat-option>
-                <mat-option value="Developer">Developer</mat-option>
-                <mat-option value="Assistant">Assistant</mat-option>
-                <mat-option value="User">User</mat-option>
-              </mat-select>
-            </mat-form-field>
-  
-          <button mat-raised-button color="primary" type="submit" [disabled]="registerForm.invalid" class="mt-2 w-full py-2 shadow-lg btn-gloss" style="height: 48px; border-radius: 8px;">
-            <mat-icon>person_add</mat-icon> Registrar Usuario
-          </button>
-        </form>
+          <!-- Empty state -->
+          <div *ngIf="filteredUsers.length === 0" class="p-12 text-center text-gray-500">
+            <mat-icon class="text-gray-300" style="font-size: 48px; width: 48px; height: 48px;">person_search</mat-icon>
+            <p class="text-base font-bold text-gray-700 mt-2">No se encontraron usuarios</p>
+            <p class="text-xs text-gray-500">Intenta con otros términos de búsqueda o ajusta los filtros.</p>
+          </div>
+        </div>
       </mat-card-content>
     </mat-card>
 
-    <!-- Credenciales -->
-    <mat-card class="glass-card border-none bg-indigo-50/50 h-full">
-        <mat-card-header class="px-6 py-4 border-b border-indigo-100 bg-indigo-100/30">
-          <mat-card-title class="text-xl font-bold text-indigo-900 flex items-center gap-2">
-              <mat-icon>vpn_key</mat-icon>
-              Credenciales Predefinidas
+    <!-- ══ Modal / Diálogo para Cambio de Rol ══ -->
+    <div *ngIf="selectedUserForRoleEdit" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+      <mat-card class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 animate-scale-up">
+        <mat-card-header class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-indigo-100/50 border-b border-indigo-100 flex items-center justify-between">
+          <mat-card-title class="text-lg font-bold text-indigo-950 flex items-center gap-2">
+            <mat-icon class="text-indigo-600">manage_accounts</mat-icon>
+            Asignar Rol de Usuario
           </mat-card-title>
+          <button mat-icon-button (click)="cancelEditRole()" class="text-gray-400 hover:text-gray-600">
+            <mat-icon>close</mat-icon>
+          </button>
         </mat-card-header>
-        <mat-card-content class="p-6">
-            <div class="flex flex-col gap-4">
-                <div class="p-4 bg-white/70 rounded-xl border border-white flex justify-between items-center text-base hover:shadow-md transition-shadow">
-                    <div class="flex items-center gap-3">
-                        <div class="avatar-circle avatar-admin">AD</div>
-                        <span class="font-bold text-indigo-900">admin</span>
-                    </div>
-                    <code class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded font-bold">Admin2026!</code>
-                </div>
-                <div class="p-4 bg-white/70 rounded-xl border border-white flex justify-between items-center text-base hover:shadow-md transition-shadow">
-                    <div class="flex items-center gap-3">
-                        <div class="avatar-circle avatar-developer">DE</div>
-                        <span class="font-bold text-gray-700">developer1</span>
-                    </div>
-                    <code class="bg-gray-100 text-gray-700 px-3 py-1 rounded font-bold">Dev2026!</code>
-                </div>
-                <div class="p-4 bg-white/70 rounded-xl border border-white flex justify-between items-center text-base hover:shadow-md transition-shadow">
-                    <div class="flex items-center gap-3">
-                        <div class="avatar-circle avatar-assistant">AS</div>
-                        <span class="font-bold text-gray-700">assistant1</span>
-                    </div>
-                    <code class="bg-gray-100 text-gray-700 px-3 py-1 rounded font-bold">Asst2026!</code>
-                </div>
-                <div class="p-4 bg-white/70 rounded-xl border border-white flex justify-between items-center text-base hover:shadow-md transition-shadow">
-                    <div class="flex items-center gap-3">
-                        <div class="avatar-circle avatar-user">US</div>
-                        <span class="font-bold text-gray-700">user1</span>
-                    </div>
-                    <code class="bg-gray-100 text-gray-700 px-3 py-1 rounded font-bold">User2026!</code>
-                </div>
+
+        <mat-card-content class="p-6 flex flex-col gap-4">
+          <!-- Info del Usuario -->
+          <div class="flex items-center gap-3 p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+            <div class="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm border"
+                 [ngClass]="{
+                   'border-red-400 bg-red-50 text-red-700': selectedUserForRoleEdit.role === 'Admin',
+                   'border-blue-400 bg-blue-50 text-blue-700': selectedUserForRoleEdit.role === 'Developer',
+                   'border-amber-400 bg-amber-50 text-amber-700': selectedUserForRoleEdit.role === 'Assistant',
+                   'border-emerald-400 bg-emerald-50 text-emerald-700': selectedUserForRoleEdit.role === 'User'
+                 }">
+              <img *ngIf="selectedUserForRoleEdit.avatarUrl" [src]="selectedUserForRoleEdit.avatarUrl" class="w-full h-full object-cover">
+              <span *ngIf="!selectedUserForRoleEdit.avatarUrl" class="font-bold text-sm">{{ getUserInitials(selectedUserForRoleEdit) }}</span>
             </div>
+            <div class="flex flex-col min-w-0">
+              <span class="font-bold text-gray-900 text-sm truncate">{{ selectedUserForRoleEdit.nombreCompleto || selectedUserForRoleEdit.username }}</span>
+              <span class="text-xs text-gray-500 truncate">&#64;{{ selectedUserForRoleEdit.username }}</span>
+              <div class="mt-1">
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                      [ngClass]="{
+                        'bg-red-100 text-red-800': selectedUserForRoleEdit.role === 'Admin',
+                        'bg-blue-100 text-blue-800': selectedUserForRoleEdit.role === 'Developer',
+                        'bg-amber-100 text-amber-800': selectedUserForRoleEdit.role === 'Assistant',
+                        'bg-emerald-100 text-emerald-800': selectedUserForRoleEdit.role === 'User'
+                      }">
+                  Rol actual: {{ selectedUserForRoleEdit.role }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selector del Nuevo Rol -->
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Nuevo Rol</mat-label>
+            <mat-select [(ngModel)]="selectedNewRole">
+              <mat-option value="Admin">
+                <span class="font-bold text-red-700">Admin</span> — Control total del sistema
+              </mat-option>
+              <mat-option value="Developer">
+                <span class="font-bold text-blue-700">Developer</span> — Operación y catálogos completos
+              </mat-option>
+              <mat-option value="Assistant">
+                <span class="font-bold text-amber-700">Assistant</span> — Movimientos e insumos operativos
+              </mat-option>
+              <mat-option value="User">
+                <span class="font-bold text-emerald-700">User</span> — Solo lectura
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="text-xs text-gray-500 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 flex items-start gap-2">
+            <mat-icon class="text-indigo-500 flex-shrink-0" style="font-size: 16px; width: 16px; height: 16px;">info</mat-icon>
+            <span>El cambio de rol reconfigurará de inmediato los permisos y accesos del usuario según las políticas RBAC configuradas.</span>
+          </div>
+
+          <!-- Botones de Acción -->
+          <div class="flex justify-end gap-3 mt-2">
+            <button mat-button type="button" (click)="cancelEditRole()" [disabled]="updatingRole">
+              Cancelar
+            </button>
+            <button mat-flat-button color="primary" type="button" (click)="saveUserRole()" [disabled]="updatingRole || selectedNewRole === selectedUserForRoleEdit.role" class="btn-gloss">
+              <span *ngIf="!updatingRole">Actualizar Rol</span>
+              <span *ngIf="updatingRole">Guardando...</span>
+            </button>
+          </div>
         </mat-card-content>
-    </mat-card>
-  </div>
+      </mat-card>
+    </div>
+
+    <!-- ══ Modal / Diálogo para Registrar Nuevo Usuario (Admin) ══ -->
+    <div *ngIf="isCreateUserModalOpen" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+      <div class="glass-card w-full max-w-lg border-none shadow-2xl p-6 sm:p-7 bg-white rounded-3xl overflow-hidden">
+        
+        <!-- Encabezado del Modal -->
+        <div class="flex items-center justify-between pb-4 mb-5 border-b border-gray-100">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-red-700 flex items-center justify-center text-white shadow-lg shadow-rose-500/20 flex-shrink-0">
+              <mat-icon style="font-size: 24px; width: 24px; height: 24px;">person_add</mat-icon>
+            </div>
+            <div class="flex flex-col">
+              <h2 class="text-xl font-black text-gray-900 tracking-tight leading-tight m-0">
+                Registrar Nuevo Usuario
+              </h2>
+              <p class="text-xs text-gray-500 font-medium mt-1 m-0 leading-normal">
+                Crear cuenta interna para personal de la oficina
+              </p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closeCreateUserModal()" [disabled]="creatingUser" class="text-gray-400 hover:text-gray-600 -mr-2">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          <!-- Mensaje de Error en el Modal -->
+          <div *ngIf="createUserError" class="bg-rose-50 border-l-4 border-rose-500 text-rose-800 p-3 rounded-r-xl text-xs font-semibold flex items-center gap-2">
+            <mat-icon class="text-rose-500" style="font-size: 18px; width: 18px; height: 18px;">error_outline</mat-icon>
+            <span>{{ createUserError }}</span>
+          </div>
+
+          <!-- Campo: Nombre Completo -->
+          <mat-form-field appearance="outline" class="w-full mb-0">
+            <mat-label>Nombre Completo</mat-label>
+            <mat-icon matPrefix class="text-gray-400 mr-2">badge</mat-icon>
+            <input matInput [(ngModel)]="newUserForm.nombreCompleto" placeholder="Ej. Carlos Mendoza" required>
+          </mat-form-field>
+
+          <!-- Campo: Nombre de Usuario -->
+          <mat-form-field appearance="outline" class="w-full mb-0">
+            <mat-label>Nombre de Usuario (Username)</mat-label>
+            <mat-icon matPrefix class="text-gray-400 mr-2">account_circle</mat-icon>
+            <input matInput [(ngModel)]="newUserForm.username" placeholder="Ej. cmendoza" required>
+            <mat-hint class="text-[11px] text-gray-400">Usado para iniciar sesión en la plataforma</mat-hint>
+          </mat-form-field>
+
+          <!-- Campo: Correo Electrónico -->
+          <mat-form-field appearance="outline" class="w-full mb-0">
+            <mat-label>Correo Electrónico Institucional</mat-label>
+            <mat-icon matPrefix class="text-gray-400 mr-2">alternate_email</mat-icon>
+            <input matInput [(ngModel)]="newUserForm.email" type="email" placeholder="Ej. cmendoza@udit.com" required>
+          </mat-form-field>
+
+          <!-- Campo: Rol Asignado -->
+          <mat-form-field appearance="outline" class="w-full mb-0">
+            <mat-label>Rol Inicial Asignado</mat-label>
+            <mat-icon matPrefix class="text-gray-400 mr-2">shield</mat-icon>
+            <mat-select [(ngModel)]="newUserForm.role">
+              <mat-option value="User">
+                <span class="font-bold text-emerald-700">User</span> — Solo Lectura (Por defecto)
+              </mat-option>
+              <mat-option value="Assistant">
+                <span class="font-bold text-amber-700">Assistant</span> — Movimientos e Insumos Operativos
+              </mat-option>
+              <mat-option value="Developer">
+                <span class="font-bold text-blue-700">Developer</span> — Operación y Catálogos Maestros
+              </mat-option>
+              <mat-option value="Admin">
+                <span class="font-bold text-red-700">Admin</span> — Control Total del Sistema
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Nota Informativa sobre la Contraseña por Defecto -->
+          <div class="text-xs text-slate-700 bg-amber-50/80 p-3.5 rounded-2xl border border-amber-200/70 flex items-start gap-2.5 leading-relaxed">
+            <mat-icon class="text-amber-600 flex-shrink-0" style="font-size: 18px; width: 18px; height: 18px;">lightbulb</mat-icon>
+            <div>
+              <strong class="text-amber-900 block font-bold mb-0.5">Contraseña Temporal: <code class="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono">Udit2026!</code></strong>
+              El usuario deberá actualizar obligatoriamente esta contraseña por una personal en su <strong>1er inicio de sesión</strong> para acceder al sistema.
+            </div>
+          </div>
+
+          <!-- Botones de Acción -->
+          <div class="flex justify-end gap-3 pt-2">
+            <button mat-button type="button" (click)="closeCreateUserModal()" [disabled]="creatingUser">
+              Cancelar
+            </button>
+            <button mat-flat-button color="primary" type="button" (click)="saveNewUser()" [disabled]="creatingUser" class="btn-gloss px-6">
+              <div class="flex items-center gap-2">
+                <mat-icon *ngIf="!creatingUser">how_to_reg</mat-icon>
+                <span *ngIf="!creatingUser">Crear Usuario</span>
+                <span *ngIf="creatingUser">Creando...</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
   </div>
 </div>
+

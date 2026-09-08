@@ -34,23 +34,24 @@ namespace Application.Services
         {
             PagedResult<Insumo> paged;
 
+            // P-02: Traer stock general UNA sola vez y reutilizarlo
+            var stockDb = await _movRepo.GetStockGeneralDbAsync();
+            var stockDict = stockDb.ToDictionary(s => s.IdInsumo);
+
             // Manejar filtro por IdsUbicacion desde Movimientos (ya que Insumo no tiene IdUbicacion)
             if (filter?.IdsUbicacion?.Count > 0)
             {
-                var stockGeneral = await _movRepo.GetStockGeneralDbAsync();
-                
-                var insumoIdsConStockEnUbicacion = new HashSet<int>();
-                foreach (var s in stockGeneral.Where(x => x.StockActual > 0))
-                {
-                    var ubiStock = await _movRepo.GetStockPorUbicacionAsync(s.IdInsumo);
-                    if (ubiStock.Any(u => filter.IdsUbicacion.Contains(u.IdUbicacion) && u.Stock > 0))
-                    {
-                        insumoIdsConStockEnUbicacion.Add(s.IdInsumo);
-                    }
-                }
-                
+                // P-01: Usar batch query en lugar de N+1 (un GetStockPorUbicacionAsync por insumo)
+                var insumosConStock = stockDb.Where(x => x.StockActual > 0).Select(x => x.IdInsumo).ToArray();
+                var ubicacionesBatch = await _movRepo.GetStockPorUbicacionPorInsumosAsync(insumosConStock);
+
+                var insumoIdsConStockEnUbicacion = ubicacionesBatch
+                    .Where(kv => kv.Value.Any(u => filter.IdsUbicacion.Contains(u.IdUbicacion) && u.Stock > 0))
+                    .Select(kv => kv.Key)
+                    .ToHashSet();
+
                 if (filter.IdsInsumo == null) filter.IdsInsumo = new List<int>();
-                
+
                 // Intersectar con IdsInsumo si ya existía
                 if (filter.IdsInsumo.Count > 0)
                 {
@@ -60,7 +61,7 @@ namespace Application.Services
                 {
                     filter.IdsInsumo = insumoIdsConStockEnUbicacion.ToList();
                 }
-                
+
                 // Si la intersección o el resultado es 0, no hay insumos que cumplan el filtro
                 if (filter.IdsInsumo.Count == 0)
                 {
@@ -81,22 +82,20 @@ namespace Application.Services
                     page: filter?.Page ?? 1, pageSize: filter?.PageSize ?? 20);
             }
 
-            var stockDb = await _movRepo.GetStockGeneralDbAsync();
-            var stockDict = stockDb.ToDictionary(s => s.IdInsumo);
-
+            // P-02: stockDb y stockDict ya están calculados arriba — no se vuelven a pedir
             var insumoIds = paged.Items.Select(i => i.Id).ToArray();
             var ubicacionesStockDict = await _movRepo.GetStockPorUbicacionPorInsumosAsync(insumoIds);
 
-            var dtos = paged.Items.Select(i => 
+            var dtos = paged.Items.Select(i =>
             {
                 var dto = MapToDto(i);
                 dto.Cantidad = stockDict.GetValueOrDefault(i.Id)?.StockActual ?? 0;
                 var ubiResults = ubicacionesStockDict.GetValueOrDefault(i.Id) ?? new List<StockUbicacionResult>();
-                dto.UbicacionesStock = ubiResults.Select(u => new StockUbicacionDto 
-                { 
-                    IdUbicacion = u.IdUbicacion, 
-                    UbicacionNombre = u.UbicacionNombre, 
-                    Stock = u.Stock 
+                dto.UbicacionesStock = ubiResults.Select(u => new StockUbicacionDto
+                {
+                    IdUbicacion = u.IdUbicacion,
+                    UbicacionNombre = u.UbicacionNombre,
+                    Stock = u.Stock
                 }).ToList();
                 return dto;
             }).ToList();
@@ -117,11 +116,11 @@ namespace Application.Services
             var dto = MapToDto(insumo);
             dto.Cantidad = await _movRepo.GetStockByInsumoAsync(id);
             var ubiResults = await _movRepo.GetStockPorUbicacionAsync(id);
-            dto.UbicacionesStock = ubiResults.Select(u => new StockUbicacionDto 
-            { 
-                IdUbicacion = u.IdUbicacion, 
-                UbicacionNombre = u.UbicacionNombre, 
-                Stock = u.Stock 
+            dto.UbicacionesStock = ubiResults.Select(u => new StockUbicacionDto
+            {
+                IdUbicacion = u.IdUbicacion,
+                UbicacionNombre = u.UbicacionNombre,
+                Stock = u.Stock
             }).ToList();
 
             return OperationResult<InsumoDto>.Ok(dto);
@@ -220,23 +219,28 @@ namespace Application.Services
         /// <summary>
         /// Retorna las ubicaciones que NO tienen insumos con stock > 0.
         /// Se usa para filtrar ubicaciones disponibles al crear un nuevo insumo.
+        /// P-03: Reemplazado GetPagedAsync(1, int.MaxValue) con batch de stock por ubicación.
         /// </summary>
         public async Task<List<CatalogoDto>> GetUbicacionesDisponiblesAsync()
         {
             var todas = await _ubicacionRepo.GetAllAsync();
             var stockGeneral = await _movRepo.GetStockGeneralDbAsync();
 
+            // Obtener solo los IDs de insumos que tienen stock > 0
             var insumosConStock = stockGeneral
                 .Where(s => s.StockActual > 0)
                 .Select(s => s.IdInsumo)
-                .ToHashSet();
+                .ToArray();
 
-            // Obtenemos los movimientos para saber qué ubicaciones tienen stock
-            var paged = await _movRepo.GetPagedAsync(1, int.MaxValue, m => insumosConStock.Contains(m.IdInsumo), null, "");
-            var ubicacionesOcupadas = paged.Items
-                .Where(m => m.IdUbicacion.HasValue)
-                .Select(m => m.IdUbicacion.Value)
-                .Distinct()
+            // P-03: Usar batch query en lugar de cargar int.MaxValue movimientos en memoria
+            // GetStockPorUbicacionPorInsumosAsync retorna solo las ubicaciones con stock activo
+            var ubicacionesStockBatch = insumosConStock.Length > 0
+                ? await _movRepo.GetStockPorUbicacionPorInsumosAsync(insumosConStock)
+                : new Dictionary<int, List<StockUbicacionResult>>();
+
+            var ubicacionesOcupadas = ubicacionesStockBatch
+                .Values
+                .SelectMany(ubis => ubis.Select(u => u.IdUbicacion))
                 .ToHashSet();
 
             var vacias = todas

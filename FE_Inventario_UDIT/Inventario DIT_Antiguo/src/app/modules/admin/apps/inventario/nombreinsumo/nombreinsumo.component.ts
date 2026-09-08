@@ -10,7 +10,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { UserService } from '@app/core/user/user.service';
-import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { ConfirmacionService } from '@app/core/services/confirmacion.service';
 import { CatalogoDto } from '@app/core/models';
 import { CatalogoService } from '@app/core/services/catalogo.service';
 import { PopupNombreInsumoComponent } from '../popup/popupNombreInsumo/popup-nombre-insumo.component';
@@ -35,7 +35,7 @@ import { CategoriaBadgePipe } from '@app/shared/pipes/categoria-badge.pipe';
 })
 export class NombreinsumoComponent implements OnInit, AfterViewInit {
   userService = inject(UserService);
-  fuseConfirmation = inject(FuseConfirmationService);
+  confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
   displayedColumns: string[] = ['editar', 'id', 'nombreInsumo', 'eliminar'];
@@ -76,7 +76,11 @@ export class NombreinsumoComponent implements OnInit, AfterViewInit {
 
   abrirPopup(elemento?: CatalogoDto, estado: number = 1): void {
     const dialogRef = this.dialog.open(PopupNombreInsumoComponent, {
-      width: '400px',
+      width: '100%',
+      maxWidth: '520px',
+      panelClass: 'responsive-dialog-panel',
+      enterAnimationDuration: '300ms',
+      exitAnimationDuration: '300ms',
       data: {
         estado: estado,
         data: elemento ? { ...elemento } : null,
@@ -92,31 +96,17 @@ export class NombreinsumoComponent implements OnInit, AfterViewInit {
   }
 
   eliminarRegistro(element: CatalogoDto): void {
-    const dialogRef = this.fuseConfirmation.open({
-      title: 'Eliminar Categoría',
-      message: `¿Estás seguro de que deseas eliminar la categoría "${element.nombre}"? Esta acción no se puede deshacer.`,
-      actions: {
-        confirm: {
-          show: true,
-          label: 'Eliminar',
-          color: 'warn'
-        },
-        cancel: {
-          show: true,
-          label: 'Cancelar'
-        }
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result === 'confirmed') {
+    const nombre = element.nombre || `ID ${element.id}`;
+    this.confirmacionService.confirmarEliminacion('Categoría de Insumo', nombre).subscribe(confirmado => {
+      if (confirmado) {
         this.catalogoService.delete(this.endpoint, element.id).subscribe({
           next: () => {
             this.snackBar.open('Categoría eliminada exitosamente', 'Cerrar', { duration: 3000 });
             this.cargarDatos();
           },
-          error: (err) => {
-            this.snackBar.open(err.message || 'Error al eliminar la categoría', 'Cerrar', { duration: 5000 });
+          error: (err: any) => {
+            const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'No se puede eliminar esta categoría porque está siendo utilizada en insumos o movimientos del sistema.');
+            this.confirmacionService.mostrarAdvertencia('No es posible eliminar la categoría', msg, `Categoría: "${nombre}"`);
           }
         });
       }

@@ -1,5 +1,4 @@
 import { inject } from '@angular/core';
-import { FuseConfirmationService } from '@fuse/services/confirmation';
 import { Component, Inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -14,6 +13,7 @@ import { CatalogoService } from '@app/core/services/catalogo.service';
 import { CatalogoDto, InsumoRequest } from '@app/core/models';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
+import { ConfirmacionService } from '@app/core/services/confirmacion.service';
 import { Observable, startWith, map } from 'rxjs';
 
 @Component({
@@ -24,7 +24,7 @@ import { Observable, startWith, map } from 'rxjs';
   styleUrl: './popup-insumos.component.scss'
 })
 export class PopupInsumosComponent implements OnInit {
-  fuseConfirmation = inject(FuseConfirmationService);
+  confirmacionService = inject(ConfirmacionService);
 
   form: FormGroup;
   categorias: CatalogoDto[] = [];
@@ -129,16 +129,23 @@ export class PopupInsumosComponent implements OnInit {
 
   actualizarUnidadesDisponiblesPorId(idCategoria: number | null) {
     if (idCategoria) {
-      this.unidadesDisponibles = this.todasLasUnidades
+      const unitsForCategory = this.todasLasUnidades
         .filter(u => u.idCategoria === idCategoria)
         .map(u => u.nombre);
+
+      if (unitsForCategory.length > 0) {
+        this.unidadesDisponibles = Array.from(new Set(unitsForCategory));
+      } else {
+        // Fallback a todas las unidades si la categoría no tiene unidades específicas asociadas
+        this.unidadesDisponibles = Array.from(new Set(this.todasLasUnidades.map(u => u.nombre))).sort();
+      }
     } else {
-      this.unidadesDisponibles = [];
+      this.unidadesDisponibles = Array.from(new Set(this.todasLasUnidades.map(u => u.nombre))).sort();
     }
 
     const currentUnidad = this.form.get('unidadMedida')?.value;
-    if (currentUnidad && this.unidadesDisponibles.length > 0 && !this.unidadesDisponibles.includes(currentUnidad)) {
-      this.form.get('unidadMedida')?.setValue(null);
+    if (currentUnidad && !this.unidadesDisponibles.includes(currentUnidad)) {
+      this.unidadesDisponibles.unshift(currentUnidad);
     }
   }
 
@@ -210,10 +217,15 @@ export class PopupInsumosComponent implements OnInit {
       this.mostrarCamposRequeridos();
       return;
     }
-    const req: InsumoRequest = this.form.value;
-    this.insumoService.create(req).subscribe({
-      next: () => this.ref.close(true),
-      error: (err: any) => this.mostrarErrorValidacion(err)
+    const codigo = this.form.get('codigoFabrica')?.value;
+    this.confirmacionService.confirmarGuardado('Insumo', false, codigo).subscribe(confirmado => {
+      if (confirmado) {
+        const req: InsumoRequest = this.form.value;
+        this.insumoService.create(req).subscribe({
+          next: (res: any) => this.ref.close(res || req),
+          error: (err: any) => this.mostrarErrorValidacion(err)
+        });
+      }
     });
   }
 
@@ -222,11 +234,16 @@ export class PopupInsumosComponent implements OnInit {
       this.mostrarCamposRequeridos();
       return;
     }
-    const id = this.data.data.id;
-    const req: InsumoRequest = this.form.value;
-    this.insumoService.update(id, req).subscribe({
-      next: () => this.ref.close(true),
-      error: (err: any) => this.mostrarErrorValidacion(err)
+    const codigo = this.form.get('codigoFabrica')?.value;
+    this.confirmacionService.confirmarGuardado('Insumo', true, codigo).subscribe(confirmado => {
+      if (confirmado) {
+        const id = this.data.data.id;
+        const req: InsumoRequest = this.form.value;
+        this.insumoService.update(id, req).subscribe({
+          next: () => this.ref.close(true),
+          error: (err: any) => this.mostrarErrorValidacion(err)
+        });
+      }
     });
   }
 
@@ -238,14 +255,11 @@ export class PopupInsumosComponent implements OnInit {
         invalidControls.push(key);
       }
     });
-    console.log('Controles inválidos:', invalidControls, this.form.value);
 
-    this.fuseConfirmation.open({
-      title: 'Formulario Incompleto',
-      message: 'Por favor completa todos los campos requeridos y selecciona opciones válidas del buscador. Campos faltantes: ' + invalidControls.join(', '),
-      icon: { show: true, name: 'heroicons_outline:exclamation-circle', color: 'warn' },
-      actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
-    });
+    this.confirmacionService.mostrarAdvertencia(
+      'Formulario Incompleto',
+      'Por favor completa todos los campos requeridos y selecciona opciones válidas del buscador.<br/><br/><b>Campos faltantes:</b> ' + invalidControls.join(', ')
+    );
   }
 
   private mostrarErrorValidacion(err: any): void {
@@ -254,30 +268,23 @@ export class PopupInsumosComponent implements OnInit {
     
     // Si es error de duplicado
     if (msg.toLowerCase().includes('ya existe') || msg.toLowerCase().includes('duplicado')) {
-      const dialogRef = this.fuseConfirmation.open({
-        title: 'Código de Fábrica Duplicado',
-        message: msg + '<br/><br/>¿Deseas ir a la sección de Ingresos para registrar stock de este insumo?',
-        icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
-        actions: { 
-          confirm: { show: true, label: 'Ir a ingresos', color: 'primary' }, 
-          cancel: { show: true, label: 'Entendido' } 
-        }
-      });
-
-      dialogRef.afterClosed().subscribe((result) => {
-        if (result === 'confirmed') {
+      this.confirmacionService.confirmar({
+        titulo: 'Código de Fábrica Duplicado',
+        subtitulo: 'El insumo ya existe en la base de datos oficial',
+        icono: 'warning',
+        tipo: 'advertencia',
+        mensajePrincipal: `${msg}<br/><br/>¿Deseas ir a la sección de Ingresos para registrar stock de este insumo?`,
+        btnConfirmarTexto: 'Ir a ingresos',
+        btnCancelarTexto: 'Permanecer aquí'
+      }).subscribe(result => {
+        if (result === true) {
           this.ref.close();
           const codigo = this.form.get('codigoFabrica')?.value;
           this.router.navigate(['/movimientos'], { queryParams: { tab: 'ingresos', q: codigo } });
         }
       });
     } else {
-      this.fuseConfirmation.open({
-        title: 'Error de validación',
-        message: msg,
-        icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
-        actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
-      });
+      this.confirmacionService.mostrarAdvertencia('Error de validación', msg);
     }
   }
 }

@@ -1,13 +1,30 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { ApiClientService } from '@app/core/http/api-client.service';
-import { MovimientoDto, MovimientoRequest, MovimientoFilter, StockDto, PagedResult } from '@app/core/models';
+import { environment } from '@env/environment';
+import { MovimientoDto, MovimientoRequest, MovimientoFilter, StockDto, PagedResult, IngresoPreviewResponseDto, IngresoMasivoResultDto } from '@app/core/models';
 
 @Injectable({ providedIn: 'root' })
 export class MovimientoService {
   private endpoint = 'movimiento';
 
-  constructor(private api: ApiClientService) {}
+  constructor(
+    private api: ApiClientService,
+    private http: HttpClient
+  ) {}
+
+  /** Previsualizar archivo Excel de ingresos masivos */
+  previewExcel(file: File): Observable<IngresoPreviewResponseDto> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    return this.api.post<IngresoPreviewResponseDto>(`${this.endpoint}/preview-excel`, formData);
+  }
+
+  /** Registrar ingreso masivo de múltiples insumos */
+  registrarIngresoMasivo(movimientos: MovimientoRequest[]): Observable<IngresoMasivoResultDto> {
+    return this.api.post<IngresoMasivoResultDto>(`${this.endpoint}/ingreso-masivo`, { movimientos });
+  }
 
   /** Registrar un ingreso */
   registrarIngreso(data: MovimientoRequest): Observable<MovimientoDto> {

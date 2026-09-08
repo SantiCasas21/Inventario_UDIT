@@ -1,0 +1,7 @@
+.avatar-picker-item {
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+.avatar-picker-item:hover {
+  transform: scale(1.1);
+}

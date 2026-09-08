@@ -1,17 +1,17 @@
-﻿<div class="premium-bg min-h-screen">
+<div class="premium-bg min-h-screen">
   <div class="admin-page">
 <!-- Encabezado -->
-  <div class="flex items-center justify-between mb-8">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
       <div class="transform transition duration-500 hover:scale-105">
-          <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 mb-1">
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 mb-1">
               <span class="gradient-text">Unidades de Medida</span>
           </h1>
-          <p class="text-sm font-medium text-gray-500 flex items-center gap-2">
+          <p class="text-xs sm:text-sm font-medium text-gray-500 flex items-center gap-2">
               <mat-icon class="text-indigo-400" style="font-size: 18px; width: 18px; height: 18px;">straighten</mat-icon>
               Gesti&oacute;n de unidades de medida para los insumos
           </p>
       </div>
-      <button mat-flat-button color="primary" class="rounded-full px-6 shadow-lg shadow-indigo-200 transition-transform hover:scale-105 btn-gloss" (click)="abrirPopup(0, 1)">
+      <button mat-flat-button color="primary" class="w-full sm:w-auto rounded-full px-6 shadow-lg shadow-indigo-200 transition-transform hover:scale-105 btn-gloss" (click)="abrirPopup(0, 1)">
           <mat-icon>add</mat-icon>
           Nueva
       </button>
@@ -26,12 +26,12 @@
 
   <!-- Tarjeta Principal Glassmorphism -->
   <mat-card class="glass-card flex-grow overflow-hidden flex flex-col border-none">
-      <mat-card-header class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white/40">
+      <mat-card-header class="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white/40">
           <div>
               <mat-card-title class="text-lg font-bold text-gray-800">Listado de Unidades de Medida</mat-card-title>
               <mat-card-subtitle class="text-xs font-medium text-gray-500 mt-1">{{ dataSource.data.length }} unidad(es) registrada(s)</mat-card-subtitle>
           </div>
-          <mat-form-field appearance="outline" class="fuse-mat-dense mb-0 w-64">
+          <mat-form-field appearance="outline" class="fuse-mat-dense mb-0 w-full sm:w-64">
               <mat-label>Filtrar</mat-label>
               <mat-icon matPrefix class="text-indigo-400">search</mat-icon>
               <input matInput (keyup)="applyFilter($event)" placeholder="Buscar..." #input>
@@ -39,7 +39,7 @@
       </mat-card-header>
 
       <mat-card-content class="p-0 flex-grow flex flex-col">
-          <div class="overflow-auto flex-grow px-2">
+          <div class="responsive-table-container overflow-auto flex-grow px-1 sm:px-2">
               <table mat-table [dataSource]="dataSource" class="w-full premium-table">
                   <ng-container matColumnDef="acciones">
                       <th mat-header-cell *matHeaderCellDef style="width: 80px;" class="text-center">Acci&oacute;n</th>

@@ -1,4 +1,4 @@
-import { NgIf } from '@angular/common';
+import { NgClass, NgIf } from '@angular/common';
 import { Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
 import { FormsModule, NgForm, ReactiveFormsModule, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -18,9 +18,10 @@ import { AuthService } from 'app/core/auth/auth.service';
     encapsulation: ViewEncapsulation.None,
     animations   : fuseAnimations,
     standalone   : true,
-    imports      : [RouterLink, NgIf, FuseAlertComponent, FormsModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatCheckboxModule, MatProgressSpinnerModule],
+    imports      : [RouterLink, NgIf, NgClass, FuseAlertComponent, FormsModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatCheckboxModule, MatProgressSpinnerModule],
 })
 export class AuthSignUpComponent implements OnInit
+
 {
     @ViewChild('signUpNgForm') signUpNgForm: NgForm;
 
@@ -46,6 +47,9 @@ export class AuthSignUpComponent implements OnInit
     // @ Lifecycle hooks
     // -----------------------------------------------------------------------------------------------------
 
+    /** Patrón de contraseña: mín 6 chars, 1 mayúscula, 1 número, 1 símbolo */
+    readonly passwordPattern = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{6,}$/;
+
     /**
      * On init
      */
@@ -53,18 +57,36 @@ export class AuthSignUpComponent implements OnInit
     {
         // Create the form
         this.signUpForm = this._formBuilder.group({
-                name      : ['', Validators.required],
-                email     : ['', [Validators.required, Validators.email]],
-                password  : ['', Validators.required],
-                company   : [''],
-                agreements: ['', Validators.requiredTrue],
-            },
-        );
+            nombreCompleto: ['', [Validators.required]],
+            username      : ['', [Validators.required, Validators.minLength(3)]],
+            email         : ['', [Validators.required, Validators.email]],
+            password      : ['', [Validators.required, Validators.minLength(6), Validators.pattern(this.passwordPattern)]],
+        });
     }
 
     // -----------------------------------------------------------------------------------------------------
     // @ Public methods
     // -----------------------------------------------------------------------------------------------------
+
+    hasUpper(): boolean {
+        const val = this.signUpForm.get('password')?.value || '';
+        return /[A-Z]/.test(val);
+    }
+
+    hasNumber(): boolean {
+        const val = this.signUpForm.get('password')?.value || '';
+        return /\d/.test(val);
+    }
+
+    hasSymbol(): boolean {
+        const val = this.signUpForm.get('password')?.value || '';
+        return /[^a-zA-Z0-9]/.test(val);
+    }
+
+    hasMinLength(): boolean {
+        const val = this.signUpForm.get('password')?.value || '';
+        return val.length >= 6;
+    }
 
     /**
      * Sign up
@@ -80,34 +102,51 @@ export class AuthSignUpComponent implements OnInit
         // Disable the form
         this.signUpForm.disable();
 
+
         // Hide the alert
         this.showAlert = false;
 
+        const val = this.signUpForm.value;
+        const payload = {
+            nombreCompleto: val.nombreCompleto,
+            username: val.username,
+            email: val.email,
+            password: val.password,
+            role: 'User'
+        };
+
         // Sign up
-        this._authService.signUp(this.signUpForm.value)
-            .subscribe(
-                (response) =>
-                {
-                    // Navigate to the confirmation required page
-                    this._router.navigateByUrl('/confirmation-required');
+        this._authService.signUp(payload)
+            .subscribe({
+                next: () => {
+                    this._router.navigate(['/sign-in'], {
+                        queryParams: { registered: 'true' }
+                    });
                 },
-                (response) =>
-                {
+                error: (err) => {
                     // Re-enable the form
                     this.signUpForm.enable();
 
-                    // Reset the form
-                    this.signUpNgForm.resetForm();
+                    let errorMsg = 'Ocurrió un error al registrar la cuenta.';
+                    if (err?.status === 0 || err?.name === 'TimeoutError') {
+                        errorMsg = 'No se pudo conectar con el servidor. Por favor verifica que el backend esté ejecutándose e inténtalo nuevamente.';
+                    } else if (err?.error?.message) {
+                        errorMsg = err.error.message;
+                    } else if (err?.message) {
+                        errorMsg = err.message;
+                    }
 
                     // Set the alert
                     this.alert = {
                         type   : 'error',
-                        message: 'Something went wrong, please try again.',
+                        message: errorMsg,
                     };
 
                     // Show the alert
                     this.showAlert = true;
-                },
-            );
+                }
+            });
     }
 }
+
+

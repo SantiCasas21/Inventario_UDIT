@@ -16,5 +16,18 @@ namespace Domain.Entities
 
         /// <summary>Si el usuario está activo (soft delete/disable)</summary>
         public bool Activo { get; set; } = true;
+
+        /// <summary>Fecha en que el usuario fue desactivado (usado para purga automática tras 30 días)</summary>
+        public DateTime? FechaDesactivacion { get; set; }
+
+        /// <summary>URL o identificador del avatar del usuario</summary>
+        public string? AvatarUrl { get; set; }
+
+        /// <summary>Indica si el usuario debe cambiar su contraseña obligatoriamente en su primer inicio de sesión</summary>
+        public bool DebeCambiarPassword { get; set; } = false;
+
+        /// <summary>Navegación a roles del usuario — usada para cargar roles en JOIN sin N+1</summary>
+        public virtual ICollection<IdentityUserRole<string>> UserRoles { get; set; } = new List<IdentityUserRole<string>>();
     }
 }
+

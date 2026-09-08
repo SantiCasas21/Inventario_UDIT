@@ -9,7 +9,12 @@ import { FilterColumnConfig, SelectOption } from '../parametric-filter.types';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="filter-column">
+    <div
+      class="filter-column"
+      [class.column-text-search]="config.type === 'text-search'"
+      [style.width]="config.width || null"
+      [style.min-width]="config.minWidth || (config.type === 'text-search' ? '280px' : null)"
+      [style.max-width]="config.maxWidth || (config.type === 'text-search' ? '380px' : null)">
       <div class="column-header">{{ config.label }}</div>
 
       <!-- Search within for multi-select -->
@@ -83,14 +88,24 @@ import { FilterColumnConfig, SelectOption } from '../parametric-filter.types';
       </div>
 
       <!-- Text search -->
-      <div *ngIf="config.type === 'text-search'" class="text-search">
-        <input
-          type="text"
-          class="text-input"
-          [placeholder]="config.searchPlaceholder || 'Buscar...'"
-          [(ngModel)]="searchText"
-          (input)="onSearchChange()"
-        />
+      <div *ngIf="config.type === 'text-search'" class="text-search-container">
+        <div class="text-search-input-wrap">
+          <input
+            type="text"
+            class="text-input"
+            [placeholder]="config.searchPlaceholder || 'Buscar...'"
+            [(ngModel)]="searchText"
+            (input)="onSearchChange()"
+          />
+          <button
+            *ngIf="searchText"
+            type="button"
+            class="clear-search-btn"
+            (click)="clearSearch()"
+            title="Limpiar búsqueda">
+            ×
+          </button>
+        </div>
       </div>
 
       <!-- Reset link -->
@@ -105,6 +120,41 @@ import { FilterColumnConfig, SelectOption } from '../parametric-filter.types';
       display: flex;
       flex-direction: column;
       gap: 4px;
+    }
+    .filter-column.column-text-search {
+      min-width: 280px;
+      max-width: 380px;
+      flex: 1 1 280px;
+    }
+    .text-search-container {
+      width: 100%;
+    }
+    .text-search-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .text-search-input-wrap .text-input {
+      padding-right: 26px;
+    }
+    .clear-search-btn {
+      position: absolute;
+      right: 6px;
+      background: none;
+      border: none;
+      font-size: 16px;
+      font-weight: 700;
+      color: #888;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .clear-search-btn:hover {
+      color: #333;
     }
     .column-header {
       font-size: 13px;
@@ -291,6 +341,11 @@ export class FilterColumnComponent implements OnInit, OnDestroy {
   // Text search
   onSearchChange(): void {
     this.valueChange.emit({ key: this.config.key, value: this.searchText });
+  }
+
+  clearSearch(): void {
+    this.searchText = '';
+    this.onSearchChange();
   }
 
   // Reset

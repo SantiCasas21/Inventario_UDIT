@@ -45,6 +45,13 @@ namespace Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Configurar navegación de ApplicationUser a sus roles (para JOIN sin N+1)
+            modelBuilder.Entity<ApplicationUser>()
+                .HasMany(u => u.UserRoles)
+                .WithOne()
+                .HasForeignKey(ur => ur.UserId)
+                .IsRequired();
+
             // ==========================================
             // Configuración de Catálogos
             // ==========================================
@@ -299,6 +306,7 @@ namespace Infrastructure.Data
                 // Índices para búsquedas rápidas
                 entity.HasIndex(e => e.Fecha, "IX_Auditoria_Fecha");
                 entity.HasIndex(e => e.Modulo, "IX_Auditoria_Modulo");
+                entity.HasIndex(e => e.Usuario, "IX_Auditoria_Usuario");
             });
         }
     }

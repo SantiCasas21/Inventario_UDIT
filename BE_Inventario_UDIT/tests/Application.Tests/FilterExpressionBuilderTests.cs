@@ -91,5 +91,32 @@ namespace Application.Tests
             Assert.Equal(2, filtered.Count);
             Assert.All(filtered, m => Assert.Equal("FAB-ABC", m.Insumo.CodigoFabrica));
         }
+
+        [Fact]
+        public void BuildMovimientoFilter_ShouldFilterByDescripcion()
+        {
+            // Arrange
+            var insumo1 = new Insumo { Id = 1, CodigoFabrica = "FAB-001", Descripcion = "Resistencia SMD 10K" };
+            var insumo2 = new Insumo { Id = 2, CodigoFabrica = "FAB-002", Descripcion = "Condensador Cerámico 100nF" };
+
+            var movimientos = new List<MovimientoInventario>
+            {
+                new MovimientoInventario { Id = 1, IdInsumo = 1, Insumo = insumo1, TipoMovimiento = TipoMovimiento.Ingreso, Cantidad = 10 },
+                new MovimientoInventario { Id = 2, IdInsumo = 2, Insumo = insumo2, TipoMovimiento = TipoMovimiento.Salida, Cantidad = 5 },
+            }.AsQueryable();
+
+            var filter = new MovimientoFilterDto
+            {
+                CodigoFabricaSearch = "Resistencia"
+            };
+
+            // Act
+            var predicate = FilterExpressionBuilder.BuildMovimientoFilter(filter);
+            var filtered = movimientos.Where(predicate).ToList();
+
+            // Assert
+            Assert.Single(filtered);
+            Assert.Equal("FAB-001", filtered[0].Insumo.CodigoFabrica);
+        }
     }
 }

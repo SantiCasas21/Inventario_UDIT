@@ -64,10 +64,19 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
    * seleccionadas; si no hay categorías o no depende, carga todas.
    */
   private cargarOpcionesPorCategoria(col: FilterColumnConfig): Observable<SelectOption[]> {
-    const toOptions = (catalogos: CatalogoDto[]) => catalogos.map(c => ({
-      label: c.nombre,
-      value: col.optionsValueField === 'nombre' ? c.nombre : c.id
-    } as SelectOption));
+    const toOptions = (catalogos: CatalogoDto[]) => {
+      const seen = new Set<string | number>();
+      const opts: SelectOption[] = [];
+      for (const c of (catalogos || [])) {
+        if (!c || !c.nombre) continue;
+        const val = col.optionsValueField === 'nombre' ? c.nombre : c.id;
+        if (val !== undefined && val !== null && !seen.has(val)) {
+          seen.add(val);
+          opts.push({ label: c.nombre, value: val });
+        }
+      }
+      return opts;
+    };
 
     if (col.dependsOn && col.optionsByCategoriaUrl) {
       const categoriaIds = (this.currentFilter[col.dependsOn] as number[]) || [];
@@ -176,6 +185,14 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
   removeFilter(filter: AppliedFilter): void {
     if (this.currentFilter[filter.key]) {
       delete this.currentFilter[filter.key];
+      // Resetear la columna visual correspondiente
+      if (this.filterColumns) {
+        const matchingCol = this.filterColumns.find(c => c.config.key === filter.key);
+        if (matchingCol) {
+          matchingCol.reset(false);
+        }
+      }
+      this.reloadDependentColumns(filter.key);
       this.updateAppliedFilters();
       this.applyFilters();
     }
@@ -190,6 +207,15 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
     this.appliedFilters = [];
     if (this.filterColumns) {
       this.filterColumns.forEach(col => col.reset(false));
+    }
+    // Recargar todas las columnas dependientes para devolverlas al catálogo completo
+    for (const col of this.smartColumns) {
+      if (col.dependsOn) {
+        const subject = (col as any).optionsSubject as BehaviorSubject<SelectOption[]> | undefined;
+        if (subject) {
+          this.cargarOpcionesPorCategoria(col).subscribe(opts => subject.next(opts));
+        }
+      }
     }
     this.filterChange.emit({});
   }

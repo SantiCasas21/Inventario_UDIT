@@ -13,6 +13,7 @@ namespace Application.DTOs
         public string? Observacion { get; set; }
         public string? Proveedor { get; set; }
         public string? Proyecto { get; set; }
+        public string? Ubicacion { get; set; }
 
         /// <summary>Saldo después de este movimiento</summary>
         public int SaldoAcumulado { get; set; }
@@ -46,14 +47,18 @@ namespace Application.DTOs
     }
 
     /// <summary>
-    /// DTO para resumen por proyecto (cuánto se gastó de cada insumo).
+    /// DTO para resumen por proyecto (cuánto se gastó y consumió de cada insumo).
     /// </summary>
     public class ResumenProyectoDto
     {
         public int IdProyecto { get; set; }
         public string ProyectoNombre { get; set; } = string.Empty;
+        public string EstadoNombre { get; set; } = string.Empty;
+        public bool EsCostoFijo { get; set; }
         public int TotalMovimientos { get; set; }
         public int TotalUnidadesRetiradas { get; set; }
+        public decimal CostoTotalProyecto { get; set; }
+        public string Moneda { get; set; } = "COP";
         public List<InsumoResumenDto> Insumos { get; set; } = new();
     }
 
@@ -61,6 +66,9 @@ namespace Application.DTOs
     {
         public int IdInsumo { get; set; }
         public string CodigoFabrica { get; set; } = string.Empty;
+        public string? Descripcion { get; set; }
         public int CantidadRetirada { get; set; }
+        public decimal PrecioUnitarioPromedio { get; set; }
+        public decimal CostoTotal { get; set; }
     }
 }

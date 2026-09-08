@@ -3,16 +3,16 @@
         <div class="w-full max-w-80 sm:w-80 mx-auto sm:mx-0">
             <!-- Logo -->
             <div class="w-12">
-                <img src="assets/images/logo/logo.svg">
+                <img src="assets/images/logo/logodit.ico">
             </div>
 
             <!-- Title -->
-            <div class="mt-8 text-4xl font-extrabold tracking-tight leading-tight">Sign up</div>
-            <div class="flex items-baseline mt-0.5 font-medium">
-                <div>Already have an account?</div>
+            <div class="mt-8 text-4xl font-extrabold tracking-tight leading-tight">Crear Cuenta</div>
+            <div class="flex items-baseline mt-1 font-medium text-sm text-gray-600">
+                <div>¿Ya tienes una cuenta?</div>
                 <a
-                    class="ml-1 text-primary-500 hover:underline"
-                    [routerLink]="['/sign-in']">Sign in
+                    class="ml-1.5 text-primary-600 hover:underline font-semibold cursor-pointer"
+                    [routerLink]="['/sign-in']">Iniciar sesión
                 </a>
             </div>
 
@@ -33,41 +33,61 @@
                 [formGroup]="signUpForm"
                 #signUpNgForm="ngForm">
 
-                <!-- Name field -->
+                <!-- Nombre Completo -->
                 <mat-form-field class="w-full">
-                    <mat-label>Full name</mat-label>
+                    <mat-label>Nombre Completo</mat-label>
                     <input
-                        id="name"
+                        id="nombreCompleto"
                         matInput
-                        [formControlName]="'name'">
-                    <mat-error *ngIf="signUpForm.get('name').hasError('required')">
-                        Full name is required
+                        [formControlName]="'nombreCompleto'"
+                        placeholder="Ej. Santiago Casas">
+                    <mat-error *ngIf="signUpForm.get('nombreCompleto').hasError('required')">
+                        El nombre completo es requerido
                     </mat-error>
                 </mat-form-field>
 
-                <!-- Email field -->
+                <!-- Usuario -->
                 <mat-form-field class="w-full">
-                    <mat-label>Email address</mat-label>
+                    <mat-label>Nombre de Usuario</mat-label>
+                    <input
+                        id="username"
+                        matInput
+                        [formControlName]="'username'"
+                        placeholder="Ej. scasas">
+                    <mat-error *ngIf="signUpForm.get('username').hasError('required')">
+                        El usuario es requerido
+                    </mat-error>
+                    <mat-error *ngIf="signUpForm.get('username').hasError('minlength')">
+                        Mínimo 3 caracteres
+                    </mat-error>
+                </mat-form-field>
+
+                <!-- Email -->
+                <mat-form-field class="w-full">
+                    <mat-label>Correo Electrónico</mat-label>
                     <input
                         id="email"
                         matInput
-                        [formControlName]="'email'">
+                        type="email"
+                        [formControlName]="'email'"
+                        placeholder="usuario@udit.com">
                     <mat-error *ngIf="signUpForm.get('email').hasError('required')">
-                        Email address is required
+                        El correo es requerido
                     </mat-error>
                     <mat-error *ngIf="signUpForm.get('email').hasError('email')">
-                        Please enter a valid email address
+                        Ingresa un correo electrónico válido
                     </mat-error>
                 </mat-form-field>
 
-                <!-- Password field -->
+                <!-- Contraseña -->
                 <mat-form-field class="w-full">
-                    <mat-label>Password</mat-label>
+                    <mat-label>Contraseña</mat-label>
                     <input
                         id="password"
                         matInput
                         type="password"
                         [formControlName]="'password'"
+                        placeholder="Mínimo 6 caracteres"
                         #passwordField>
                     <button
                         mat-icon-button
@@ -83,48 +103,54 @@
                             *ngIf="passwordField.type === 'text'"
                             [svgIcon]="'heroicons_solid:eye-slash'"></mat-icon>
                     </button>
-                    <mat-error>
-                        Password is required
+                    <mat-error *ngIf="signUpForm.get('password').hasError('required')">
+                        La contraseña es requerida
+                    </mat-error>
+                    <mat-error *ngIf="signUpForm.get('password').hasError('pattern') && !signUpForm.get('password').hasError('required')">
+                        Debe cumplir con todos los requisitos de seguridad
                     </mat-error>
                 </mat-form-field>
 
-                <!-- Company field -->
-                <mat-form-field class="w-full">
-                    <mat-label>Company</mat-label>
-                    <input
-                        id="company-confirm"
-                        matInput
-                        [formControlName]="'company'">
-                </mat-form-field>
-
-                <!-- ToS and PP -->
-                <div class="inline-flex items-end w-full mt-1.5">
-                    <mat-checkbox
-                        class="-ml-2"
-                        [color]="'primary'"
-                        [formControlName]="'agreements'">
-                        <span>I agree with</span>
-                        <a
-                            class="ml-1 text-primary-500 hover:underline"
-                            [routerLink]="['./']">Terms
-                        </a>
-                        <span>and</span>
-                        <a
-                            class="ml-1 text-primary-500 hover:underline"
-                            [routerLink]="['./']">Privacy Policy
-                        </a>
-                    </mat-checkbox>
+                <!-- Requisitos de Contraseña -->
+                <div class="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-100 text-xs">
+                    <span class="font-semibold text-gray-600 block mb-1.5">Requisitos de la contraseña:</span>
+                    <div class="grid grid-cols-2 gap-1.5 text-gray-500">
+                        <div class="flex items-center gap-1.5" [ngClass]="hasMinLength() ? 'text-green-600 font-semibold' : ''">
+                            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">{{ hasMinLength() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                            <span>Mínimo 6 caracteres</span>
+                        </div>
+                        <div class="flex items-center gap-1.5" [ngClass]="hasUpper() ? 'text-green-600 font-semibold' : ''">
+                            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">{{ hasUpper() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                            <span>1 Mayúscula (A-Z)</span>
+                        </div>
+                        <div class="flex items-center gap-1.5" [ngClass]="hasNumber() ? 'text-green-600 font-semibold' : ''">
+                            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">{{ hasNumber() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                            <span>1 Número (0-9)</span>
+                        </div>
+                        <div class="flex items-center gap-1.5" [ngClass]="hasSymbol() ? 'text-green-600 font-semibold' : ''">
+                            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">{{ hasSymbol() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                            <span>1 Símbolo (!&#64;#$%)</span>
+                        </div>
+                    </div>
                 </div>
+
+
+                <!-- Info Permisos de solo lectura -->
+                <div class="p-3.5 bg-blue-50/80 border border-blue-200/80 rounded-xl text-xs text-blue-900 flex items-center gap-3 mb-2">
+                    <mat-icon class="text-blue-500 flex-shrink-0" style="font-size: 20px; width: 20px; height: 20px;">info</mat-icon>
+                    <span>La cuenta se creará con permisos de <strong>solo lectura</strong> como un usuario. Si requieres realizar más acciones, comunícate con el Administrador para mejorar tus permisos.</span>
+                </div>
+
 
                 <!-- Submit button -->
                 <button
-                    class="fuse-mat-button-large w-full mt-6"
+                    class="fuse-mat-button-large w-full mt-4"
                     mat-flat-button
                     [color]="'primary'"
                     [disabled]="signUpForm.disabled"
                     (click)="signUp()">
                     <span *ngIf="!signUpForm.disabled">
-                        Create your free account
+                        Crear Cuenta
                     </span>
                     <mat-progress-spinner
                         *ngIf="signUpForm.disabled"
@@ -136,8 +162,7 @@
         </div>
     </div>
     <div class="relative hidden md:flex flex-auto items-center justify-center w-1/2 h-full p-16 lg:px-28 overflow-hidden bg-gray-800 dark:border-l">
-        <!-- Background - @formatter:off -->
-        <!-- Rings -->
+        <!-- Background Rings -->
         <svg class="absolute inset-0 pointer-events-none"
              viewBox="0 0 960 540" width="100%" height="100%" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
             <g class="text-gray-700 opacity-25" fill="none" stroke="currentColor" stroke-width="100">
@@ -145,44 +170,15 @@
                 <circle r="234" cx="790" cy="491"></circle>
             </g>
         </svg>
-        <!-- Dots -->
-        <svg class="absolute -top-16 -right-16 text-gray-700"
-             viewBox="0 0 220 192" width="220" height="192" fill="none">
-            <defs>
-                <pattern id="837c3e70-6c3a-44e6-8854-cc48c737b659" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-                    <rect x="0" y="0" width="4" height="4" fill="currentColor"></rect>
-                </pattern>
-            </defs>
-            <rect width="220" height="192" fill="url(#837c3e70-6c3a-44e6-8854-cc48c737b659)"></rect>
-        </svg>
-        <!-- @formatter:on -->
         <!-- Content -->
         <div class="z-10 relative w-full max-w-2xl">
             <div class="text-7xl font-bold leading-none text-gray-100">
-                <div>Welcome to</div>
-                <div>our community</div>
+                <div>Inventario DIT</div>
             </div>
             <div class="mt-6 text-lg tracking-tight leading-6 text-gray-400">
-                Fuse helps developers to build organized and well coded dashboards full of beautiful and rich modules.
-                Join us and start building your application today.
-            </div>
-            <div class="flex items-center mt-8">
-                <div class="flex flex-0 items-center -space-x-1.5">
-                    <img
-                        class="flex-0 w-10 h-10 rounded-full ring-4 ring-offset-1 ring-gray-800 ring-offset-gray-800 object-cover"
-                        src="assets/images/avatars/female-18.jpg">
-                    <img
-                        class="flex-0 w-10 h-10 rounded-full ring-4 ring-offset-1 ring-gray-800 ring-offset-gray-800 object-cover"
-                        src="assets/images/avatars/female-11.jpg">
-                    <img
-                        class="flex-0 w-10 h-10 rounded-full ring-4 ring-offset-1 ring-gray-800 ring-offset-gray-800 object-cover"
-                        src="assets/images/avatars/male-09.jpg">
-                    <img
-                        class="flex-0 w-10 h-10 rounded-full ring-4 ring-offset-1 ring-gray-800 ring-offset-gray-800 object-cover"
-                        src="assets/images/avatars/male-16.jpg">
-                </div>
-                <div class="ml-4 font-medium tracking-tight text-gray-400">More than 17k people joined us, it's your turn</div>
+                Sistema integral de control de stock, insumos, movimientos, proyectos y auditoría operacional.
             </div>
         </div>
     </div>
 </div>
+

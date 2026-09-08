@@ -1,0 +1,36 @@
+:host {
+  display: block;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.btn-gloss {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  &:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+    &:hover {
+      background-color: #94a3b8;
+    }
+  }
+}

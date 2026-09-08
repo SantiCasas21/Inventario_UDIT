@@ -9,6 +9,7 @@ namespace Application.Interfaces
     public interface IKardexService
     {
         Task<OperationResult<MovimientoDto>> RegistrarIngresoAsync(MovimientoRequestDto request);
+        Task<OperationResult<IngresoMasivoResultDto>> RegistrarIngresoMasivoAsync(IngresoMasivoRequestDto request, string usuario);
         Task<OperationResult<MovimientoDto>> RegistrarSalidaAsync(MovimientoRequestDto request);
         Task<OperationResult<MovimientoDto>> RegistrarAjusteAsync(MovimientoRequestDto request);
         Task<OperationResult<IEnumerable<MovimientoDto>>> GetMovimientosPorInsumoAsync(int insumoId, int? limite = null);

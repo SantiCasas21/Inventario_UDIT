@@ -1,177 +1,205 @@
-<!-- Notifications toggle -->
+<!-- Notifications toggle button -->
 <button
     mat-icon-button
     (click)="openPanel()"
-    #notificationsOrigin>
+    #notificationsOrigin
+    class="relative text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-150"
+    style="width: 38px; height: 38px;">
+    
+    <!-- Unread badge with pulse -->
     <ng-container *ngIf="unreadCount > 0">
-        <span class="absolute top-0 right-0 left-0 flex items-center justify-center h-3">
-            <span class="flex items-center justify-center shrink-0 min-w-4 h-4 px-1 ml-4 mt-2.5 rounded-full bg-teal-600 text-indigo-50 text-xs font-medium">
-                {{unreadCount}}
+        <span class="absolute top-1 right-1 flex h-4 w-4">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-4 w-4 bg-red-600 text-[10px] font-black text-white items-center justify-center shadow-md">
+                {{ unreadCount > 9 ? '9+' : unreadCount }}
             </span>
         </span>
     </ng-container>
-    <mat-icon [svgIcon]="'heroicons_outline:bell'"></mat-icon>
+
+    <mat-icon [svgIcon]="'heroicons_outline:bell'" class="text-gray-300 hover:text-white"></mat-icon>
 </button>
 
-<!-- Notifications panel -->
+<!-- Notifications panel overlay -->
 <ng-template #notificationsPanel>
 
-    <div class="fixed inset-0 sm:static sm:inset-auto flex flex-col sm:w-[450px] sm:rounded-2xl overflow-hidden shadow-lg">
+    <div class="fixed inset-0 sm:static sm:inset-auto flex flex-col sm:w-[460px] sm:rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-100 dark:bg-slate-900 dark:border-gray-800">
 
         <!-- Header -->
-        <div class="flex shrink-0 items-center py-4 pr-4 pl-6 bg-primary text-on-primary">
-            <div class="sm:hidden -ml-1 mr-3">
-                <button
-                    mat-icon-button
-                    (click)="closePanel()">
-                    <mat-icon
-                        class="icon-size-5 text-current"
-                        [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
-                </button>
+        <div class="flex shrink-0 items-center justify-between py-4 px-6 bg-gradient-to-r from-red-700 via-red-800 to-slate-900 text-white shadow-md">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center backdrop-blur-sm border border-white/20">
+                    <mat-icon class="text-white icon-size-5" [svgIcon]="'heroicons_solid:bell'"></mat-icon>
+                </div>
+                <div>
+                    <div class="text-base font-bold leading-tight flex items-center gap-2">
+                        Notificaciones
+                        <span *ngIf="unreadCount > 0" class="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-white text-red-700">
+                            {{ unreadCount }} nueva(s)
+                        </span>
+                    </div>
+                    <div class="text-[11px] text-red-100 font-medium leading-tight mt-0.5">
+                        Alertas de stock, insumos y eventos
+                    </div>
+                </div>
             </div>
-            <div class="text-lg font-medium leading-10">Notificaciones</div>
-            <div class="ml-auto flex items-center gap-2">
+
+            <!-- Header Actions -->
+            <div class="flex items-center gap-1">
                 <button
                     mat-icon-button
                     [matTooltip]="'Marcar todas como leídas'"
                     [disabled]="unreadCount === 0"
-                    (click)="markAllAsRead()">
-                    <mat-icon
-                        class="icon-size-5 text-current"
-                        [svgIcon]="'heroicons_solid:envelope-open'"></mat-icon>
+                    (click)="markAllAsRead()"
+                    class="text-white hover:bg-white/15 disabled:opacity-40">
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:envelope-open'"></mat-icon>
+                </button>
+                <button
+                    mat-icon-button
+                    (click)="closePanel()"
+                    class="text-white hover:bg-white/15 sm:hidden">
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
                 </button>
             </div>
         </div>
 
         <!-- Filter Row -->
-        <div class="flex flex-wrap items-center gap-2 p-3 bg-gray-50 border-b dark:bg-gray-800 dark:border-gray-700">
-            <button (click)="setFilter('all')" [ngClass]="currentFilter === 'all' ? 'bg-primary text-on-primary' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-3 py-1 text-xs rounded-full font-medium transition-colors cursor-pointer">Todas</button>
-            <button (click)="setFilter('unread')" [ngClass]="currentFilter === 'unread' ? 'bg-primary text-on-primary' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-3 py-1 text-xs rounded-full font-medium transition-colors cursor-pointer">No Leídas</button>
-            <button (click)="setFilter('read')" [ngClass]="currentFilter === 'read' ? 'bg-primary text-on-primary' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-3 py-1 text-xs rounded-full font-medium transition-colors cursor-pointer">Leídas</button>
-            <button (click)="setFilter('low-stock')" [ngClass]="currentFilter === 'low-stock' ? 'bg-yellow-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-3 py-1 text-xs rounded-full font-medium transition-colors cursor-pointer">Stock Bajo</button>
-            <button (click)="setFilter('no-stock')" [ngClass]="currentFilter === 'no-stock' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-3 py-1 text-xs rounded-full font-medium transition-colors cursor-pointer">Agotados</button>
+        <div class="flex items-center gap-1.5 p-2.5 bg-gray-50/90 border-b border-gray-100 overflow-x-auto dark:bg-slate-800/90 dark:border-gray-700">
+            <button 
+                (click)="setFilter('all')" 
+                [ngClass]="currentFilter === 'all' ? 'bg-slate-900 text-white shadow-sm' : 'bg-gray-200/70 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-300'" 
+                class="px-3 py-1 text-xs rounded-full font-bold transition-all cursor-pointer flex items-center gap-1">
+                Todas
+                <span class="text-[10px] opacity-75">({{ notifications?.length || 0 }})</span>
+            </button>
+            <button 
+                (click)="setFilter('unread')" 
+                [ngClass]="currentFilter === 'unread' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-200/70 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-300'" 
+                class="px-3 py-1 text-xs rounded-full font-bold transition-all cursor-pointer flex items-center gap-1">
+                No Leídas
+                <span *ngIf="unreadCount > 0" class="text-[10px] bg-white/20 px-1 rounded-full font-extrabold">{{ unreadCount }}</span>
+            </button>
+            <button 
+                (click)="setFilter('low-stock')" 
+                [ngClass]="currentFilter === 'low-stock' ? 'bg-amber-500 text-white shadow-sm' : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300'" 
+                class="px-3 py-1 text-xs rounded-full font-bold transition-all cursor-pointer flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                Stock Bajo
+            </button>
+            <button 
+                (click)="setFilter('no-stock')" 
+                [ngClass]="currentFilter === 'no-stock' ? 'bg-red-600 text-white shadow-sm' : 'bg-red-50 text-red-800 border border-red-200 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300'" 
+                class="px-3 py-1 text-xs rounded-full font-bold transition-all cursor-pointer flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                Agotados
+            </button>
         </div>
 
-        <!-- Content -->
-        <div class="relative flex flex-col flex-auto sm:max-h-120 divide-y overflow-y-auto bg-card">
-            <!-- Notifications -->
+        <!-- Notifications Content List -->
+        <div class="relative flex flex-col flex-auto sm:max-h-120 divide-y divide-gray-100 overflow-y-auto bg-white dark:bg-slate-900 dark:divide-gray-800">
+            
             <ng-container *ngFor="let notification of filteredNotifications; trackBy: trackByFn">
                 <div
-                    class="flex group hover:bg-gray-50 dark:hover:bg-black dark:hover:bg-opacity-5"
-                    [ngClass]="{'unread': !notification.read}">
+                    class="flex group transition-colors duration-150 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 relative"
+                    [ngClass]="{
+                        'bg-indigo-50/30 dark:bg-indigo-950/20 border-l-4 border-indigo-500': !notification.read,
+                        'border-l-4 border-transparent': notification.read
+                    }">
 
                     <!-- Notification with a link -->
                     <ng-container *ngIf="notification.link">
-                        <!-- Normal links -->
                         <ng-container *ngIf="!notification.useRouter">
-                            <a
-                                class="flex flex-auto py-5 pl-6 cursor-pointer"
-                                [href]="notification.link">
-                                <ng-container *ngTemplateOutlet="notificationContent"></ng-container>
+                            <a class="flex flex-auto py-3.5 pl-4 pr-2 cursor-pointer" [href]="notification.link">
+                                <ng-container *ngTemplateOutlet="notificationContent; context: {$implicit: notification}"></ng-container>
                             </a>
                         </ng-container>
-                        <!-- Router links -->
                         <ng-container *ngIf="notification.useRouter">
-                            <a
-                                class="flex flex-auto py-5 pl-6 cursor-pointer"
-                                [routerLink]="notification.link">
-                                <ng-container *ngTemplateOutlet="notificationContent"></ng-container>
+                            <a class="flex flex-auto py-3.5 pl-4 pr-2 cursor-pointer" [routerLink]="notification.link">
+                                <ng-container *ngTemplateOutlet="notificationContent; context: {$implicit: notification}"></ng-container>
                             </a>
                         </ng-container>
                     </ng-container>
 
                     <!-- Notification without a link -->
                     <ng-container *ngIf="!notification.link">
-                        <div class="flex flex-auto py-5 pl-6">
-                            <ng-container *ngTemplateOutlet="notificationContent"></ng-container>
+                        <div class="flex flex-auto py-3.5 pl-4 pr-2">
+                            <ng-container *ngTemplateOutlet="notificationContent; context: {$implicit: notification}"></ng-container>
                         </div>
                     </ng-container>
 
-                    <!-- Actions -->
-                    <div class="relative flex flex-col my-5 mr-6 ml-2">
-                        <!-- Indicator -->
+                    <!-- Quick Actions on Right -->
+                    <div class="flex flex-col items-center justify-center my-2 mr-3 ml-1 gap-1">
+                        <!-- Toggle Read Status -->
                         <button
-                            class="w-6 h-6 min-h-6"
                             mat-icon-button
+                            class="w-7 h-7 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-700"
                             (click)="toggleRead(notification)"
                             [matTooltip]="notification.read ? 'Marcar como no leído' : 'Marcar como leído'">
                             <span
-                                class="w-2 h-2 rounded-full"
-                                [ngClass]="{'bg-gray-400 dark:bg-gray-500 sm:opacity-0 sm:group-hover:opacity-100': notification.read,
-                                            'bg-primary': !notification.read}"></span>
+                                class="w-2 h-2 rounded-full inline-block"
+                                [ngClass]="{
+                                    'bg-gray-300 dark:bg-gray-600': notification.read,
+                                    'bg-indigo-600 ring-4 ring-indigo-100': !notification.read
+                                }"></span>
                         </button>
-                        <!-- Copy text -->
+
+                        <!-- Copy Code if present -->
                         <button *ngIf="notification.codeToCopy"
-                            class="w-6 h-6 min-h-6 sm:opacity-0 sm:group-hover:opacity-100"
+                            class="w-7 h-7 text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-slate-700 opacity-60 group-hover:opacity-100 transition-opacity"
                             mat-icon-button
                             (click)="copyCode(notification.codeToCopy, $event)"
-                            [matTooltip]="'Copiar Código'">
-                            <mat-icon
-                                class="icon-size-4"
-                                [svgIcon]="'heroicons_outline:clipboard-document'"></mat-icon>
+                            [matTooltip]="'Copiar código (' + notification.codeToCopy + ')'">
+                            <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:clipboard-document'"></mat-icon>
                         </button>
-                        <!-- Remove -->
+
+                        <!-- Delete button -->
                         <button
-                            class="w-6 h-6 min-h-6 sm:opacity-0 sm:group-hover:opacity-100"
+                            class="w-7 h-7 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-slate-700 opacity-60 group-hover:opacity-100 transition-opacity"
                             mat-icon-button
                             (click)="delete(notification)"
-                            [matTooltip]="'Eliminar'">
-                            <mat-icon
-                                class="icon-size-4"
-                                [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
+                            [matTooltip]="'Eliminar notificación'">
+                            <mat-icon class="icon-size-4" [svgIcon]="'heroicons_solid:trash'"></mat-icon>
                         </button>
                     </div>
 
                 </div>
-
-                <!-- Notification content template -->
-                <ng-template #notificationContent>
-                    <!-- Icon -->
-                    <ng-container *ngIf="notification.icon && !notification.image">
-                        <div class="flex shrink-0 items-center justify-center w-8 h-8 mr-4 rounded-full bg-gray-100 dark:bg-gray-700">
-                            <mat-icon
-                                class="icon-size-5"
-                                [svgIcon]="notification.icon">
-                            </mat-icon>
-                        </div>
-                    </ng-container>
-                    <!-- Image -->
-                    <ng-container *ngIf="notification.image">
-                        <img
-                            class="shrink-0 w-8 h-8 mr-4 rounded-full overflow-hidden object-cover object-center"
-                            [src]="notification.image"
-                            [alt]="'Notification image'">
-                    </ng-container>
-                    <!-- Title, description & time -->
-                    <div class="flex flex-col flex-auto">
-                        <ng-container *ngIf="notification.title">
-                            <div
-                                class="font-semibold"
-                                [innerHTML]="notification.title"></div>
-                        </ng-container>
-                        <ng-container *ngIf="notification.description">
-                            <div
-                                class="mt-1"
-                                [innerHTML]="notification.description"></div>
-                        </ng-container>
-                        <div class="mt-2 text-sm leading-none text-secondary">
-                            {{notification.time | date:'MMM dd, h:mm a'}}
-                        </div>
-                    </div>
-                </ng-template>
             </ng-container>
 
-            <!-- No notifications -->
-            <ng-container *ngIf="!filteredNotifications || !filteredNotifications.length">
-                <div class="flex flex-col flex-auto items-center justify-center sm:justify-start py-12 px-8">
-                    <div class="flex flex-0 items-center justify-center w-14 h-14 rounded-full bg-primary-100 dark:bg-primary-600">
-                        <mat-icon
-                            class="text-primary-700 dark:text-primary-50"
-                            [svgIcon]="'heroicons_outline:bell'"></mat-icon>
+            <!-- Template for single notification content -->
+            <ng-template #notificationContent let-notification>
+                <div class="flex items-start gap-3 w-full">
+                    <!-- Icon / Avatar -->
+                    <div class="flex shrink-0 items-center justify-center w-9 h-9 rounded-xl shadow-sm mt-0.5"
+                         [ngClass]="{
+                             'bg-amber-100 text-amber-700 border border-amber-200': notification.icon === 'heroicons_outline:exclamation-triangle' || notification.type === 'low-stock',
+                             'bg-red-100 text-red-700 border border-red-200': notification.icon === 'heroicons_outline:no-symbol' || notification.type === 'no-stock',
+                             'bg-indigo-100 text-indigo-700 border border-indigo-200': !notification.type || notification.type === 'default'
+                         }">
+                        <mat-icon class="icon-size-5" [svgIcon]="notification.icon || 'heroicons_outline:information-circle'"></mat-icon>
                     </div>
-                    <div class="mt-5 text-2xl font-semibold tracking-tight">No hay notificaciones</div>
-                    <div class="w-full max-w-60 mt-1 text-md text-center text-secondary">
-                        Cuando tengas notificaciones, aparecerán aquí.
+
+                    <!-- Title, Description & Time -->
+                    <div class="flex flex-col flex-auto min-w-0">
+                        <div class="text-sm font-bold text-gray-900 dark:text-white leading-snug"
+                             [innerHTML]="notification.title"></div>
+                        <div class="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed"
+                             [innerHTML]="notification.description"></div>
+                        <div class="mt-2 text-[11px] font-medium text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                            <mat-icon class="text-gray-400" style="font-size: 13px; width: 13px; height: 13px;">schedule</mat-icon>
+                            {{ notification.time | date:'dd MMM yyyy, h:mm a' }}
+                        </div>
+                    </div>
+                </div>
+            </ng-template>
+
+            <!-- Empty State -->
+            <ng-container *ngIf="!filteredNotifications || !filteredNotifications.length">
+                <div class="flex flex-col items-center justify-center py-12 px-6 text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-slate-800 flex items-center justify-center text-indigo-500 mb-3 shadow-inner">
+                        <mat-icon class="icon-size-8" [svgIcon]="'heroicons_outline:bell-slash'"></mat-icon>
+                    </div>
+                    <div class="text-base font-bold text-gray-800 dark:text-white">Todo al día</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 max-w-xs mt-1">
+                        No hay notificaciones en este filtro. Te avisaremos cuando ocurra algún evento de stock o insumos.
                     </div>
                 </div>
             </ng-container>

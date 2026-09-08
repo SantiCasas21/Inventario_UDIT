@@ -1,6 +1,4 @@
-import { inject } from '@angular/core';
-import { FuseConfirmationService } from '@fuse/services/confirmation';
-﻿import { Component, Inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, Inject, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -10,9 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Subject, takeUntil } from 'rxjs';
 import { InsumoService } from '@app/core/services/insumo.service';
-import { InsumoDto } from '@app/core/models';
-
-import { IrregularidadDto } from '@app/core/models';
+import { InsumoDto, IrregularidadDto } from '@app/core/models';
 
 export interface PopupUnificarData {
   irr: IrregularidadDto;
@@ -102,8 +98,6 @@ export interface PopupUnificarData {
   `]
 })
 export class PopupUnificarComponent implements OnInit, OnDestroy {
-  fuseConfirmation = inject(FuseConfirmationService);
-
   form: FormGroup;
   loading = true;
   submitting = false;

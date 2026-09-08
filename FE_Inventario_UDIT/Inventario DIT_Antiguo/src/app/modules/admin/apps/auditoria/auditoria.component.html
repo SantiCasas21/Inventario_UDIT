@@ -1,129 +1,295 @@
-<div class="premium-bg min-h-screen"><div class="admin-page">
-    <!-- Encabezado con animaciones y gradiente -->
-    <div class="flex items-center justify-between mb-8">
-        <div class="transform transition duration-500 hover:scale-105">
-            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 mb-1">
-                <span class="gradient-text">Auditoría</span> del Sistema
-            </h1>
-            <p class="text-sm font-medium text-gray-500 flex items-center gap-2">
-                <mat-icon class="text-indigo-400" style="font-size: 18px; width: 18px; height: 18px;">history</mat-icon>
-                Registro inmutable de todas las acciones y unificaciones
-            </p>
-        </div>
-        <button mat-flat-button color="primary" class="rounded-full px-6 shadow-lg shadow-indigo-200 transition-transform hover:scale-105 btn-gloss" (click)="loadLogs()">
-            <mat-icon>refresh</mat-icon>
-            Actualizar
-        </button>
-    </div>
+<div class="premium-bg min-h-screen py-6 px-4 sm:px-8">
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Encabezado -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 text-xs font-bold text-rose-600 uppercase tracking-widest mb-1">
+                    <mat-icon style="font-size: 16px; width: 16px; height: 16px;">shield</mat-icon>
+                    Seguridad y Trazabilidad
+                </div>
+                <h1 class="text-3xl font-black tracking-tight text-slate-900 mb-1 drop-shadow-sm">
+                    <span class="gradient-text">Auditoría</span> del Sistema
+                </h1>
+                <p class="text-sm font-medium text-slate-500 flex items-center gap-1.5 m-0">
+                    <mat-icon class="text-slate-400" style="font-size: 16px; width: 16px; height: 16px;">history</mat-icon>
+                    Historial cronológico de eventos, modificaciones y operaciones en el inventario
+                </p>
+            </div>
 
-    <!-- Filtros Glassmorphism -->
-    <mat-card class="mb-8 glass-card border-none">
-        <mat-card-content class="p-6">
-            <form [formGroup]="filterForm" class="flex flex-wrap gap-6 items-end">
-                <mat-form-field appearance="outline" class="w-full md:w-80 mb-0 fuse-mat-dense">
-                    <mat-label>Buscar (Usuario, Acción o Detalles)</mat-label>
-                    <mat-icon matPrefix class="text-indigo-400">search</mat-icon>
-                    <input matInput formControlName="textSearch" placeholder="Ej. Unificar, Juan, etc.">
-                </mat-form-field>
-                
-                <mat-form-field appearance="outline" class="w-full md:w-56 mb-0 fuse-mat-dense">
-                    <mat-label>Módulo</mat-label>
-                    <mat-icon matPrefix class="text-indigo-400">view_module</mat-icon>
-                    <mat-select formControlName="modulo">
-                        <mat-option value="">Todos los módulos</mat-option>
-                        <mat-option *ngFor="let mod of modulos" [value]="mod">{{mod}}</mat-option>
-                    </mat-select>
-                </mat-form-field>
-            </form>
-        </mat-card-content>
-    </mat-card>
+            <!-- Acciones de Cabecera: Selector de Vista y Actualizar -->
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                <mat-button-toggle-group [(ngModel)]="viewMode" aria-label="Modo de vista" class="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
+                    <mat-button-toggle value="timeline" class="px-3 text-xs font-bold">
+                        <div class="flex items-center gap-1.5">
+                            <mat-icon style="font-size: 18px; width: 18px; height: 18px;">timeline</mat-icon>
+                            <span>Línea de Tiempo</span>
+                        </div>
+                    </mat-button-toggle>
+                    <mat-button-toggle value="table" class="px-3 text-xs font-bold">
+                        <div class="flex items-center gap-1.5">
+                            <mat-icon style="font-size: 18px; width: 18px; height: 18px;">table_rows</mat-icon>
+                            <span>Tabla</span>
+                        </div>
+                    </mat-button-toggle>
+                </mat-button-toggle-group>
 
-    <!-- Tabla de Logs -->
-    <mat-card class="glass-card flex-grow overflow-hidden flex flex-col border-none">
-        <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 font-medium m-4 rounded-r-lg shadow-sm">
-            <div class="flex items-center gap-2">
-                <mat-icon>error_outline</mat-icon>
-                {{ error }}
+                <button mat-flat-button color="primary" class="rounded-xl px-5 py-2 shadow-sm transition-transform hover:scale-105 btn-gloss flex items-center gap-2" (click)="loadLogs()" [disabled]="isLoading">
+                    <mat-icon [class.animate-spin]="isLoading">refresh</mat-icon>
+                    <span>Actualizar</span>
+                </button>
             </div>
         </div>
-        
-        <div class="overflow-auto flex-grow px-2">
-            <table mat-table [dataSource]="dataSource" class="w-full">
-                <!-- Fecha Column -->
-                <ng-container matColumnDef="fecha">
-                    <th mat-header-cell *matHeaderCellDef> Fecha </th>
-                    <td mat-cell *matCellDef="let element" class="whitespace-nowrap font-medium text-gray-700"> 
-                        <div class="flex items-center gap-2">
-                            <mat-icon class="text-gray-400" style="font-size: 16px; width:16px; height: 16px;">calendar_today</mat-icon>
-                            {{ formatDate(element.fecha) }} 
-                        </div>
-                    </td>
-                </ng-container>
 
-                <!-- Usuario Column -->
-                <ng-container matColumnDef="usuario">
-                    <th mat-header-cell *matHeaderCellDef> Usuario </th>
-                    <td mat-cell *matCellDef="let element">
-                        <div class="flex items-center gap-3">
-                            <div class="avatar-circle">
-                                {{ element.usuario.charAt(0).toUpperCase() }}
-                            </div>
-                            <span class="font-semibold text-gray-800">{{ element.usuario }}</span>
-                        </div>
-                    </td>
-                </ng-container>
+        <!-- Filtros Glassmorphism -->
+        <mat-card class="glass-card border-none shadow-sm">
+            <mat-card-content class="p-5">
+                <form [formGroup]="filterForm" class="flex flex-wrap gap-4 items-center">
+                    <mat-form-field appearance="outline" class="flex-1 min-w-[240px] mb-0">
+                        <mat-label>Buscar en auditoría</mat-label>
+                        <mat-icon matPrefix class="text-slate-400 mr-2">search</mat-icon>
+                        <input matInput formControlName="textSearch" placeholder="Usuario, acción, insumo o detalles...">
+                    </mat-form-field>
+                    
+                    <mat-form-field appearance="outline" class="w-full sm:w-64 mb-0">
+                        <mat-label>Filtrar por Módulo</mat-label>
+                        <mat-icon matPrefix class="text-slate-400 mr-2">filter_alt</mat-icon>
+                        <mat-select formControlName="modulo">
+                            <mat-option value="">Todos los módulos</mat-option>
+                            <mat-option *ngFor="let mod of modulos" [value]="mod">{{ mod }}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </form>
+            </mat-card-content>
+        </mat-card>
 
-                <!-- Módulo Column -->
-                <ng-container matColumnDef="modulo">
-                    <th mat-header-cell *matHeaderCellDef> Módulo </th>
-                    <td mat-cell *matCellDef="let element" class="font-medium text-gray-600"> 
-                        {{ element.modulo }} 
-                    </td>
-                </ng-container>
-
-                <!-- Acción Column -->
-                <ng-container matColumnDef="accion">
-                    <th mat-header-cell *matHeaderCellDef> Acción </th>
-                    <td mat-cell *matCellDef="let element">
-                        <span class="badge" [ngClass]="element.accion | tipoMovimientoBadge">
-                          {{ element.accion }}
-                        </span>
-                    </td>
-                </ng-container>
-
-                <!-- Detalles Column -->
-                <ng-container matColumnDef="detalles">
-                    <th mat-header-cell *matHeaderCellDef> Detalles </th>
-                    <td mat-cell *matCellDef="let element">
-                        <div class="details-cell" [matTooltip]="element.detalles" matTooltipClass="custom-tooltip"> 
-                            {{ element.detalles }} 
-                        </div>
-                    </td>
-                </ng-container>
-
-                <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-                <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row-animate cursor-default"></tr>
-                
-                <!-- Sin datos -->
-                <tr class="mat-row" *matNoDataRow>
-                    <td class="mat-cell text-center py-12" colspan="5">
-                        <div class="flex flex-col items-center justify-center text-gray-400">
-                            <mat-icon style="font-size: 48px; width: 48px; height: 48px; margin-bottom: 16px;">search_off</mat-icon>
-                            <span *ngIf="isLoading" class="text-lg font-medium">Cargando registros...</span>
-                            <span *ngIf="!isLoading" class="text-lg font-medium">No se encontraron registros de auditoría.</span>
-                        </div>
-                    </td>
-                </tr>
-            </table>
+        <!-- Mensaje de Error -->
+        <div *ngIf="error" class="bg-rose-50 border-l-4 border-rose-500 text-rose-800 p-4 font-medium rounded-r-xl shadow-sm flex items-center gap-3">
+            <mat-icon class="text-rose-500">error_outline</mat-icon>
+            <span>{{ error }}</span>
         </div>
 
-        <mat-paginator 
-            [length]="totalCount" 
-            [pageSize]="pageSize" 
-            [pageSizeOptions]="[10, 20, 50, 100]"
-            (page)="onPageChange($event)"
-            class="bg-transparent border-t border-gray-100 rounded-b-xl">
-        </mat-paginator>
-    </mat-card>
+        <!-- Estado de Carga -->
+        <div *ngIf="isLoading" class="py-16 text-center">
+            <div class="inline-flex flex-col items-center justify-center text-slate-500">
+                <div class="w-10 h-10 border-4 border-slate-200 border-t-rose-600 rounded-full animate-spin mb-4"></div>
+                <span class="text-sm font-semibold tracking-wide">Cargando registros de auditoría...</span>
+            </div>
+        </div>
+
+        <!-- Estado Vacío -->
+        <div *ngIf="!isLoading && rawLogs.length === 0" class="glass-card py-16 text-center">
+            <div class="flex flex-col items-center justify-center text-slate-400">
+                <mat-icon style="font-size: 54px; width: 54px; height: 54px;" class="mb-3 text-slate-300">manage_search</mat-icon>
+                <h3 class="text-base font-bold text-slate-700 m-0">No se encontraron registros</h3>
+                <p class="text-xs text-slate-500 mt-1 max-w-sm">No existen eventos que coincidan con los criterios de búsqueda o módulos seleccionados.</p>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- MODO 1: LÍNEA DE TIEMPO (TIMELINE GROUPED BY DATE)                -->
+        <!-- ================================================================= -->
+        <div *ngIf="!isLoading && rawLogs.length > 0 && viewMode === 'timeline'" class="space-y-8 timeline-container">
+            <div *ngFor="let group of groupedLogs" class="space-y-4">
+                
+                <!-- Encabezado de Fecha -->
+                <div class="flex items-center gap-3 pt-2">
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-black shadow-md shadow-slate-900/10 tracking-wide uppercase">
+                        <mat-icon style="font-size: 15px; width: 15px; height: 15px;">calendar_today</mat-icon>
+                        <span>{{ group.dateLabel }}</span>
+                    </div>
+                    <span class="text-xs font-bold text-slate-400 tracking-tight">
+                        {{ group.count }} {{ group.count === 1 ? 'acción registrada' : 'acciones registradas' }}
+                    </span>
+                    <div class="flex-1 border-t border-slate-200/80 ml-2"></div>
+                </div>
+
+                <!-- Rama de Línea de Tiempo -->
+                <div class="timeline-branch space-y-4">
+                    <div *ngFor="let log of group.logs" class="timeline-item">
+                        
+                        <!-- Marcador de Tiempo y Nodo en el eje vertical -->
+                        <div class="timeline-marker">
+                            <span class="timeline-time-label hidden md:block">
+                                {{ formatTime(log.fecha) }}
+                            </span>
+                            <div class="timeline-node" [ngClass]="getActionConfig(log.accion).dotClass"></div>
+                        </div>
+
+                        <!-- Tarjeta del Log -->
+                        <div class="timeline-card">
+                            <div class="flex items-start gap-3.5">
+                                
+                                <!-- Avatar Compacto de Usuario (36x36px) -->
+                                <ng-container *ngIf="getUserConfig(log.usuario, log.rol, log.avatarUrl) as uCfg">
+                                    <div *ngIf="!uCfg.avatarUrl"
+                                         class="user-avatar-compact"
+                                         [ngClass]="uCfg.avatarClass"
+                                         [ngStyle]="uCfg.customStyle"
+                                         [matTooltip]="log.usuario">
+                                        {{ uCfg.initials }}
+                                    </div>
+                                    <div *ngIf="uCfg.avatarUrl" 
+                                         class="user-avatar-compact border border-slate-200 bg-white"
+                                         [matTooltip]="log.usuario">
+                                        <img [src]="uCfg.avatarUrl" [alt]="log.usuario">
+                                    </div>
+                                </ng-container>
+
+                                <!-- Información Central del Log -->
+                                <div class="flex-1 min-w-0">
+                                    
+                                    <!-- Cabecera de la Tarjeta: Usuario + Rol + Hora móvil -->
+                                    <div class="flex items-center flex-wrap gap-2 mb-1.5">
+                                        <span class="font-extrabold text-slate-900 text-sm tracking-tight">{{ log.usuario }}</span>
+                                        
+                                        <ng-container *ngIf="getUserConfig(log.usuario, log.rol, log.avatarUrl) as uCfg">
+                                            <span class="user-role-badge" [ngClass]="uCfg.badgeClass">
+                                                {{ uCfg.roleLabel }}
+                                            </span>
+                                        </ng-container>
+
+                                        <span class="md:hidden text-[11px] font-bold text-slate-400 ml-auto">
+                                            {{ formatTime(log.fecha) }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Descripción del evento / detalle -->
+                                    <p class="text-sm font-semibold text-slate-700 leading-relaxed mb-3 m-0 break-words">
+                                        {{ log.detalles }}
+                                    </p>
+
+                                    <!-- Fila de Metadatos y Pills -->
+                                    <div class="flex items-center flex-wrap gap-2 pt-2 border-t border-slate-100">
+                                        <!-- Pill de Módulo -->
+                                        <div *ngIf="getModuleConfig(log.modulo) as mCfg"
+                                             class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border"
+                                             [ngClass]="mCfg.colorClass">
+                                            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">{{ mCfg.icon }}</mat-icon>
+                                            <span>{{ mCfg.label }}</span>
+                                        </div>
+
+                                        <!-- Pill de Acción -->
+                                        <div *ngIf="getActionConfig(log.accion) as aCfg"
+                                             class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider"
+                                             [ngClass]="aCfg.badgeClass">
+                                            <mat-icon style="font-size: 13px; width: 13px; height: 13px;">{{ aCfg.icon }}</mat-icon>
+                                            <span>{{ aCfg.label }}</span>
+                                        </div>
+
+                                        <!-- Timestamp Completo Tooltip -->
+                                        <span class="text-[11px] font-medium text-slate-400 ml-auto hidden sm:inline-block" [matTooltip]="log.fecha">
+                                            {{ formatDate(log.fecha) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- MODO 2: TABLA CLÁSICA COMPACTA                                    -->
+        <!-- ================================================================= -->
+        <mat-card *ngIf="!isLoading && rawLogs.length > 0 && viewMode === 'table'" class="glass-card overflow-hidden flex flex-col border-none shadow-sm">
+            <div class="responsive-table-container overflow-auto flex-grow px-1 sm:px-2">
+                <table mat-table [dataSource]="dataSource" class="w-full">
+                    
+                    <!-- Fecha Column -->
+                    <ng-container matColumnDef="fecha">
+                        <th mat-header-cell *matHeaderCellDef> Fecha </th>
+                        <td mat-cell *matCellDef="let element" class="whitespace-nowrap font-medium text-slate-700"> 
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="text-slate-400" style="font-size: 15px; width:15px; height: 15px;">calendar_today</mat-icon>
+                                {{ formatDate(element.fecha) }} 
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <!-- Usuario Column -->
+                    <ng-container matColumnDef="usuario">
+                        <th mat-header-cell *matHeaderCellDef> Usuario </th>
+                        <td mat-cell *matCellDef="let element">
+                            <ng-container *ngIf="getUserConfig(element.usuario, element.rol, element.avatarUrl) as uCfg">
+                                <div class="flex items-center gap-3">
+                                    <div *ngIf="!uCfg.avatarUrl"
+                                         class="user-avatar-compact"
+                                         [ngClass]="uCfg.avatarClass"
+                                         [ngStyle]="uCfg.customStyle">
+                                        {{ uCfg.initials }}
+                                    </div>
+                                    <div *ngIf="uCfg.avatarUrl" class="user-avatar-compact border border-slate-200 bg-white">
+                                        <img [src]="uCfg.avatarUrl" class="w-full h-full object-cover" [alt]="element.usuario">
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-slate-900 text-sm leading-snug">{{ element.usuario }}</span>
+                                        <div class="mt-0.5">
+                                            <span class="user-role-badge" [ngClass]="uCfg.badgeClass">
+                                                {{ uCfg.roleLabel }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </ng-container>
+                        </td>
+                    </ng-container>
+
+                    <!-- Módulo Column -->
+                    <ng-container matColumnDef="modulo">
+                        <th mat-header-cell *matHeaderCellDef> Módulo </th>
+                        <td mat-cell *matCellDef="let element">
+                            <div *ngIf="getModuleConfig(element.modulo) as mCfg"
+                                 class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold border"
+                                 [ngClass]="mCfg.colorClass">
+                                <mat-icon style="font-size: 13px; width: 13px; height: 13px;">{{ mCfg.icon }}</mat-icon>
+                                <span>{{ mCfg.label }}</span>
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <!-- Acción Column -->
+                    <ng-container matColumnDef="accion">
+                        <th mat-header-cell *matHeaderCellDef> Acción </th>
+                        <td mat-cell *matCellDef="let element">
+                            <div *ngIf="getActionConfig(element.accion) as aCfg"
+                                 class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider"
+                                 [ngClass]="aCfg.badgeClass">
+                                <span>{{ aCfg.label }}</span>
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <!-- Detalles Column -->
+                    <ng-container matColumnDef="detalles">
+                        <th mat-header-cell *matHeaderCellDef> Detalles </th>
+                        <td mat-cell *matCellDef="let element">
+                            <div class="text-sm font-medium text-slate-700 py-1" [matTooltip]="element.detalles"> 
+                                {{ element.detalles }} 
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row-animate cursor-default"></tr>
+                </table>
+            </div>
+        </mat-card>
+
+        <!-- Paginador Compartido -->
+        <mat-card class="glass-card border-none shadow-sm overflow-hidden">
+            <mat-paginator 
+                [length]="totalCount" 
+                [pageSize]="pageSize" 
+                [pageSizeOptions]="[10, 20, 50, 100]"
+                (page)="onPageChange($event)"
+                class="bg-transparent">
+            </mat-paginator>
+        </mat-card>
+
     </div>
 </div>
+

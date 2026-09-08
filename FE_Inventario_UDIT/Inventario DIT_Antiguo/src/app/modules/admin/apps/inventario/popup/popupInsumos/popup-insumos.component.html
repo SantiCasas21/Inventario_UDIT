@@ -59,7 +59,7 @@
 
 
       <!-- Valor y Unidad de Medida -->
-      <div class="col-span-1 md:col-span-2 grid grid-cols-2 gap-4">
+      <div class="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <!-- Valor Medida -->
         <mat-form-field appearance="outline" class="w-full">
           <mat-label>Valor</mat-label>
@@ -80,7 +80,7 @@
       </div>
 
       <!-- Precio de Referencia y Moneda -->
-      <div class="col-span-1 md:col-span-2 grid grid-cols-2 gap-4">
+      <div class="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <!-- Precio de Referencia -->
         <mat-form-field appearance="outline" class="w-full">
           <mat-label>Precio Referencia</mat-label>
@@ -103,7 +103,7 @@
   </mat-dialog-content>
 
   <!-- Actions -->
-  <mat-dialog-actions class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+  <mat-dialog-actions class="px-4 sm:px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 flex-wrap">
     <button mat-button (click)="cerrarPopup()" class="text-gray-600 hover:bg-gray-200">Cancelar</button>
     <button mat-raised-button color="primary" class="bg-udit-verde text-white" 
             (click)="data.estado === 1 ? guardarInsumo() : actualizarInsumo()">

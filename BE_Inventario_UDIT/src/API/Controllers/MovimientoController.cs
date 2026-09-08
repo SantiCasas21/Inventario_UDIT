@@ -15,11 +15,35 @@ namespace API.Controllers
     {
         private readonly IKardexService _kardexService;
         private readonly IMovimientoRepository _movRepo;
+        private readonly IExcelParserService _excelParserService;
 
-        public MovimientoController(IKardexService kardexService, IMovimientoRepository movRepo)
+        public MovimientoController(
+            IKardexService kardexService,
+            IMovimientoRepository movRepo,
+            IExcelParserService excelParserService)
         {
             _kardexService = kardexService;
             _movRepo = movRepo;
+            _excelParserService = excelParserService;
+        }
+
+        // ==========================================
+        // PREVIEW EXCEL INGRESO MASIVO
+        // POST /api/movimiento/preview-excel
+        // ==========================================
+        [HttpPost("preview-excel")]
+        [Authorize(Roles = "Admin,Developer,Assistant")]
+        public async Task<IActionResult> PreviewExcel([FromForm] Microsoft.AspNetCore.Http.IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(OperationResult<IngresoPreviewResponseDto>.Fail("Por favor cargue un archivo Excel o CSV válido."));
+
+            using var stream = file.OpenReadStream();
+            var result = await _excelParserService.ProcesarExcelIngresoAsync(stream, file.FileName);
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
         }
 
         // ==========================================
@@ -37,6 +61,22 @@ namespace API.Controllers
 
             return CreatedAtAction(nameof(GetMovimientosPorInsumo),
                 new { insumoId = request.IdInsumo }, result);
+        }
+
+        // ==========================================
+        // REGISTRAR INGRESO MASIVO (DESDE EXCEL)
+        // POST /api/movimiento/ingreso-masivo
+        // ==========================================
+        [HttpPost("ingreso-masivo")]
+        [Authorize(Roles = "Admin,Developer,Assistant")]
+        public async Task<IActionResult> RegistrarIngresoMasivo([FromBody] IngresoMasivoRequestDto request)
+        {
+            var usuario = User.FindFirst(ClaimTypes.Name)?.Value ?? User.Identity?.Name ?? "Sistema";
+            var result = await _kardexService.RegistrarIngresoMasivoAsync(request, usuario);
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
         }
 
         // ==========================================

@@ -223,11 +223,12 @@
                     </tbody>
                   </table>
                   <div *ngIf="!irr.detalles?.length" class="text-gray-400 text-sm py-2 text-center">No hay información detallada disponible.</div>
-                  <div class="irr-detail-actions" *ngIf="irr.tipo === 'duplicado'">
+                  <div class="irr-detail-actions" *ngIf="irr.tipo === 'duplicado' && canUnificar">
                     <button mat-raised-button color="primary" class="btn-gloss shadow-lg" (click)="abrirUnificarModal(irr)">
                       <mat-icon>merge_type</mat-icon> Unificar Duplicados
                     </button>
                   </div>
+
                   <div class="irr-detail-actions" *ngIf="irr.tipo !== 'duplicado'">
                     <a mat-button color="primary" [routerLink]="'/insumos'" class="text-udit-verde">
                       <mat-icon>visibility</mat-icon> Ver en Insumos

@@ -9,6 +9,7 @@ export interface KardexDetalladoDto {
   observacion: string | null;
   proveedor: string | null;
   proyecto: string | null;
+  ubicacion?: string | null;
   /** Saldo después de este movimiento */
   saldoAcumulado: number;
 }
@@ -38,14 +39,21 @@ export interface MovimientosPeriodoDto {
 export interface InsumoResumenDto {
   idInsumo: number;
   codigoFabrica: string;
+  descripcion?: string | null;
   cantidadRetirada: number;
+  precioUnitarioPromedio?: number;
+  costoTotal?: number;
 }
 
-/** DTO para resumen por proyecto (cuánto se gastó de cada insumo). */
+/** DTO para resumen por proyecto (cuánto se gastó y valor económico invertido). */
 export interface ResumenProyectoDto {
   idProyecto: number;
   proyectoNombre: string;
+  estadoNombre?: string;
+  esCostoFijo?: boolean;
   totalMovimientos: number;
   totalUnidadesRetiradas: number;
+  costoTotalProyecto?: number;
+  moneda?: string;
   insumos: InsumoResumenDto[];
 }

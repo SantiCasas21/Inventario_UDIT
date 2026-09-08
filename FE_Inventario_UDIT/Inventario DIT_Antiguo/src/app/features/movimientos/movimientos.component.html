@@ -20,209 +20,514 @@
           <!-- Tab: Registrar Ingreso -->
           <mat-tab label="+ Ingreso" *ngIf="userRole !== 'User'">
             <div class="tab-content">
-              <h3 class="tab-title">Registrar Ingreso de Insumo</h3>
-              <form [formGroup]="ingresoForm" (ngSubmit)="registrarIngreso()" class="movimiento-form">
-                <div class="form-grid">
-                  <mat-form-field appearance="outline">
-                    <mat-label>Insumo</mat-label>
-                    <input type="text" matInput formControlName="insumoObj" [matAutocomplete]="autoInsumoIngreso" placeholder="Buscar insumo...">
-                    <mat-autocomplete #autoInsumoIngreso="matAutocomplete" [displayWith]="displayFnInsumo">
-                      <mat-option *ngFor="let i of filteredInsumosIngreso | async" [value]="i">
-                        {{ i.codigoFabrica }}
-                      </mat-option>
-                    </mat-autocomplete>
-                    <mat-error>Requerido</mat-error>
-                  </mat-form-field>
+              <div class="movimiento-form-container">
+                
+                <!-- Encabezado de Pestaña Centrado -->
+                <div class="form-header-bar">
+                  <div class="header-info">
+                    <div class="header-icon-badge bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                      <mat-icon style="font-size: 24px; width: 24px; height: 24px;">add_box</mat-icon>
+                    </div>
+                    <div>
+                      <h3 class="tab-title">Registrar Ingreso de Insumo</h3>
+                      <p class="tab-subtitle">Incrementa el stock físico y registra la trazabilidad en Kardex</p>
+                    </div>
+                  </div>
 
-                  <mat-form-field appearance="outline">
-                    <mat-label>Ubicación</mat-label>
-                    <input type="text" matInput formControlName="ubicacionObj" [matAutocomplete]="autoUbiIngreso" placeholder="Buscar ubicación...">
-                    <mat-autocomplete #autoUbiIngreso="matAutocomplete" [displayWith]="displayFnUbicacion">
-                      <mat-option *ngFor="let u of filteredIngresoUbicacion | async" [value]="u">
-                        {{ u.nombre }} (Stock: {{ u.stock || 0 }})
-                      </mat-option>
-                    </mat-autocomplete>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline">
-                    <mat-label>Cantidad</mat-label>
-                    <input matInput type="number" formControlName="cantidad" min="1" />
-                    <mat-error>Mínimo 1</mat-error>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline">
-                    <mat-label>Precio Unitario</mat-label>
-                    <input matInput type="number" formControlName="precioUnitario" />
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline">
-                    <mat-label>Proveedor</mat-label>
-                    <mat-select formControlName="idProveedor">
-                      <mat-option *ngFor="let p of proveedores" [value]="p.id">{{ p.nombre }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline">
-                    <mat-label>Tipo de Compra</mat-label>
-                    <mat-select formControlName="idTipoCompra">
-                      <mat-option *ngFor="let t of tiposCompra" [value]="t.id">{{ t.nombre }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Observación</mat-label>
-                    <textarea matInput formControlName="observacion" rows="2"></textarea>
-                  </mat-form-field>
+                  <button mat-raised-button 
+                          type="button" 
+                          (click)="abrirImportacionExcel()" 
+                          class="btn-cargar-excel flex items-center justify-center gap-2 font-bold text-xs shadow-sm hover:shadow transition-all w-full sm:w-auto btn-gloss"
+                          style="background: linear-gradient(135deg, #636F03 0%, #7A8904 100%); color: #ffffff; border-radius: 10px; padding: 0 18px; height: 40px;">
+                    <mat-icon style="font-size: 19px; width: 19px; height: 19px;">table_view</mat-icon>
+                    <span>Cargar Ingresos desde Excel (.xlsx)</span>
+                  </button>
                 </div>
-                <button mat-raised-button color="primary" type="submit" [disabled]="ingresoForm.invalid" class="btn-gloss">
-                  <mat-icon>save</mat-icon> Registrar Ingreso
-                </button>
-              </form>
+
+                <form [formGroup]="ingresoForm" (ngSubmit)="registrarIngreso()" (keydown)="preventEnterIfInvalid($event, ingresoForm)" class="movimiento-form">
+                  <div class="form-grid">
+                    
+                    <!-- Insumo Autocomplete -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">inventory_2</mat-icon>
+                        <span>Insumo</span>
+                        <span class="text-red-500 font-bold">*</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input type="text" matInput formControlName="insumoObj" [matAutocomplete]="autoInsumoIngreso" placeholder="Buscar por código o descripción...">
+                        <button *ngIf="ingresoForm.get('insumoObj')?.value" matSuffix mat-icon-button type="button" (click)="limpiarInsumo('INGRESO')" matTooltip="Limpiar insumo y ubicación">
+                          <mat-icon class="text-gray-400" style="font-size: 18px; width: 18px; height: 18px;">close</mat-icon>
+                        </button>
+                        <mat-autocomplete #autoInsumoIngreso="matAutocomplete" [displayWith]="displayFnInsumo" class="insumo-autocomplete-panel">
+                          <mat-option *ngFor="let i of filteredInsumosIngreso | async" [value]="i" class="insumo-multiline-option">
+                            <div class="flex flex-col py-1.5 min-w-0">
+                              <span class="font-bold text-gray-900 text-sm leading-tight tracking-tight">{{ i.codigoFabrica }}</span>
+                              <span class="text-xs text-gray-500 font-normal leading-snug mt-0.5 whitespace-normal break-words">
+                                {{ i.descripcion || 'Sin descripción adicional' }}
+                              </span>
+                            </div>
+                          </mat-option>
+                          
+                          <!-- Opción de creación rápida si no hay coincidencia -->
+                          <mat-option *ngIf="noMatchIngreso && ingresoSearchTerm" 
+                                      [value]="null"
+                                      (click)="crearNuevoInsumoDesdeMovimiento('INGRESO', $event)" 
+                                      class="no-match-create-option">
+                            <div class="flex items-center justify-between gap-2 py-2 text-xs w-full">
+                              <div class="flex items-center gap-1.5 min-w-0 text-gray-700">
+                                <mat-icon class="text-amber-500" style="font-size: 16px; width: 16px; height: 16px;">help_outline</mat-icon>
+                                <span class="truncate">Este insumo no está registrado</span>
+                              </div>
+                              <span class="font-bold text-red-600 hover:text-red-800 underline flex items-center gap-0.5 whitespace-nowrap">
+                                + ¿Quiere crearlo?
+                              </span>
+                            </div>
+                          </mat-option>
+                        </mat-autocomplete>
+                        <mat-error *ngIf="ingresoForm.get('insumoObj')?.hasError('required')">El insumo es requerido</mat-error>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Ubicación -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">place</mat-icon>
+                        <span>Ubicación</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input type="text" matInput formControlName="ubicacionObj" [matAutocomplete]="autoUbiIngreso" placeholder="Buscar o seleccionar ubicación...">
+                        <button *ngIf="ingresoForm.get('ubicacionObj')?.value" matSuffix mat-icon-button type="button" (click)="ingresoForm.get('ubicacionObj')?.setValue(''); ingresoForm.get('idUbicacion')?.setValue(null)" matTooltip="Limpiar ubicación">
+                          <mat-icon class="text-gray-400" style="font-size: 18px; width: 18px; height: 18px;">close</mat-icon>
+                        </button>
+                        <mat-autocomplete #autoUbiIngreso="matAutocomplete" [displayWith]="displayFnUbicacion">
+                          <mat-option *ngFor="let u of filteredIngresoUbicacion | async" [value]="u">
+                            <div class="flex items-center justify-between w-full">
+                              <span class="font-medium text-gray-800">{{ u.nombre }}</span>
+                              <span class="text-xs px-2 py-0.5 rounded-full font-bold ml-2" 
+                                    [ngClass]="u.stock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'">
+                                Stock: {{ u.stock || 0 }}
+                              </span>
+                            </div>
+                          </mat-option>
+                        </mat-autocomplete>
+                        <mat-hint class="text-[11px] text-gray-400">Asignada automáticamente si el insumo ya cuenta con ubicación</mat-hint>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Cantidad -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">pin</mat-icon>
+                        <span>Cantidad</span>
+                        <span class="text-red-500 font-bold">*</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input matInput type="number" formControlName="cantidad" min="1" placeholder="0" />
+                        <mat-hint class="text-[11px] text-gray-400">Ingresa una cantidad mayor a 0</mat-hint>
+                        <mat-error *ngIf="ingresoForm.get('cantidad')?.hasError('min') || ingresoForm.get('cantidad')?.value === 0">
+                          La cantidad debe ser mayor a 0
+                        </mat-error>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Precio Unitario -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">payments</mat-icon>
+                        <span>Precio Unitario</span>
+                        <span class="text-xs text-gray-400 font-normal">(Opcional)</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input matInput type="number" formControlName="precioUnitario" placeholder="Auto de catálogo si se omite" />
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Proveedor -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">store</mat-icon>
+                        <span>Proveedor</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <mat-select formControlName="idProveedor" placeholder="Seleccionar proveedor...">
+                          <mat-option *ngFor="let p of proveedores" [value]="p.id">{{ p.nombre }}</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Tipo de Compra -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">shopping_bag</mat-icon>
+                        <span>Tipo de Compra</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <mat-select formControlName="idTipoCompra" placeholder="Seleccionar tipo de compra...">
+                          <mat-option *ngFor="let t of tiposCompra" [value]="t.id">{{ t.nombre }}</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Observación -->
+                    <div class="field-container full-width">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">notes</mat-icon>
+                        <span>Observación</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <textarea matInput formControlName="observacion" rows="2" placeholder="Notas adicionales sobre el ingreso..."></textarea>
+                      </mat-form-field>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <button mat-raised-button color="primary" type="submit" [disabled]="ingresoForm.invalid || ingresoForm.get('cantidad')?.value <= 0" class="btn-gloss px-8 py-2.5 text-xs font-bold rounded-xl shadow-md">
+                      <mat-icon class="mr-1">save</mat-icon> Registrar Ingreso
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </mat-tab>
 
           <!-- Tab: Registrar Salida -->
           <mat-tab label="- Salida" *ngIf="userRole !== 'User'">
             <div class="tab-content">
-              <h3 class="tab-title">Registrar Salida de Insumo</h3>
-              <form [formGroup]="salidaForm" (ngSubmit)="registrarSalida()" class="movimiento-form">
-                <div class="form-grid">
-                  <mat-form-field appearance="outline">
-                    <mat-label>Insumo</mat-label>
-                    <input type="text" matInput formControlName="insumoObj" [matAutocomplete]="autoInsumoSalida" placeholder="Buscar insumo...">
-                    <mat-autocomplete #autoInsumoSalida="matAutocomplete" [displayWith]="displayFnInsumo">
-                      <mat-option *ngFor="let i of filteredInsumosSalida | async" [value]="i">
-                        {{ i.codigoFabrica }}
-                      </mat-option>
-                    </mat-autocomplete>
-                    <mat-error>Requerido</mat-error>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline">
-                    <mat-label>Ubicación Origen</mat-label>
-                    <input type="text" matInput formControlName="ubicacionObj" [matAutocomplete]="autoUbiSalida" placeholder="Buscar ubicación...">
-                    <mat-autocomplete #autoUbiSalida="matAutocomplete" [displayWith]="displayFnUbicacion">
-                      <mat-option *ngFor="let u of filteredSalidaUbicacion | async" [value]="u">
-                        {{ u.nombre }} (Stock: {{ u.stock }})
-                      </mat-option>
-                    </mat-autocomplete>
-                    <mat-error>Requerido</mat-error>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline">
-                    <mat-label>Cantidad</mat-label>
-                    <input matInput type="number" formControlName="cantidad" min="1" />
-                    <mat-error>Mínimo 1</mat-error>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline">
-                    <mat-label>Precio Unitario (Opcional)</mat-label>
-                    <input matInput type="number" formControlName="precioUnitario" placeholder="Auto de catálogo si se omite" />
-                    <mat-hint>Opcional - Usa precio ref. de catálogo</mat-hint>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline">
-                    <mat-label>Proyecto</mat-label>
-                    <mat-select formControlName="idProyecto">
-                      <mat-option *ngFor="let p of proyectos" [value]="p.id">{{ p.nombre }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline">
-                    <mat-label>Estado Salida</mat-label>
-                    <mat-select formControlName="idEstadoSalida">
-                      <mat-option *ngFor="let e of estadosSalida" [value]="e.id">{{ e.nombre }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Observación</mat-label>
-                    <textarea matInput formControlName="observacion" rows="2"></textarea>
-                  </mat-form-field>
+              <div class="movimiento-form-container">
+                
+                <!-- Encabezado de Pestaña Centrado -->
+                <div class="form-header-bar">
+                  <div class="header-info">
+                    <div class="header-icon-badge bg-rose-500/10 text-rose-600 border border-rose-500/20">
+                      <mat-icon style="font-size: 24px; width: 24px; height: 24px;">outbox</mat-icon>
+                    </div>
+                    <div>
+                      <h3 class="tab-title">Registrar Salida de Insumo</h3>
+                      <p class="tab-subtitle">Descuenta unidades de inventario y vincula al proyecto de destino</p>
+                    </div>
+                  </div>
                 </div>
-                <button mat-raised-button color="warn" type="submit" [disabled]="salidaForm.invalid" class="btn-gloss">
-                  <mat-icon>save</mat-icon> Registrar Salida
-                </button>
-              </form>
+
+                <form [formGroup]="salidaForm" (ngSubmit)="registrarSalida()" (keydown)="preventEnterIfInvalid($event, salidaForm)" class="movimiento-form">
+                  <div class="form-grid">
+                    
+                    <!-- Insumo Autocomplete -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">inventory_2</mat-icon>
+                        <span>Insumo</span>
+                        <span class="text-red-500 font-bold">*</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input type="text" matInput formControlName="insumoObj" [matAutocomplete]="autoInsumoSalida" placeholder="Buscar por código o descripción...">
+                        <button *ngIf="salidaForm.get('insumoObj')?.value" matSuffix mat-icon-button type="button" (click)="limpiarInsumo('SALIDA')" matTooltip="Limpiar insumo y ubicación">
+                          <mat-icon class="text-gray-400" style="font-size: 18px; width: 18px; height: 18px;">close</mat-icon>
+                        </button>
+                        <mat-autocomplete #autoInsumoSalida="matAutocomplete" [displayWith]="displayFnInsumo" class="insumo-autocomplete-panel">
+                          <mat-option *ngFor="let i of filteredInsumosSalida | async" [value]="i" class="insumo-multiline-option">
+                            <div class="flex flex-col py-1.5 min-w-0">
+                              <span class="font-bold text-gray-900 text-sm leading-tight tracking-tight">{{ i.codigoFabrica }}</span>
+                              <span class="text-xs text-gray-500 font-normal leading-snug mt-0.5 whitespace-normal break-words">
+                                {{ i.descripcion || 'Sin descripción adicional' }}
+                              </span>
+                            </div>
+                          </mat-option>
+                          
+                          <!-- Opción de creación rápida si no hay coincidencia -->
+                          <mat-option *ngIf="noMatchSalida && salidaSearchTerm" 
+                                      [value]="null"
+                                      (click)="crearNuevoInsumoDesdeMovimiento('SALIDA', $event)" 
+                                      class="no-match-create-option">
+                            <div class="flex items-center justify-between gap-2 py-2 text-xs w-full">
+                              <div class="flex items-center gap-1.5 min-w-0 text-gray-700">
+                                <mat-icon class="text-amber-500" style="font-size: 16px; width: 16px; height: 16px;">help_outline</mat-icon>
+                                <span class="truncate">Este insumo no está registrado</span>
+                              </div>
+                              <span class="font-bold text-red-600 hover:text-red-800 underline flex items-center gap-0.5 whitespace-nowrap">
+                                + ¿Quiere crearlo?
+                              </span>
+                            </div>
+                          </mat-option>
+                        </mat-autocomplete>
+                        <mat-error *ngIf="salidaForm.get('insumoObj')?.hasError('required')">El insumo es requerido</mat-error>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Ubicación Origen -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">place</mat-icon>
+                        <span>Ubicación Origen</span>
+                        <span class="text-red-500 font-bold">*</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input type="text" matInput formControlName="ubicacionObj" [matAutocomplete]="autoUbiSalida" placeholder="Buscar ubicación origen...">
+                        <button *ngIf="salidaForm.get('ubicacionObj')?.value" matSuffix mat-icon-button type="button" (click)="salidaForm.get('ubicacionObj')?.setValue(''); salidaForm.get('idUbicacion')?.setValue(null)" matTooltip="Limpiar ubicación">
+                          <mat-icon class="text-gray-400" style="font-size: 18px; width: 18px; height: 18px;">close</mat-icon>
+                        </button>
+                        <mat-autocomplete #autoUbiSalida="matAutocomplete" [displayWith]="displayFnUbicacion">
+                          <mat-option *ngFor="let u of filteredSalidaUbicacion | async" [value]="u">
+                            <div class="flex items-center justify-between w-full">
+                              <span class="font-medium text-gray-800">{{ u.nombre }}</span>
+                              <span class="text-xs px-2 py-0.5 rounded-full font-bold ml-2 bg-blue-100 text-blue-800">
+                                Stock: {{ u.stock }}
+                              </span>
+                            </div>
+                          </mat-option>
+                        </mat-autocomplete>
+                        <mat-error *ngIf="salidaForm.get('ubicacionObj')?.hasError('required')">La ubicación de origen es requerida</mat-error>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Cantidad -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">pin</mat-icon>
+                        <span>Cantidad</span>
+                        <span class="text-red-500 font-bold">*</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input matInput type="number" formControlName="cantidad" min="1" placeholder="0" />
+                        <mat-hint class="text-[11px] text-gray-400">Ingresa una cantidad mayor a 0</mat-hint>
+                        <mat-error *ngIf="salidaForm.get('cantidad')?.hasError('min') || salidaForm.get('cantidad')?.value === 0">
+                          La cantidad debe ser mayor a 0
+                        </mat-error>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Precio Unitario -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">payments</mat-icon>
+                        <span>Precio Unitario</span>
+                        <span class="text-xs text-gray-400 font-normal">(Opcional)</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input matInput type="number" formControlName="precioUnitario" placeholder="Auto de catálogo si se omite" />
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Proyecto -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">folder</mat-icon>
+                        <span>Proyecto</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <mat-select formControlName="idProyecto" placeholder="Seleccionar proyecto...">
+                          <mat-option *ngFor="let p of proyectos" [value]="p.id">{{ p.nombre }}</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Estado Salida -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">check_circle_outline</mat-icon>
+                        <span>Estado de Salida</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <mat-select formControlName="idEstadoSalida" placeholder="Seleccionar estado...">
+                          <mat-option *ngFor="let e of estadosSalida" [value]="e.id">{{ e.nombre }}</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Observación -->
+                    <div class="field-container full-width">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">notes</mat-icon>
+                        <span>Observación</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <textarea matInput formControlName="observacion" rows="2" placeholder="Notas adicionales sobre la salida..."></textarea>
+                      </mat-form-field>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <button mat-raised-button color="warn" type="submit" [disabled]="salidaForm.invalid || salidaForm.get('cantidad')?.value <= 0" class="btn-gloss px-8 py-2.5 text-xs font-bold rounded-xl shadow-md">
+                      <mat-icon class="mr-1">save</mat-icon> Registrar Salida
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </mat-tab>
 
           <!-- Tab: Registrar Ajuste -->
           <mat-tab label="± Ajuste" *ngIf="userRole !== 'User'">
             <div class="tab-content">
-              <!-- Tip Box informativo -->
-              <div class="tip-box">
-                <mat-icon>info</mat-icon>
-                <div>
-                  <strong>¿Cómo funciona el ajuste?</strong>
-                  <p>El Ajuste permite corregir el stock de un insumo sin registrarlo como ingreso o salida.</p>
-                  <ul>
-                    <li><strong>Cantidad positiva</strong> (ej: +50) → <span class="text-udit-verde">AUMENTA</span> el stock</li>
-                    <li><strong>Cantidad negativa</strong> (ej: -30) → <span class="text-udit-rojo">REDUCE</span> el stock</li>
-                  </ul>
-                  <p><em>La observación es obligatoria para registrar el motivo del ajuste.</em></p>
+              <div class="movimiento-form-container">
+                
+                <!-- Tip Box informativo -->
+                <div class="tip-box">
+                  <mat-icon>info</mat-icon>
+                  <div>
+                    <strong>¿Cómo funciona el ajuste de inventario?</strong>
+                    <p>El Ajuste permite corregir el conteo físico de un insumo sin registrarlo como compra o consumo estándar, o bien reubicarlo de estantería.</p>
+                    <ul>
+                      <li><strong>Cantidad positiva</strong> (ej: +50) → <span class="text-udit-verde font-bold">AUMENTA</span> el stock disponible</li>
+                      <li><strong>Cantidad negativa</strong> (ej: -30) → <span class="text-udit-rojo font-bold">REDUCE</span> el stock disponible</li>
+                    </ul>
+                    <p class="text-xs mt-1"><em>La observación es obligatoria para certificar la causa o justificación del ajuste.</em></p>
+                  </div>
                 </div>
+
+                <!-- Encabezado de Pestaña Centrado -->
+                <div class="form-header-bar">
+                  <div class="header-info">
+                    <div class="header-icon-badge bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                      <mat-icon style="font-size: 24px; width: 24px; height: 24px;">tune</mat-icon>
+                    </div>
+                    <div>
+                      <h3 class="tab-title">Registrar Ajuste de Stock</h3>
+                      <p class="tab-subtitle">Aplica correcciones directas sobre existencias o traslados de ubicación</p>
+                    </div>
+                  </div>
+                </div>
+
+                <form [formGroup]="ajusteForm" (ngSubmit)="registrarAjuste()" (keydown)="preventEnterIfInvalid($event, ajusteForm)" class="movimiento-form">
+                  <div class="form-grid">
+                    
+                    <!-- Insumo Autocomplete -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">inventory_2</mat-icon>
+                        <span>Insumo</span>
+                        <span class="text-red-500 font-bold">*</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input type="text" matInput formControlName="insumoObj" [matAutocomplete]="autoInsumoAjuste" placeholder="Buscar por código o descripción...">
+                        <button *ngIf="ajusteForm.get('insumoObj')?.value" matSuffix mat-icon-button type="button" (click)="limpiarInsumo('AJUSTE')" matTooltip="Limpiar insumo y ubicación">
+                          <mat-icon class="text-gray-400" style="font-size: 18px; width: 18px; height: 18px;">close</mat-icon>
+                        </button>
+                        <mat-autocomplete #autoInsumoAjuste="matAutocomplete" [displayWith]="displayFnInsumo" class="insumo-autocomplete-panel">
+                          <mat-option *ngFor="let i of filteredInsumosAjuste | async" [value]="i" class="insumo-multiline-option">
+                            <div class="flex flex-col py-1.5 min-w-0">
+                              <span class="font-bold text-gray-900 text-sm leading-tight tracking-tight">{{ i.codigoFabrica }}</span>
+                              <span class="text-xs text-gray-500 font-normal leading-snug mt-0.5 whitespace-normal break-words">
+                                {{ i.descripcion || 'Sin descripción adicional' }}
+                              </span>
+                            </div>
+                          </mat-option>
+                          
+                          <!-- Opción de creación rápida si no hay coincidencia -->
+                          <mat-option *ngIf="noMatchAjuste && ajusteSearchTerm" 
+                                      [value]="null"
+                                      (click)="crearNuevoInsumoDesdeMovimiento('AJUSTE', $event)" 
+                                      class="no-match-create-option">
+                            <div class="flex items-center justify-between gap-2 py-2 text-xs w-full">
+                              <div class="flex items-center gap-1.5 min-w-0 text-gray-700">
+                                <mat-icon class="text-amber-500" style="font-size: 16px; width: 16px; height: 16px;">help_outline</mat-icon>
+                                <span class="truncate">Este insumo no está registrado</span>
+                              </div>
+                              <span class="font-bold text-red-600 hover:text-red-800 underline flex items-center gap-0.5 whitespace-nowrap">
+                                + ¿Quiere crearlo?
+                              </span>
+                            </div>
+                          </mat-option>
+                        </mat-autocomplete>
+                        <mat-error *ngIf="ajusteForm.get('insumoObj')?.hasError('required')">El insumo es requerido</mat-error>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Ubicación Actual / Origen -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">place</mat-icon>
+                        <span>Ubicación Actual</span>
+                        <span class="text-red-500 font-bold">*</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input type="text" matInput formControlName="ubicacionObj" [matAutocomplete]="autoUbiAjuste" placeholder="Buscar ubicación origen...">
+                        <button *ngIf="ajusteForm.get('ubicacionObj')?.value" matSuffix mat-icon-button type="button" (click)="ajusteForm.get('ubicacionObj')?.setValue(''); ajusteForm.get('idUbicacion')?.setValue(null)" matTooltip="Limpiar ubicación">
+                          <mat-icon class="text-gray-400" style="font-size: 18px; width: 18px; height: 18px;">close</mat-icon>
+                        </button>
+                        <mat-autocomplete #autoUbiAjuste="matAutocomplete" [displayWith]="displayFnUbicacion">
+                          <mat-option *ngFor="let u of filteredAjusteUbicacion | async" [value]="u">
+                            <div class="flex items-center justify-between w-full">
+                              <span class="font-medium text-gray-800">{{ u.nombre }}</span>
+                              <span class="text-xs px-2 py-0.5 rounded-full font-bold ml-2 bg-amber-100 text-amber-800">
+                                Stock: {{ u.stock }}
+                              </span>
+                            </div>
+                          </mat-option>
+                        </mat-autocomplete>
+                        <mat-error *ngIf="ajusteForm.get('ubicacionObj')?.hasError('required')">Requerido</mat-error>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Nueva Ubicación (opcional, solo para traslados/cambios) -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">drive_file_move</mat-icon>
+                        <span>Nueva Ubicación</span>
+                        <span class="text-xs text-gray-400 font-normal">(Opcional)</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input type="text" matInput formControlName="nuevaUbicacionObj" [matAutocomplete]="autoNuevaUbi" placeholder="Buscar ubicación destino...">
+                        <button *ngIf="ajusteForm.get('nuevaUbicacionObj')?.value" matSuffix mat-icon-button type="button" (click)="ajusteForm.get('nuevaUbicacionObj')?.setValue(''); ajusteForm.get('idNuevaUbicacion')?.setValue(null)" matTooltip="Limpiar ubicación destino">
+                          <mat-icon class="text-gray-400" style="font-size: 18px; width: 18px; height: 18px;">close</mat-icon>
+                        </button>
+                        <mat-autocomplete #autoNuevaUbi="matAutocomplete" [displayWith]="displayFnUbicacion">
+                          <mat-option *ngFor="let u of filteredNuevaUbicacion | async" [value]="u">
+                            <div class="flex items-center justify-between w-full">
+                              <span class="font-medium text-gray-800">{{ u.nombre }}</span>
+                              <span class="text-xs px-2 py-0.5 rounded-full font-bold ml-2 bg-gray-100 text-gray-600">
+                                Stock: {{ u.stock || 0 }}
+                              </span>
+                            </div>
+                          </mat-option>
+                        </mat-autocomplete>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Cantidad -->
+                    <div class="field-container">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">swap_vert</mat-icon>
+                        <span>Cantidad a Ajustar</span>
+                        <span class="text-red-500 font-bold">*</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <input matInput type="number" formControlName="cantidad" placeholder="0" />
+                        <mat-hint class="text-[11px] text-gray-400">Positivo (+) aumenta | Negativo (-) reduce stock</mat-hint>
+                        <mat-error *ngIf="ajusteForm.get('cantidad')?.hasError('nonZero') || ajusteForm.get('cantidad')?.value === 0">
+                          La cantidad no puede ser 0
+                        </mat-error>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Observación -->
+                    <div class="field-container full-width">
+                      <label class="field-label">
+                        <mat-icon class="field-icon">notes</mat-icon>
+                        <span>Observación / Justificación</span>
+                        <span class="text-red-500 font-bold">*</span>
+                      </label>
+                      <mat-form-field appearance="outline" class="w-full">
+                        <textarea matInput formControlName="observacion" rows="2" placeholder="Motivo o justificación del ajuste..."></textarea>
+                        <mat-error *ngIf="ajusteForm.get('observacion')?.hasError('required')">La observación es obligatoria para registrar un ajuste</mat-error>
+                      </mat-form-field>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <button mat-raised-button color="primary" type="submit" [disabled]="ajusteForm.invalid || ajusteForm.get('cantidad')?.value === 0" class="btn-gloss px-8 py-2.5 text-xs font-bold rounded-xl shadow-md">
+                      <mat-icon class="mr-1">swap_vert</mat-icon> Registrar Ajuste
+                    </button>
+                  </div>
+                </form>
               </div>
-
-              <h3 class="tab-title">Registrar Ajuste de Stock</h3>
-              <form [formGroup]="ajusteForm" (ngSubmit)="registrarAjuste()" class="movimiento-form">
-                <div class="form-grid">
-                  <mat-form-field appearance="outline">
-                    <mat-label>Insumo</mat-label>
-                    <input type="text" matInput formControlName="insumoObj" [matAutocomplete]="autoInsumoAjuste" placeholder="Buscar insumo...">
-                    <mat-autocomplete #autoInsumoAjuste="matAutocomplete" [displayWith]="displayFnInsumo">
-                      <mat-option *ngFor="let i of filteredInsumosAjuste | async" [value]="i">
-                        {{ i.codigoFabrica }}
-                      </mat-option>
-                    </mat-autocomplete>
-                    <mat-error>Requerido</mat-error>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline">
-                    <mat-label>Cantidad</mat-label>
-                    <input matInput type="number" formControlName="cantidad" placeholder="Ej: 50 o -30" />
-                    <mat-hint>Positivo = aumenta stock | Negativo = reduce stock</mat-hint>
-                    <mat-error>Requerido (no puede ser 0)</mat-error>
-                  </mat-form-field>
-
-                  <!-- Ubicación Actual / Origen -->
-                  <mat-form-field appearance="outline">
-                    <mat-label>Ubicación Actual</mat-label>
-                    <input type="text" matInput formControlName="ubicacionObj" [matAutocomplete]="autoUbiAjuste" placeholder="Buscar ubicación origen...">
-                    <mat-autocomplete #autoUbiAjuste="matAutocomplete" [displayWith]="displayFnUbicacion">
-                      <mat-option *ngFor="let u of filteredAjusteUbicacion | async" [value]="u">
-                        {{ u.nombre }} (Stock: {{ u.stock }})
-                      </mat-option>
-                    </mat-autocomplete>
-                    <mat-error>Requerido</mat-error>
-                  </mat-form-field>
-
-                  <!-- Nueva Ubicación (opcional, solo para cambios) -->
-                  <mat-form-field appearance="outline">
-                    <mat-label>Nueva Ubicación (opcional)</mat-label>
-                    <input type="text" matInput formControlName="nuevaUbicacionObj" [matAutocomplete]="autoNuevaUbi" placeholder="Buscar ubicación destino...">
-                    <mat-autocomplete #autoNuevaUbi="matAutocomplete" [displayWith]="displayFnUbicacion">
-                      <mat-option *ngFor="let u of filteredNuevaUbicacion | async" [value]="u">
-                        {{ u.nombre }} (Stock: {{ u.stock || 0 }})
-                      </mat-option>
-                    </mat-autocomplete>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Observación (obligatorio)</mat-label>
-                    <textarea matInput formControlName="observacion" rows="2" placeholder="Motivo del ajuste..."></textarea>
-                    <mat-error>La observación es obligatoria para registrar un ajuste</mat-error>
-                  </mat-form-field>
-                </div>
-                <button mat-raised-button color="primary" type="submit" [disabled]="ajusteForm.invalid" class="btn-gloss">
-                  <mat-icon>swap_vert</mat-icon> Registrar Ajuste
-                </button>
-              </form>
             </div>
           </mat-tab>
 
+
           <!-- Tab: Historial con filtro -->
           <mat-tab label="Historial">
+
             <div class="tab-content">
               <!-- Filtro paramétrico -->
               <div class="filter-section">
@@ -234,7 +539,7 @@
               </div>
 
               <!-- Tabla premium -->
-              <div class="table-section overflow-auto" *ngIf="!loading || data.length > 0">
+              <div class="table-section responsive-table-container overflow-auto" *ngIf="!loading || data.length > 0">
                 <table mat-table [dataSource]="data" class="w-full premium-table">
                   <ng-container matColumnDef="fecha">
                     <th mat-header-cell *matHeaderCellDef>Fecha</th>

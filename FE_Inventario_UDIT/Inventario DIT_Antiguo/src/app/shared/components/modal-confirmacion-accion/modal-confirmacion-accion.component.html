@@ -1,0 +1,123 @@
+<div class="flex flex-col bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-2xl w-full max-h-[90vh]">
+  
+  <!-- Header Modal Premium UDIT -->
+  <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between shadow-md flex-shrink-0">
+    <div class="flex items-center gap-3.5">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center shadow-inner flex-shrink-0"
+           [ngClass]="{
+             'bg-rose-500/20 border border-rose-500/40 text-rose-400': data.tipo === 'eliminar' || data.tipo === 'error',
+             'bg-amber-500/20 border border-amber-500/40 text-amber-400': data.tipo === 'salida' || data.tipo === 'advertencia',
+             'bg-sky-500/20 border border-sky-500/40 text-sky-400': data.tipo === 'editar' || data.tipo === 'info',
+             'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400': !data.tipo || data.tipo === 'ingreso' || data.tipo === 'crear' || data.tipo === 'ajuste' || data.tipo === 'general'
+           }">
+        <mat-icon style="font-size: 24px; width: 24px; height: 24px;">
+          {{ data.icono || (data.tipo === 'eliminar' ? 'delete_forever' : (data.tipo === 'advertencia' ? 'warning' : (data.tipo === 'error' ? 'error' : (data.tipo === 'info' ? 'info' : (data.tipo === 'editar' ? 'edit' : 'inventory'))))) }}
+        </mat-icon>
+      </div>
+      <div>
+        <h2 class="text-base font-bold text-white tracking-tight m-0">{{ data.titulo || 'Confirmar Acción' }}</h2>
+        <p class="text-xs text-slate-300 mt-0.5 mb-0" *ngIf="data.subtitulo">{{ data.subtitulo }}</p>
+      </div>
+    </div>
+
+    <button type="button" mat-icon-button (click)="cancelar()" class="text-slate-400 hover:text-white" matTooltip="Cerrar">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Contenido -->
+  <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-4 bg-slate-50/60 dark:bg-slate-950/60 custom-scrollbar">
+    
+    <!-- Mensaje Principal (si aplica) -->
+    <div *ngIf="data.mensajePrincipal" class="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 shadow-xs text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-medium">
+      <div [innerHTML]="data.mensajePrincipal"></div>
+    </div>
+
+    <!-- Métricas Consolidadas -->
+    <div *ngIf="data.metricas && data.metricas.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div *ngFor="let m of data.metricas" 
+           class="p-3.5 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center text-center shadow-xs">
+        <span class="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">{{ m.label }}</span>
+        <span class="text-base font-black mt-1" [ngClass]="m.colorClass || 'text-slate-900 dark:text-white'">{{ m.value }}</span>
+      </div>
+    </div>
+
+    <!-- Lista Resumida de Insumos / Acciones -->
+    <div *ngIf="data.items && data.items.length > 0" class="flex flex-col gap-2">
+      <div class="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 px-1">
+        <span>Detalle de insumos a procesar ({{ data.items.length }}):</span>
+        <span class="text-[11px] text-slate-500 dark:text-slate-400 font-normal">Revisa las cantidades y destinos</span>
+      </div>
+
+      <div class="max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-700/50 shadow-inner custom-scrollbar">
+        <div *ngFor="let item of data.items; let idx = index" class="p-3 flex items-center justify-between gap-3 text-xs hover:bg-slate-50/70 dark:hover:bg-slate-700/40 transition-colors">
+          
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold flex items-center justify-center text-[10px] flex-shrink-0 border border-slate-200 dark:border-slate-600">
+              {{ idx + 1 }}
+            </span>
+            <div class="min-w-0">
+              <div class="font-black text-slate-900 dark:text-white text-xs truncate">{{ item.codigo }}</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" *ngIf="item.descripcion">{{ item.descripcion }}</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 text-right flex-shrink-0">
+            <div class="flex flex-col items-end">
+              <span class="font-black text-slate-900 dark:text-white text-xs bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md">{{ item.cantidad }} un.</span>
+              <span class="text-[10px] text-slate-600 dark:text-slate-300 font-medium mt-0.5 flex items-center gap-0.5" *ngIf="item.ubicacion">
+                <mat-icon style="font-size: 11px; width: 11px; height: 11px;" class="text-rose-600">place</mat-icon>
+                {{ item.ubicacion }}
+              </span>
+            </div>
+            <div *ngIf="item.precioUnitario" class="text-emerald-800 dark:text-emerald-300 font-bold text-xs bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              ${{ item.precioUnitario | number:'1.0-0' }}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Advertencia Informativa -->
+    <div *ngIf="data.mensajeAdvertencia" 
+         class="p-3.5 rounded-xl border flex items-start gap-3 text-xs leading-relaxed font-medium"
+         [ngClass]="{
+           'bg-rose-50 dark:bg-rose-950/40 border-rose-200/90 dark:border-rose-800/60 text-rose-950 dark:text-rose-200': data.tipo === 'eliminar' || data.tipo === 'error',
+           'bg-amber-50 dark:bg-amber-950/40 border-amber-200/90 dark:border-amber-800/60 text-amber-950 dark:text-amber-200': data.tipo !== 'eliminar' && data.tipo !== 'error'
+         }">
+      <mat-icon [ngClass]="(data.tipo === 'eliminar' || data.tipo === 'error') ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'" class="text-base flex-shrink-0 mt-0.5">
+        {{ (data.tipo === 'eliminar' || data.tipo === 'error') ? 'error_outline' : 'info' }}
+      </mat-icon>
+      <span class="leading-relaxed">{{ data.mensajeAdvertencia }}</span>
+    </div>
+
+  </div>
+
+  <!-- Footer con Botones -->
+  <div class="px-6 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0 shadow-lg">
+    <button *ngIf="!data.soloAceptar" type="button" mat-stroked-button (click)="cancelar()" class="text-xs text-slate-700 dark:text-slate-300 font-medium">
+      {{ data.btnCancelarTexto || 'Cancelar' }}
+    </button>
+    <div *ngIf="data.soloAceptar"></div>
+
+    <div class="flex items-center gap-2">
+      <!-- Botón de Acción Adicional Opcional -->
+      <button *ngIf="data.btnAccionAdicionalTexto" type="button" mat-stroked-button (click)="accionAdicional()"
+              class="text-xs font-bold text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700">
+        {{ data.btnAccionAdicionalTexto }}
+      </button>
+
+      <!-- Botón Principal -->
+      <button type="button" mat-raised-button (click)="confirmar()" 
+              class="btn-gloss text-xs font-bold shadow-md flex items-center gap-1.5 px-4"
+              [ngStyle]="{ 'background-color': (data.tipo === 'eliminar' || data.tipo === 'error') ? '#B11F16' : '#636F03', 'color': 'white' }">
+        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">
+          {{ data.tipo === 'eliminar' ? 'delete' : (data.soloAceptar ? 'check' : 'check_circle') }}
+        </mat-icon>
+        <span>{{ data.btnConfirmarTexto || (data.tipo === 'eliminar' ? 'Sí, eliminar' : (data.soloAceptar ? 'Entendido' : 'Sí, confirmar')) }}</span>
+      </button>
+    </div>
+  </div>
+
+</div>

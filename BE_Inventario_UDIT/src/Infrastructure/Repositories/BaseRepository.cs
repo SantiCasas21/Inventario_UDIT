@@ -27,7 +27,7 @@ namespace Infrastructure.Repositories
         // ==========================================
         public virtual async Task<IEnumerable<T>> GetAllAsync()
         {
-            return await _dbSet.ToListAsync();
+            return await _dbSet.AsNoTracking().ToListAsync();
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace Infrastructure.Repositories
         /// </summary>
         public virtual async Task<IEnumerable<T>> GetAllAsync(params string[] includes)
         {
-            IQueryable<T> query = _dbSet;
+            IQueryable<T> query = _dbSet.AsNoTracking();
             foreach (var include in includes)
             {
                 query = query.Include(include);
@@ -57,7 +57,7 @@ namespace Infrastructure.Repositories
         /// </summary>
         public virtual async Task<T?> GetByIdAsync(int id, params string[] includes)
         {
-            IQueryable<T> query = _dbSet;
+            IQueryable<T> query = _dbSet.AsNoTracking();
             foreach (var include in includes)
             {
                 query = query.Include(include);
@@ -78,7 +78,7 @@ namespace Infrastructure.Repositories
             page = Math.Max(1, page);
             pageSize = Math.Max(1, Math.Min(pageSize, 200)); // máx 200 por página
 
-            IQueryable<T> query = _dbSet;
+            IQueryable<T> query = _dbSet.AsNoTracking();
 
             // Aplicar filtro
             if (filter != null)
@@ -174,12 +174,12 @@ namespace Infrastructure.Repositories
         // ==========================================
         public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
         {
-            return await _dbSet.Where(predicate).ToListAsync();
+            return await _dbSet.AsNoTracking().Where(predicate).ToListAsync();
         }
 
         public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate, params string[] includes)
         {
-            IQueryable<T> query = _dbSet.Where(predicate);
+            IQueryable<T> query = _dbSet.AsNoTracking().Where(predicate);
             foreach (var include in includes)
             {
                 query = query.Include(include);

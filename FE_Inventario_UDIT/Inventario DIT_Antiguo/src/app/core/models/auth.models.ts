@@ -9,9 +9,14 @@ export interface LoginResponse {
   token: string;
   expiration: string; // ISO 8601
   username: string;
+  email?: string;
   nombreCompleto: string;
   role: string;
+  avatarUrl?: string;
+  debeCambiarPassword?: boolean;
+  permissions?: string[];
 }
+
 
 /** DTO para solicitud de registro (solo Admin). */
 export interface RegisterRequest {
@@ -22,6 +27,14 @@ export interface RegisterRequest {
   role: string; // "Admin" | "Developer" | "Assistant" | "User"
 }
 
+/** DTO para creación de usuario por parte del Administrador */
+export interface CreateUserAdminRequest {
+  nombreCompleto: string;
+  username: string;
+  email: string;
+  role: string;
+}
+
 /** DTO con la información del usuario autenticado. */
 export interface UserInfo {
   id: string;
@@ -29,9 +42,13 @@ export interface UserInfo {
   email: string;
   nombreCompleto: string;
   role: string;
+  avatarUrl?: string;
+  debeCambiarPassword?: boolean;
+  permissions?: string[];
   activo: boolean;
   fechaCreacion: string;
 }
+
 
 /** DTO para gestión de usuarios del sistema (admin). */
 export interface UserDto {
@@ -40,9 +57,15 @@ export interface UserDto {
   email: string;
   nombreCompleto: string;
   role: string;
+  avatarUrl?: string;
   activo: boolean;
+  debeCambiarPassword?: boolean;
+  fechaDesactivacion?: string;
+  diasRestantesEliminacion?: number;
   fechaCreacion: string;
 }
+
+
 
 /** Roles disponibles en el sistema. */
 export type UserRole = 'Admin' | 'Developer' | 'Assistant' | 'User';

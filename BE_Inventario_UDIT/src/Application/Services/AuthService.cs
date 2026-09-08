@@ -44,6 +44,7 @@ namespace Application.Services
                 return OperationResult<LoginResponseDto>.Fail("Usuario o contraseña incorrectos");
 
             var roles = await _userManager.GetRolesAsync(user);
+            var permissions = await GetRolePermissionsAsync(roles);
             var token = await GenerateJwtToken(user, roles);
 
             return OperationResult<LoginResponseDto>.Ok(new LoginResponseDto
@@ -51,10 +52,15 @@ namespace Application.Services
                 Token = token,
                 Expiration = DateTime.UtcNow.AddMinutes(GetJwtExpireMinutes()),
                 Username = user.UserName!,
+                Email = user.Email ?? string.Empty,
                 NombreCompleto = user.NombreCompleto,
-                Role = roles.FirstOrDefault() ?? "User"
+                Role = roles.FirstOrDefault() ?? "User",
+                AvatarUrl = user.AvatarUrl,
+                DebeCambiarPassword = user.DebeCambiarPassword,
+                Permissions = permissions
             }, "Inicio de sesión exitoso");
         }
+
 
         public async Task<OperationResult<LoginResponseDto>> RegisterAsync(RegisterRequestDto request)
         {
@@ -62,8 +68,16 @@ namespace Application.Services
             if (existingUser != null)
                 return OperationResult<LoginResponseDto>.Fail("El nombre de usuario ya existe");
 
-            if (!await _roleManager.RoleExistsAsync(request.Role))
-                return OperationResult<LoginResponseDto>.Fail($"El rol '{request.Role}' no existe");
+            if (!string.IsNullOrWhiteSpace(request.Email))
+            {
+                var existingEmail = await _userManager.FindByEmailAsync(request.Email);
+                if (existingEmail != null)
+                    return OperationResult<LoginResponseDto>.Fail("El correo electrónico ya está registrado por otra cuenta");
+            }
+
+            var roleToAssign = string.IsNullOrWhiteSpace(request.Role) ? "User" : request.Role;
+            if (!await _roleManager.RoleExistsAsync(roleToAssign))
+                return OperationResult<LoginResponseDto>.Fail($"El rol '{roleToAssign}' no existe");
 
             var user = new ApplicationUser
             {
@@ -78,24 +92,28 @@ namespace Application.Services
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
             {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                var errors = TranslateIdentityErrors(result.Errors);
                 return OperationResult<LoginResponseDto>.Fail($"Error al crear usuario: {errors}");
             }
 
-            await _userManager.AddToRoleAsync(user, request.Role);
+            await _userManager.AddToRoleAsync(user, roleToAssign);
 
-            var roles = new List<string> { request.Role };
+            var roles = new List<string> { roleToAssign };
+            var permissions = await GetRolePermissionsAsync(roles);
             var token = await GenerateJwtToken(user, roles);
 
-            await _auditoriaService.LogAsync("CREAR", "Usuario", $"Se registró el nuevo usuario '{user.UserName}' con Rol '{request.Role}'");
+            await _auditoriaService.LogAsync("CREAR", "Usuario", $"Se registró el nuevo usuario '{user.UserName}' con Rol '{roleToAssign}'");
 
             return OperationResult<LoginResponseDto>.Ok(new LoginResponseDto
             {
                 Token = token,
                 Expiration = DateTime.UtcNow.AddMinutes(GetJwtExpireMinutes()),
                 Username = user.UserName!,
+                Email = user.Email ?? string.Empty,
                 NombreCompleto = user.NombreCompleto,
-                Role = request.Role
+                Role = roleToAssign,
+                AvatarUrl = user.AvatarUrl,
+                Permissions = permissions
             }, "Usuario registrado exitosamente");
         }
 
@@ -106,18 +124,148 @@ namespace Application.Services
                 return OperationResult<UserInfoDto>.Fail("Usuario no encontrado");
 
             var roles = await _userManager.GetRolesAsync(user);
+            var permissions = await GetRolePermissionsAsync(roles);
 
             return OperationResult<UserInfoDto>.Ok(new UserInfoDto
             {
                 Id = user.Id,
                 Username = user.UserName!,
-                Email = user.Email!,
+                Email = user.Email ?? string.Empty,
                 NombreCompleto = user.NombreCompleto,
                 Role = roles.FirstOrDefault() ?? "User",
+                AvatarUrl = user.AvatarUrl,
+                DebeCambiarPassword = user.DebeCambiarPassword,
                 Activo = user.Activo,
-                FechaCreacion = user.FechaCreacion
+                FechaCreacion = user.FechaCreacion,
+                Permissions = permissions
             });
         }
+
+        public async Task<OperationResult<UserInfoDto>> UpdateProfileAsync(string userId, UpdateProfileRequestDto request)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return OperationResult<UserInfoDto>.Fail("Usuario no encontrado");
+
+            // Si cambió el nombre de usuario, verificar que no esté ocupado por otro
+            if (!string.Equals(user.UserName, request.Username, StringComparison.OrdinalIgnoreCase))
+            {
+                var existing = await _userManager.FindByNameAsync(request.Username);
+                if (existing != null && existing.Id != user.Id)
+                    return OperationResult<UserInfoDto>.Fail("El nombre de usuario ya está en uso");
+                user.UserName = request.Username.Trim();
+            }
+
+            // Si cambió el email, verificar que no esté ocupado
+            if (!string.IsNullOrWhiteSpace(request.Email) && !string.Equals(user.Email, request.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                var existingEmail = await _userManager.FindByEmailAsync(request.Email);
+                if (existingEmail != null && existingEmail.Id != user.Id)
+                    return OperationResult<UserInfoDto>.Fail("El correo electrónico ya está registrado por otro usuario");
+                user.Email = request.Email.Trim();
+            }
+
+            user.NombreCompleto = request.NombreCompleto.Trim();
+            user.AvatarUrl = request.AvatarUrl;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                var errors = TranslateIdentityErrors(updateResult.Errors);
+                return OperationResult<UserInfoDto>.Fail($"Error al actualizar perfil: {errors}");
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var permissions = await GetRolePermissionsAsync(roles);
+
+            await _auditoriaService.LogAsync("EDITAR", "Usuario", $"El usuario '{user.UserName}' actualizó su perfil");
+
+            return OperationResult<UserInfoDto>.Ok(new UserInfoDto
+            {
+                Id = user.Id,
+                Username = user.UserName!,
+                Email = user.Email ?? string.Empty,
+                NombreCompleto = user.NombreCompleto,
+                Role = roles.FirstOrDefault() ?? "User",
+                AvatarUrl = user.AvatarUrl,
+                DebeCambiarPassword = user.DebeCambiarPassword,
+                Activo = user.Activo,
+                FechaCreacion = user.FechaCreacion,
+                Permissions = permissions
+            }, "Perfil actualizado exitosamente");
+        }
+
+        public async Task<OperationResult> ChangePasswordAsync(string userId, ChangePasswordRequestDto request)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return OperationResult.Fail("Usuario no encontrado");
+
+            if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+                return OperationResult.Fail("Debe ingresar la contraseña actual y la nueva");
+
+            var changeResult = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+            if (!changeResult.Succeeded)
+            {
+                var errors = TranslateIdentityErrors(changeResult.Errors);
+                return OperationResult.Fail($"Error al cambiar contraseña: {errors}");
+            }
+
+            if (user.DebeCambiarPassword)
+            {
+                user.DebeCambiarPassword = false;
+                await _userManager.UpdateAsync(user);
+            }
+
+            await _auditoriaService.LogAsync("EDITAR", "Usuario", $"El usuario '{user.UserName}' cambió su contraseña");
+
+            return OperationResult.Ok("Contraseña actualizada exitosamente");
+        }
+
+        private static string TranslateIdentityErrors(IEnumerable<IdentityError> errors)
+        {
+            var translated = new List<string>();
+            foreach (var e in errors)
+            {
+                if (e.Code == "PasswordRequiresUpper")
+                    translated.Add("La contraseña debe tener al menos una letra mayúscula ('A'-'Z').");
+                else if (e.Code == "PasswordRequiresDigit")
+                    translated.Add("La contraseña debe tener al menos un número ('0'-'9').");
+                else if (e.Code == "PasswordRequiresNonAlphanumeric")
+                    translated.Add("La contraseña debe tener al menos un símbolo especial (ej. ! @ # $ %).");
+                else if (e.Code == "PasswordTooShort")
+                    translated.Add("La contraseña debe tener al menos 6 caracteres.");
+                else if (e.Code == "PasswordMismatch" || e.Description.Contains("Incorrect password", StringComparison.OrdinalIgnoreCase))
+                    translated.Add("La contraseña actual ingresada es incorrecta.");
+                else if (e.Code == "DuplicateUserName")
+                    translated.Add("El nombre de usuario ya está en uso.");
+                else if (e.Code == "DuplicateEmail")
+                    translated.Add("El correo electrónico ya está registrado por otra cuenta.");
+                else
+                    translated.Add(e.Description);
+            }
+            return string.Join(" ", translated);
+        }
+
+        private async Task<List<string>> GetRolePermissionsAsync(IEnumerable<string> roles)
+
+        {
+            var permissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var roleName in roles)
+            {
+                var role = await _roleManager.FindByNameAsync(roleName);
+                if (role != null)
+                {
+                    var claims = await _roleManager.GetClaimsAsync(role);
+                    foreach (var claim in claims.Where(c => c.Type == "permission"))
+                    {
+                        permissions.Add(claim.Value);
+                    }
+                }
+            }
+            return permissions.OrderBy(p => p).ToList();
+        }
+
 
         private Task<string> GenerateJwtToken(ApplicationUser user, IList<string> roles)
         {

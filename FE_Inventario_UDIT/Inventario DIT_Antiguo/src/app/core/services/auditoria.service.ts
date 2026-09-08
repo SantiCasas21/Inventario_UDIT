@@ -7,10 +7,13 @@ export interface AuditoriaDto {
   id: number;
   fecha: string;
   usuario: string;
+  rol?: string;
+  avatarUrl?: string;
   accion: string;
   modulo: string;
   detalles: string;
 }
+
 
 @Injectable({
   providedIn: 'root'

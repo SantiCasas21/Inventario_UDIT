@@ -57,14 +57,18 @@ export class AuthService {
           id: '',
           name: login.nombreCompleto,
           username: login.username,
-          email: '',
+          email: login.email || '',
           nombreCompleto: login.nombreCompleto,
           role: login.role,
+          avatar: (login as any).avatarUrl,
+          debeCambiarPassword: login.debeCambiarPassword,
+          permissions: login.permissions || [],
           activo: true,
           fechaCreacion: '',
         };
 
-        console.log('[Auth] Login exitoso. Token guardado, rol:', login.role);
+
+        console.log('[Auth] Login exitoso. Token guardado, rol:', login.role, 'DebeCambiarPassword:', login.debeCambiarPassword);
         return login;
       }),
       catchError(err => {
@@ -99,10 +103,15 @@ export class AuthService {
         this._userService.user = {
           id: u.id, name: u.nombreCompleto, username: u.username,
           email: u.email, nombreCompleto: u.nombreCompleto, role: u.role,
+          avatar: (u as any).avatarUrl,
+          debeCambiarPassword: u.debeCambiarPassword,
+          permissions: u.permissions || [],
           activo: u.activo, fechaCreacion: u.fechaCreacion,
         };
         return u;
       }),
+
+
       catchError(err => {
         this.signOut();
         return throwError(() => err);
@@ -117,7 +126,7 @@ export class AuthService {
     return of(true);
   }
 
-  signUp(data: { username: string; email: string; password: string; nombreCompleto: string; role: string }): Observable<LoginResponse> {
+  signUp(data: { username: string; email: string; password: string; nombreCompleto: string; role?: string }): Observable<LoginResponse> {
     return this._http.post<{ success: boolean; message?: string; data: LoginResponse }>(
       `${this._baseUrl}/auth/register`, data
     ).pipe(
@@ -128,8 +137,41 @@ export class AuthService {
     );
   }
 
-  register(data: { username: string; email: string; password: string; nombreCompleto: string; role: string }): Observable<LoginResponse> {
+  register(data: { username: string; email: string; password: string; nombreCompleto: string; role?: string }): Observable<LoginResponse> {
     return this.signUp(data);
+  }
+
+  /** Actualizar perfil del usuario autenticado */
+  updateProfile(data: { nombreCompleto: string; username: string; email?: string; avatarUrl?: string }): Observable<UserInfo> {
+    return this._http.put<{ success: boolean; message?: string; data: UserInfo }>(
+      `${this._baseUrl}/auth/profile`, data
+    ).pipe(
+      map(res => {
+        if (!res?.success || !res?.data) throw new Error(res?.message || 'Error al actualizar perfil.');
+        const u = res.data;
+        this._userService.update({
+          name: u.nombreCompleto,
+          username: u.username,
+          email: u.email,
+          nombreCompleto: u.nombreCompleto,
+          avatar: (u as any).avatarUrl
+        });
+        return u;
+      })
+    );
+  }
+
+
+  /** Cambiar contraseña */
+  changePassword(data: { currentPassword: string; newPassword: string }): Observable<{ success: boolean; message: string }> {
+    return this._http.put<{ success: boolean; message: string }>(
+      `${this._baseUrl}/auth/change-password`, data
+    ).pipe(
+      map(res => {
+        if (!res?.success) throw new Error(res?.message || 'Error al cambiar contraseña.');
+        return res;
+      })
+    );
   }
 
   check(): Observable<boolean> {
@@ -138,3 +180,4 @@ export class AuthService {
     return this.validateToken().pipe(map(() => true), catchError(() => of(false)));
   }
 }
+

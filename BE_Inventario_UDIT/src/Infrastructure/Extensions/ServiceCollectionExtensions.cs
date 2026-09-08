@@ -18,6 +18,7 @@ namespace Infrastructure.Extensions
             // DbContext
             // ==========================================
             services.AddDbContext<AppDbContext>(options =>
+            {
                 options.UseSqlServer(
                     configuration.GetConnectionString("DefaultConnection"),
                     sqlOptions =>
@@ -26,7 +27,10 @@ namespace Infrastructure.Extensions
                             maxRetryCount: 3,
                             maxRetryDelay: TimeSpan.FromSeconds(10),
                             errorNumbersToAdd: null);
-                    }));
+                    });
+                options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+            });
+
 
             // ==========================================
             // Repositorio genérico

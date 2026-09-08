@@ -6,6 +6,8 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 .refresh-btn {
   display: flex;
@@ -29,12 +31,40 @@
 .error-msg { color: #d32f2f; }
 .stat-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
+
+  @media (max-width: 599px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 420px) {
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 1536px) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
 }
 .stat-cards.small {
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+
+  @media (max-width: 599px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 420px) {
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 1536px) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
 }
 .stat-card {
   display: flex;
@@ -42,6 +72,11 @@
   gap: 16px;
   padding: 20px;
   border-radius: 12px;
+
+  @media (max-width: 599px) {
+    padding: 14px;
+    gap: 12px;
+  }
 }
 .stat-icon {
   width: 48px;

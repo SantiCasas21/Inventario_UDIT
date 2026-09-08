@@ -2,21 +2,28 @@
 <button
     mat-icon-button
     [matMenuTriggerFor]="userActions">
-    <span class="relative">
+    <span class="relative flex items-center justify-center">
         <img
-            class="w-7 h-7 rounded-full"
-            *ngIf="showAvatar && user.avatar"
+            class="w-8 h-8 rounded-full object-cover shadow-sm ring-1 ring-indigo-200"
+            *ngIf="showAvatar && user?.avatar"
             [src]="user.avatar">
-        <mat-icon
-            *ngIf="!showAvatar || !user.avatar"
-            [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
+        <div
+            *ngIf="!showAvatar || !user?.avatar"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm"
+            [ngClass]="{
+                'avatar-admin': user?.role === 'Admin',
+                'avatar-developer': user?.role === 'Developer',
+                'avatar-assistant': user?.role === 'Assistant',
+                'avatar-user': user?.role === 'User'
+            }">
+            {{ getUserInitials() }}
+        </div>
         <span
-            class="absolute right-0 bottom-0 w-2 h-2 rounded-full"
-            [ngClass]="{'mr-px mb-px': !showAvatar || !user.avatar,
-                          'bg-green-500': user.status === 'online',
-                          'bg-amber-500': user.status === 'away',
-                          'bg-red-500': user.status === 'busy',
-                          'bg-gray-400': user.status === 'not-visible'}"
+            class="absolute right-0 bottom-0 w-2.5 h-2.5 rounded-full ring-2 ring-white"
+            [ngClass]="{'bg-green-500': user?.status === 'online' || !user?.status,
+                          'bg-amber-500': user?.status === 'away',
+                          'bg-red-500': user?.status === 'busy',
+                          'bg-gray-400': user?.status === 'not-visible'}"
         ></span>
     </span>
 </button>
@@ -24,35 +31,33 @@
 <mat-menu
     [xPosition]="'before'"
     #userActions="matMenu">
-    <button mat-menu-item>
-        <span class="flex flex-col leading-none">
-            <span>Signed in as</span>
-            <span class="mt-1.5 text-md font-medium">{{user.email}}</span>
-        </span>
-    </button>
-    <mat-divider class="my-2"></mat-divider>
-    <button mat-menu-item>
+    <div class="px-4 py-2.5 flex flex-col leading-none border-b border-gray-100">
+        <span class="font-bold text-gray-900 text-sm">{{user?.nombreCompleto || user?.username}}</span>
+        <span class="text-xs text-indigo-600 font-medium mt-0.5">&#64;{{user?.username}} &bull; {{user?.role}}</span>
+        <span class="text-xs text-gray-400 mt-1" *ngIf="user?.email">{{user?.email}}</span>
+    </div>
+
+    
+    <button mat-menu-item [routerLink]="['/perfil']">
         <mat-icon [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
-        <span>Profile</span>
+        <span class="font-medium">Mi Perfil</span>
     </button>
-    <button mat-menu-item>
-        <mat-icon [svgIcon]="'heroicons_outline:cog-8-tooth'"></mat-icon>
-        <span>Settings</span>
-    </button>
+    
     <button
         mat-menu-item
         [matMenuTriggerFor]="userStatus">
         <mat-icon [svgIcon]="'heroicons_outline:ellipsis-horizontal-circle'"></mat-icon>
-        <span>Status</span>
+        <span>Estado</span>
     </button>
     <mat-divider class="my-2"></mat-divider>
     <button
         mat-menu-item
         (click)="signOut()">
         <mat-icon [svgIcon]="'heroicons_outline:arrow-right-on-rectangle'"></mat-icon>
-        <span>Sign out</span>
+        <span class="text-red-600 font-medium">Cerrar Sesión</span>
     </button>
 </mat-menu>
+
 
 <mat-menu
     class="user-status-menu"

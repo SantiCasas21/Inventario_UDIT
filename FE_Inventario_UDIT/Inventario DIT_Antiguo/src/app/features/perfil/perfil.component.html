@@ -1,0 +1,271 @@
+<div class="premium-bg min-h-screen">
+  <div class="admin-page">
+    <!-- Encabezado con animaciones y gradiente -->
+    <div class="flex items-center justify-between mb-6 sm:mb-8 flex-wrap gap-4">
+      <div class="transform transition duration-500 hover:scale-105">
+        <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-gray-900 mb-1 sm:mb-2 drop-shadow-sm">
+          <span class="gradient-text">Mi Perfil</span>
+        </h1>
+        <p class="text-xs sm:text-base font-medium text-gray-500 flex items-center gap-2">
+          <mat-icon class="text-indigo-400" style="font-size: 20px; width: 20px; height: 20px;">account_circle</mat-icon>
+          Personaliza tu información de cuenta, avatar y seguridad
+        </p>
+      </div>
+    </div>
+
+    <!-- Grid Principal de Perfil -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Columna Izquierda: Tarjeta de Avatar & Resumen (4 Cols) -->
+      <div class="lg:col-span-4 flex flex-col gap-6">
+        <mat-card class="glass-card border-none text-center p-6 flex flex-col items-center">
+          
+          <!-- Avatar Grande con Iniciales o Imagen -->
+          <div class="relative group my-4">
+            <div *ngIf="previewAvatar" class="w-32 h-32 rounded-full overflow-hidden shadow-xl ring-4 ring-indigo-100 mx-auto">
+              <img [src]="previewAvatar" class="w-full h-full object-cover" alt="Foto de perfil">
+            </div>
+            <div *ngIf="!previewAvatar" class="w-32 h-32 rounded-full shadow-xl ring-4 ring-indigo-100 flex items-center justify-center text-4xl font-black text-indigo-700 bg-gradient-to-tr from-indigo-200 to-indigo-50 mx-auto">
+              {{ getUserInitials() }}
+            </div>
+
+            <!-- Botón flotante para subir foto -->
+            <label class="absolute bottom-1 right-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-2.5 shadow-lg cursor-pointer transition-transform hover:scale-110 flex items-center justify-center" matTooltip="Subir foto">
+              <mat-icon style="font-size: 20px; width: 20px; height: 20px;">photo_camera</mat-icon>
+              <input type="file" (change)="onFileSelected($event)" accept="image/*" class="hidden">
+            </label>
+          </div>
+
+          <!-- Nombre y Rol -->
+          <h2 class="text-2xl font-black text-gray-900 mt-2 mb-0.5">
+            {{ profileForm.get('nombreCompleto')?.value || 'Usuario' }}
+          </h2>
+          <span class="text-sm font-medium text-indigo-600 mb-3">&#64;{{ profileForm.get('username')?.value }}</span>
+          
+
+          <div class="mb-4">
+            <span class="badge" [ngClass]="{
+              'badge-error': currentUser?.role === 'Admin',
+              'badge-info': currentUser?.role === 'Developer',
+              'badge-warning': currentUser?.role === 'Assistant',
+              'badge-success': currentUser?.role === 'User'
+            }">
+              {{ currentUser?.role }}
+            </span>
+          </div>
+
+          <!-- Botón para quitar foto personalizada -->
+          <button *ngIf="previewAvatar" mat-stroked-button color="warn" (click)="removeAvatar()" class="text-xs rounded-full px-4 mb-4">
+            <mat-icon style="font-size: 16px; width: 16px; height: 16px;">delete</mat-icon>
+            Quitar foto
+          </button>
+
+          <mat-divider class="w-full my-4"></mat-divider>
+
+          <!-- Galería de Avatares Predefinidos (Animales Domésticos) -->
+          <div class="w-full text-left">
+            <span class="text-xs font-bold text-gray-600 uppercase tracking-wider block mb-3">Elige tu mascota / animal:</span>
+            <div class="grid grid-cols-4 gap-2.5">
+              <button *ngFor="let pet of avatarPresets" 
+                      type="button"
+                      (click)="selectPresetAvatar(pet.path)"
+                      [matTooltip]="pet.name"
+                      class="rounded-2xl p-1.5 border-2 transition-all hover:scale-110 focus:outline-none flex flex-col items-center gap-1 bg-white/60 hover:bg-white shadow-sm"
+                      [ngClass]="previewAvatar === pet.path ? 'border-indigo-600 ring-2 ring-indigo-300 bg-indigo-50/50' : 'border-gray-200/80'">
+                <img [src]="pet.path" class="w-11 h-11 rounded-full object-cover" [alt]="pet.name">
+                <span class="text-[10px] font-semibold text-gray-600 truncate max-w-full">{{ pet.name }}</span>
+              </button>
+            </div>
+          </div>
+        </mat-card>
+
+        <!-- Tarjeta Informativa de Rol -->
+        <mat-card class="glass-card border-none p-5 bg-indigo-50/60">
+          <div class="flex items-start gap-3">
+            <mat-icon class="text-indigo-600 mt-0.5">verified_user</mat-icon>
+            <div>
+              <h4 class="text-sm font-bold text-indigo-950 mb-1">Permisos de tu Rol</h4>
+              <p class="text-xs text-indigo-800 leading-relaxed">
+                Tu rol asignado es <strong>{{ currentUser?.role }}</strong>. Las políticas de acceso son gestionadas por el Administrador del sistema mediante RBAC.
+              </p>
+            </div>
+          </div>
+        </mat-card>
+      </div>
+
+      <!-- Columna Derecha: Formularios de Datos y Seguridad (8 Cols) -->
+      <div class="lg:col-span-8 flex flex-col gap-8">
+        
+        <!-- Tarjeta 1: Información Personal -->
+        <mat-card class="glass-card border-none">
+          <mat-card-header class="px-6 py-4 border-b border-gray-100 bg-white/40">
+            <mat-card-title class="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <mat-icon class="text-indigo-500">badge</mat-icon>
+              Información Personal
+            </mat-card-title>
+            <mat-card-subtitle class="text-sm font-medium text-gray-500 mt-1">
+              Actualiza tu nombre completo, usuario y correo electrónico
+            </mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content class="p-6">
+            <form [formGroup]="profileForm" (ngSubmit)="guardarPerfil()" class="flex flex-col gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <!-- Nombre Completo -->
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Nombre Completo</mat-label>
+                  <mat-icon matPrefix class="text-gray-400">person</mat-icon>
+                  <input matInput formControlName="nombreCompleto" placeholder="Santiago Casas">
+                  <mat-error *ngIf="profileForm.get('nombreCompleto')?.hasError('required')">
+                    El nombre completo es requerido
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- Nombre de Usuario -->
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Nombre de Usuario</mat-label>
+                  <mat-icon matPrefix class="text-gray-400">alternate_email</mat-icon>
+                  <input matInput formControlName="username" placeholder="scasas">
+                  <mat-error *ngIf="profileForm.get('username')?.hasError('required')">
+                    El usuario es requerido
+                  </mat-error>
+                  <mat-error *ngIf="profileForm.get('username')?.hasError('minlength')">
+                    Mínimo 3 caracteres
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- Correo Electrónico (Editable) -->
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Correo Electrónico</mat-label>
+                  <mat-icon matPrefix class="text-gray-400">email</mat-icon>
+                  <input matInput type="email" formControlName="email" placeholder="usuario@udit.com">
+                  <mat-error *ngIf="profileForm.get('email')?.hasError('required')">
+                    El correo es requerido
+                  </mat-error>
+                  <mat-error *ngIf="profileForm.get('email')?.hasError('email')">
+                    Ingresa un correo electrónico válido
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- Rol (Solo lectura) -->
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Rol Asignado (No editable)</mat-label>
+                  <mat-icon matPrefix class="text-gray-400">shield</mat-icon>
+                  <input matInput formControlName="role">
+                  <mat-icon matSuffix class="text-gray-400" matTooltip="Solo el Administrador puede cambiar tu rol">lock</mat-icon>
+                </mat-form-field>
+              </div>
+
+
+              <!-- Botón Guardar Perfil -->
+              <div class="flex justify-end mt-2">
+                <button mat-flat-button color="primary" type="submit" [disabled]="profileForm.invalid || savingProfile" class="btn-gloss px-8 py-2 rounded-xl">
+                  <mat-icon *ngIf="!savingProfile">save</mat-icon>
+                  <span *ngIf="!savingProfile">Guardar Cambios</span>
+                  <span *ngIf="savingProfile">Guardando...</span>
+                </button>
+              </div>
+            </form>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Tarjeta 2: Cambio de Contraseña -->
+        <mat-card class="glass-card border-none">
+          <mat-card-header class="px-6 py-4 border-b border-gray-100 bg-white/40">
+            <mat-card-title class="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <mat-icon class="text-amber-500">lock_reset</mat-icon>
+              Seguridad y Contraseña
+            </mat-card-title>
+            <mat-card-subtitle class="text-sm font-medium text-gray-500 mt-1">
+              Actualiza tu clave de acceso de manera rápida y segura
+            </mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content class="p-6">
+            <form [formGroup]="passwordForm" (ngSubmit)="cambiarPassword()" class="flex flex-col gap-4">
+              
+              <!-- Contraseña Actual -->
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Contraseña Actual</mat-label>
+                <mat-icon matPrefix class="text-gray-400">key</mat-icon>
+                <input matInput [type]="showCurrentPassword ? 'text' : 'password'" formControlName="currentPassword" placeholder="Ingresa tu clave actual">
+                <button mat-icon-button type="button" matSuffix (click)="showCurrentPassword = !showCurrentPassword">
+                  <mat-icon>{{ showCurrentPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+                <mat-error *ngIf="passwordForm.get('currentPassword')?.hasError('required')">
+                  La contraseña actual es requerida
+                </mat-error>
+              </mat-form-field>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Nueva Contraseña -->
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Nueva Contraseña</mat-label>
+                  <mat-icon matPrefix class="text-gray-400">lock</mat-icon>
+                  <input matInput [type]="showNewPassword ? 'text' : 'password'" formControlName="newPassword" placeholder="Mínimo 6 caracteres">
+                  <button mat-icon-button type="button" matSuffix (click)="showNewPassword = !showNewPassword">
+                    <mat-icon>{{ showNewPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
+                  <mat-error *ngIf="passwordForm.get('newPassword')?.hasError('required')">
+                    La nueva contraseña es requerida
+                  </mat-error>
+                  <mat-error *ngIf="passwordForm.get('newPassword')?.hasError('pattern') && !passwordForm.get('newPassword')?.hasError('required')">
+                    Debe cumplir con todos los parámetros de seguridad
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- Confirmar Nueva Contraseña -->
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Confirmar Nueva Contraseña</mat-label>
+                  <mat-icon matPrefix class="text-gray-400">check_circle</mat-icon>
+                  <input matInput [type]="showConfirmPassword ? 'text' : 'password'" formControlName="confirmPassword" placeholder="Repite la nueva contraseña">
+                  <button mat-icon-button type="button" matSuffix (click)="showConfirmPassword = !showConfirmPassword">
+                    <mat-icon>{{ showConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
+                  <mat-error *ngIf="passwordForm.get('confirmPassword')?.hasError('required')">
+                    Confirma tu nueva contraseña
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <!-- Requisitos de Contraseña -->
+              <div class="p-3.5 bg-gray-50 rounded-xl border border-gray-100 text-xs">
+                <span class="font-semibold text-gray-700 block mb-1.5">Parámetros de seguridad de la nueva contraseña:</span>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-gray-500">
+                  <div class="flex items-center gap-1.5" [ngClass]="hasNewMinLength() ? 'text-green-600 font-semibold' : ''">
+                    <mat-icon style="font-size: 15px; width: 15px; height: 15px;">{{ hasNewMinLength() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                    <span>Mínimo 6 chars</span>
+                  </div>
+                  <div class="flex items-center gap-1.5" [ngClass]="hasNewUpper() ? 'text-green-600 font-semibold' : ''">
+                    <mat-icon style="font-size: 15px; width: 15px; height: 15px;">{{ hasNewUpper() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                    <span>1 Mayúscula (A-Z)</span>
+                  </div>
+                  <div class="flex items-center gap-1.5" [ngClass]="hasNewNumber() ? 'text-green-600 font-semibold' : ''">
+                    <mat-icon style="font-size: 15px; width: 15px; height: 15px;">{{ hasNewNumber() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                    <span>1 Número (0-9)</span>
+                  </div>
+                  <div class="flex items-center gap-1.5" [ngClass]="hasNewSymbol() ? 'text-green-600 font-semibold' : ''">
+                    <mat-icon style="font-size: 15px; width: 15px; height: 15px;">{{ hasNewSymbol() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                    <span>1 Símbolo (!&#64;#$%)</span>
+                  </div>
+                </div>
+              </div>
+
+
+              <!-- Botón Cambiar Contraseña -->
+              <div class="flex justify-end mt-2">
+                <button mat-flat-button color="accent" type="submit" [disabled]="passwordForm.invalid || savingPassword" class="px-8 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-md">
+                  <mat-icon *ngIf="!savingPassword">vpn_key</mat-icon>
+                  <span *ngIf="!savingPassword">Actualizar Contraseña</span>
+                  <span *ngIf="savingPassword">Actualizando...</span>
+                </button>
+              </div>
+            </form>
+          </mat-card-content>
+        </mat-card>
+
+      </div>
+    </div>
+  </div>
+</div>

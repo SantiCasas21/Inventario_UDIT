@@ -1,0 +1,67 @@
+<div class="premium-bg min-h-screen py-6 sm:py-8">
+  <div class="admin-page">
+    <!-- Encabezado -->
+    <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+      <div>
+        <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-2">
+          <span class="gradient-text">Catálogos Maestros</span>
+        </h1>
+        <p class="text-sm sm:text-base font-medium text-gray-500 flex items-center gap-2">
+          <mat-icon class="text-indigo-500" style="font-size: 20px; width: 20px; height: 20px;">table_chart</mat-icon>
+          Tablas maestras de parametrización, clasificación y control del sistema
+        </p>
+      </div>
+    </div>
+
+    <!-- Grid de Tarjetas de Catálogos (9 Catálogos) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <mat-card
+        *ngFor="let cat of visibleCatalogs"
+        class="hub-card overflow-hidden relative group">
+
+        <!-- Barra superior de color de catálogo -->
+        <div class="h-2 w-full flex-shrink-0" [style.background-color]="cat.color"></div>
+
+        <div class="p-6 flex flex-col flex-grow justify-between">
+          <!-- Cabecera de la tarjeta con icono y textos completos -->
+          <div>
+            <div class="flex items-start gap-4 mb-3.5">
+              <div
+                class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0"
+                [style.background-color]="cat.color + '18'"
+                [style.color]="cat.color">
+                <mat-icon style="font-size: 26px; width: 26px; height: 26px;">{{ cat.icon }}</mat-icon>
+              </div>
+              <div class="flex-1 min-w-0">
+                <span class="hub-subtitle">
+                  {{ cat.subtitle }}
+                </span>
+                <h3 class="hub-title">
+                  {{ cat.title }}
+                </h3>
+              </div>
+            </div>
+
+            <!-- Descripción sin truncamiento agresivo -->
+            <p class="hub-desc mb-5">
+              {{ cat.description }}
+            </p>
+          </div>
+
+          <!-- Botón de acción al fondo -->
+          <div class="pt-2">
+            <button
+              mat-raised-button
+              [routerLink]="cat.link"
+              class="w-full py-2 shadow-sm btn-gloss flex items-center justify-center gap-2"
+              [style.background-color]="cat.color"
+              style="color: white; height: 42px; border-radius: 10px; font-weight: 700; font-size: 13px;">
+              <mat-icon style="font-size: 18px; width: 18px; height: 18px;">open_in_new</mat-icon>
+              <span>Gestionar Catálogo</span>
+            </button>
+          </div>
+        </div>
+      </mat-card>
+    </div>
+  </div>
+</div>

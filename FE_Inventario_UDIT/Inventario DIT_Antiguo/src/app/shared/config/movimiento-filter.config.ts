@@ -20,9 +20,11 @@ export const MOVIMIENTO_FILTER_CONFIG: ParametricFilterConfig = {
     },
     {
       key: 'codigoFabricaSearch',
-      label: 'Código Fabricante',
+      label: 'Código Fabricante / Descripción',
       type: 'text-search',
-      searchPlaceholder: 'Cód. Fábrica...',
+      searchPlaceholder: 'Cód. Fábrica o Descripción...',
+      minWidth: '280px',
+      maxWidth: '380px',
     },
     {
       key: 'idsCategoria',

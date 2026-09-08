@@ -34,7 +34,17 @@ export class ReporteService {
   }
 
   /** Resumen por proyecto (insumos retirados) */
-  getResumenProyecto(proyectoId: number): Observable<ResumenProyectoDto[]> {
-    return this.api.get<ResumenProyectoDto[]>(`${this.endpoint}/proyecto`, { proyectoId } as Record<string, unknown>);
+  getResumenProyecto(proyectoId?: number): Observable<ResumenProyectoDto[]> {
+    const params: Record<string, unknown> = {};
+    if (proyectoId !== undefined) params['proyectoId'] = proyectoId;
+    return this.api.get<ResumenProyectoDto[]>(`${this.endpoint}/proyecto`, params);
+  }
+
+  /** Registra la exportación del reporte a Excel en el log de auditoría */
+  logExportacion(nombreReporte: string, filtros?: string): Observable<void> {
+    return this.api.post<void>(`${this.endpoint}/log-exportacion`, {
+      nombreReporte,
+      filtros
+    });
   }
 }

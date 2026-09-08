@@ -1,31 +1,46 @@
-<h2 mat-dialog-title>
-  @if(this.data.estado == 1) { Crear Empaquetamiento }
-  @else { Editar Empaquetamiento }
-</h2>
+<div class="flex flex-col bg-white rounded-lg">
+  <!-- Header -->
+  <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-udit-verde text-white rounded-t">
+    <h2 class="m-0 text-xl font-bold flex items-center shadow-text">
+      <mat-icon class="mr-2">{{ data.estado === 1 ? 'add_circle' : 'edit' }}</mat-icon>
+      {{ data.estado === 1 ? 'Crear Empaquetamiento' : 'Editar Empaquetamiento' }}
+    </h2>
+    <button mat-icon-button (click)="cerrarPopup()" class="text-white hover:bg-white/20 transition-colors">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-<form [formGroup]="form">
-    <mat-form-field class="example-full-width">
+  <!-- Content -->
+  <mat-dialog-content class="p-6">
+    <form [formGroup]="form" class="flex flex-col gap-4 mt-2">
+      <!-- Nombre -->
+      <mat-form-field appearance="outline" class="w-full">
         <mat-label>Nombre</mat-label>
-        <input matInput formControlName="nombre" (input)="onNombreInput()" placeholder="Ej: TSSOP-28, 0805, SOT-23...">
-        <mat-hint *ngIf="data.estado == 1">La familia se auto-selecciona al escribir (puedes cambiarla).</mat-hint>
-    </mat-form-field>
+        <mat-icon matPrefix class="text-gray-400 mr-2">inventory_2</mat-icon>
+        <input matInput formControlName="nombre" (input)="onNombreInput()" placeholder="Ej: TSSOP-28, 0805, SOT-23..." required>
+        <mat-hint *ngIf="data.estado === 1">La familia se auto-selecciona al escribir (puedes cambiarla).</mat-hint>
+        <mat-error *ngIf="form.get('nombre')?.hasError('required')">El nombre es obligatorio</mat-error>
+      </mat-form-field>
 
-    <mat-form-field class="example-full-width">
+      <!-- Familia -->
+      <mat-form-field appearance="outline" class="w-full">
         <mat-label>Familia de Empaquetamiento</mat-label>
-        <mat-select formControlName="idFamiliaEmpaquetamiento">
-            <mat-option *ngFor="let f of familias" [value]="f.id">{{ f.nombre }}</mat-option>
+        <mat-icon matPrefix class="text-gray-400 mr-2">category</mat-icon>
+        <mat-select formControlName="idFamiliaEmpaquetamiento" placeholder="Seleccione familia">
+          <mat-option *ngFor="let f of familias" [value]="f.id">{{ f.nombre }}</mat-option>
         </mat-select>
-    </mat-form-field>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
 
-    <div mat-dialog-actions>
-        @if(this.data.estado == 1){
-            <button (click)="guardarEmpaquetamiento()" mat-raised-button color="accent">Agregar</button>
-        }
-        @else()
-        {
-            <button (click)="actualizarEmpaquetamiento()" mat-raised-button color="accent">Editar</button>
-        }
-        <button (click)="cerrarPopup()" mat-raised-button color="warn">Cerrar</button>
-    </div>
-
-</form>
+  <!-- Actions -->
+  <mat-dialog-actions class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
+    <button mat-button (click)="cerrarPopup()" class="rounded-full text-gray-600 hover:bg-gray-200">Cancelar</button>
+    <button mat-raised-button color="primary" class="btn-gloss shadow-md" 
+            (click)="data.estado === 1 ? guardarEmpaquetamiento() : actualizarEmpaquetamiento()" 
+            [disabled]="form.invalid">
+      <mat-icon class="mr-1">{{ data.estado === 1 ? 'save' : 'update' }}</mat-icon>
+      {{ data.estado === 1 ? 'Crear' : 'Guardar Cambios' }}
+    </button>
+  </mat-dialog-actions>
+</div>

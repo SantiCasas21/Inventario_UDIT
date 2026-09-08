@@ -192,11 +192,6 @@ namespace Infrastructure.Repositories
                 orderBy,
                 "Insumo", "Proveedor", "TipoCompra", "Proyecto", "EstadoSalida", "Ubicacion", "UbicacionAnterior");
 
-            // Tenemos que cargar explícitamente Insumo.Ubicacion porque GetPagedAsync del BaseRepository solo soporta 1 nivel
-            // Como esto devuelve entidades trackeadas, EF Core vinculará la navegación.
-            var insumoIds = paged.Items.Select(x => x.IdInsumo).Distinct().ToList();
-            await _context.Insumos.Include(i => i.Categoria).Include(i => i.Empaquetamiento).Where(i => insumoIds.Contains(i.Id)).LoadAsync();
-
             return paged;
         }
 

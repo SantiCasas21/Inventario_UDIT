@@ -92,10 +92,14 @@ const config = {
             '10xl': '8rem'
         },
         screens : {
+            xs: '420px',
             sm: '600px',
             md: '960px',
             lg: '1280px',
-            xl: '1440px'
+            xl: '1440px',
+            '2xl': '1536px',
+            '3xl': '1920px',
+            '4k': '2560px'
         },
         extend  : {
             animation               : {

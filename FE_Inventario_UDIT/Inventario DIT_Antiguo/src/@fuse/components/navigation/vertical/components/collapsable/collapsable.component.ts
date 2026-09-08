@@ -65,6 +65,19 @@ export class FuseVerticalNavigationCollapsableItemComponent implements OnInit, O
         /* eslint-enable @typescript-eslint/naming-convention */
     }
 
+    /**
+     * Getter for active status
+     */
+    get isActive(): boolean
+    {
+        if ( this.item.link && this._router.isActive(this.item.link, this.item.exactMatch || false) )
+        {
+            return true;
+        }
+
+        return this._hasActiveChild(this.item, this._router.url);
+    }
+
     // -----------------------------------------------------------------------------------------------------
     // @ Lifecycle hooks
     // -----------------------------------------------------------------------------------------------------
@@ -77,8 +90,8 @@ export class FuseVerticalNavigationCollapsableItemComponent implements OnInit, O
         // Get the parent navigation component
         this._fuseVerticalNavigationComponent = this._fuseNavigationService.getComponent(this.name);
 
-        // If the item has a children that has a matching url with the current url, expand...
-        if ( this._hasActiveChild(this.item, this._router.url) )
+        // If the item itself or one of its children is active, expand...
+        if ( this.isActive )
         {
             this.expand();
         }
@@ -91,6 +104,7 @@ export class FuseVerticalNavigationCollapsableItemComponent implements OnInit, O
                 this.collapse();
             }
         }
+
 
         // Listen for the onCollapsableItemCollapsed from the service
         this._fuseVerticalNavigationComponent.onCollapsableItemCollapsed
@@ -154,8 +168,8 @@ export class FuseVerticalNavigationCollapsableItemComponent implements OnInit, O
             )
             .subscribe((event: NavigationEnd) =>
             {
-                // If the item has a children that has a matching url with the current url, expand...
-                if ( this._hasActiveChild(this.item, event.urlAfterRedirects) )
+                // If the item itself or one of its children matches the current url, expand...
+                if ( (this.item.link && this._router.isActive(this.item.link, this.item.exactMatch || false)) || this._hasActiveChild(this.item, event.urlAfterRedirects) )
                 {
                     this.expand();
                 }
@@ -169,6 +183,7 @@ export class FuseVerticalNavigationCollapsableItemComponent implements OnInit, O
                     }
                 }
             });
+
 
         // Subscribe to onRefreshed on the navigation component
         this._fuseVerticalNavigationComponent.onRefreshed.pipe(
@@ -264,7 +279,14 @@ export class FuseVerticalNavigationCollapsableItemComponent implements OnInit, O
         {
             this.collapse();
         }
+
+        // Navigate to the category HUB if link is present
+        if ( this.item.link )
+        {
+            this._router.navigateByUrl(this.item.link);
+        }
     }
+
 
     /**
      * Track by function for ngFor loops

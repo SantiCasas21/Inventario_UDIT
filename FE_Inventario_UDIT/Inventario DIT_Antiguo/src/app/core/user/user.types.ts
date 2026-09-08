@@ -5,8 +5,12 @@ export interface User {
   email: string;
   nombreCompleto: string;
   role: string;
+  permissions?: string[];
   activo: boolean;
+  debeCambiarPassword?: boolean;
   fechaCreacion: string;
   avatar?: string;
   status?: string;
 }
+
+

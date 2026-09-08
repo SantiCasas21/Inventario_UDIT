@@ -3,17 +3,83 @@ using Domain.Entities.Catalogos;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Security.Claims;
 
 namespace Infrastructure.Data
 {
     /// <summary>
     /// Inicializa la base de datos con los roles, usuario admin por defecto,
-    /// y datos iniciales de catálogos para que la aplicación sea funcional.
+    /// datos iniciales de catálogos y claims de permisos RBAC.
     /// Se ejecuta al iniciar la aplicación en Development.
     /// Es idempotente: solo inserta si las tablas están vacías.
     /// </summary>
     public static class DbInitializer
     {
+        /// <summary>ClaimType usado para permisos RBAC en toda la aplicación.</summary>
+        private const string PermissionClaimType = "permission";
+
+        /// <summary>
+        /// Mapa de permisos iniciales por rol.
+        /// Se aplica solo si el rol aún no tiene claims de permiso asignados.
+        /// </summary>
+        private static readonly Dictionary<string, string[]> _defaultRolePermissions = new()
+        {
+            ["Admin"] = new[]
+            {
+                "insumos.ver", "insumos.crear", "insumos.editar", "insumos.eliminar", "insumos.unificar",
+                "movimientos.ver", "movimientos.crear", "movimientos.ajuste",
+                "reportes.ver", "reportes.exportar",
+
+                "catalogos.categorias.ver", "catalogos.categorias.gestionar",
+                "catalogos.unidades.ver", "catalogos.unidades.gestionar",
+                "catalogos.empaquetamiento.ver", "catalogos.empaquetamiento.gestionar",
+                "catalogos.ubicaciones.ver", "catalogos.ubicaciones.gestionar",
+                "catalogos.proveedores.ver", "catalogos.proveedores.gestionar",
+                "catalogos.proyectos.ver", "catalogos.proyectos.gestionar",
+                "catalogos.tipocompra.ver", "catalogos.tipocompra.gestionar",
+                "catalogos.estadoproyecto.ver", "catalogos.estadoproyecto.gestionar",
+                "catalogos.estadosalida.ver", "catalogos.estadosalida.gestionar",
+                "usuarios.ver", "usuarios.gestionar", "roles.gestionar",
+                "auditoria.ver"
+            },
+            ["Developer"] = new[]
+            {
+                "insumos.ver", "insumos.crear", "insumos.editar", "insumos.eliminar",
+                "movimientos.ver", "movimientos.crear", "movimientos.ajuste",
+                "reportes.ver", "reportes.exportar",
+                "catalogos.categorias.ver", "catalogos.categorias.gestionar",
+                "catalogos.unidades.ver", "catalogos.unidades.gestionar",
+                "catalogos.empaquetamiento.ver", "catalogos.empaquetamiento.gestionar",
+                "catalogos.ubicaciones.ver", "catalogos.ubicaciones.gestionar",
+                "catalogos.proveedores.ver", "catalogos.proveedores.gestionar",
+                "catalogos.proyectos.ver", "catalogos.proyectos.gestionar",
+                "catalogos.tipocompra.ver", "catalogos.tipocompra.gestionar",
+                "catalogos.estadoproyecto.ver", "catalogos.estadoproyecto.gestionar",
+                "catalogos.estadosalida.ver", "catalogos.estadosalida.gestionar",
+                "auditoria.ver"
+            },
+            ["Assistant"] = new[]
+            {
+                "insumos.ver", "insumos.crear", "insumos.editar",
+                "movimientos.ver", "movimientos.crear",
+                "reportes.ver",
+                "catalogos.categorias.ver", "catalogos.unidades.ver", "catalogos.empaquetamiento.ver",
+                "catalogos.ubicaciones.ver", "catalogos.proveedores.ver", "catalogos.proyectos.ver",
+                "catalogos.tipocompra.ver", "catalogos.estadoproyecto.ver", "catalogos.estadosalida.ver"
+            },
+            ["User"] = new[]
+            {
+                "insumos.ver",
+                "movimientos.ver",
+                "reportes.ver",
+                "catalogos.categorias.ver", "catalogos.unidades.ver", "catalogos.empaquetamiento.ver",
+                "catalogos.ubicaciones.ver", "catalogos.proveedores.ver", "catalogos.proyectos.ver",
+                "catalogos.tipocompra.ver", "catalogos.estadoproyecto.ver", "catalogos.estadosalida.ver"
+            },
+
+        };
+
+
         public static async Task SeedAsync(IServiceProvider serviceProvider)
         {
             using var scope = serviceProvider.CreateScope();
@@ -173,6 +239,49 @@ namespace Infrastructure.Data
             }
 
             await db.SaveChangesAsync();
+
+            // ==========================================
+            // 4. CLAIMS DE PERMISOS RBAC
+            // Limpia claims obsoletos y asegura permisos válidos
+            // ==========================================
+            var allKnownValidPerms = _defaultRolePermissions["Admin"].ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var (roleName, permissions) in _defaultRolePermissions)
+            {
+                var role = await roleManager.FindByNameAsync(roleName);
+                if (role == null) continue;
+
+                var existingClaims = await roleManager.GetClaimsAsync(role);
+                var permissionClaims = existingClaims.Where(c => c.Type == PermissionClaimType).ToList();
+
+                // 1. Eliminar claims obsoletos (ej. catalogos.ver, catalogos.personal.*)
+                foreach (var claim in permissionClaims.Where(c => !allKnownValidPerms.Contains(c.Value)))
+                {
+                    await roleManager.RemoveClaimAsync(role, claim);
+                }
+
+                // 2. Si es Admin, asegurar el 100% de los permisos
+                if (roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    var currentValues = existingClaims.Select(c => c.Value).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    foreach (var permission in permissions)
+                    {
+                        if (!currentValues.Contains(permission))
+                        {
+                            await roleManager.AddClaimAsync(role, new Claim(PermissionClaimType, permission));
+                        }
+                    }
+                }
+                // 3. Para otros roles, si no tienen ningún claim activo, sembrar defaults
+                else if (permissionClaims.Count == 0)
+                {
+                    foreach (var permission in permissions)
+                    {
+                        await roleManager.AddClaimAsync(role, new Claim(PermissionClaimType, permission));
+                    }
+                }
+            }
         }
     }
 }
+

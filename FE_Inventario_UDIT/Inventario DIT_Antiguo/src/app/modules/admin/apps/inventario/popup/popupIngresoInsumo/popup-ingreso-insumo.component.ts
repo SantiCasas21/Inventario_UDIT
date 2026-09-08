@@ -1,5 +1,4 @@
-﻿import { inject } from '@angular/core';
-import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { inject } from '@angular/core';
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -15,6 +14,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { ConfirmacionService } from '@app/core/services/confirmacion.service';
 
 @Component({
   selector: 'app-popup-ingreso-insumo',
@@ -24,7 +24,7 @@ import { MatNativeDateModule } from '@angular/material/core';
   styleUrl: './popup-ingreso-insumo.component.scss'
 })
 export class PopupIngresoInsumoComponent implements OnInit {
-  fuseConfirmation = inject(FuseConfirmationService);
+  confirmacionService = inject(ConfirmacionService);
 
   inputData:any;
   form:FormGroup;
@@ -72,17 +72,27 @@ export class PopupIngresoInsumoComponent implements OnInit {
   }
 
   guardarIngresoInsumo(){
-    this.movimientoService.registrarIngreso(this.form.value).subscribe({
-      next:() => {
-        this.cerrarPopup();
-      },
-      error: (err:any) => {
-        const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'Ocurrió un error al guardar el registro.');
-        this.fuseConfirmation.open({
-          title: 'Error de validación',
-          message: msg,
-          icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
-          actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    this.confirmacionService.confirmar({
+      titulo: 'Confirmar Ingreso de Insumo',
+      mensajePrincipal: '¿Desea registrar este ingreso de insumo en el sistema?',
+      subtitulo: `Cantidad: ${this.form.value.cantidad}`,
+      tipo: 'ingreso',
+      btnConfirmarTexto: 'Registrar Ingreso',
+      btnCancelarTexto: 'Cancelar'
+    }).subscribe(confirmado => {
+      if (confirmado) {
+        this.movimientoService.registrarIngreso(this.form.value).subscribe({
+          next:() => {
+            this.ref.close(true);
+          },
+          error: (err:any) => {
+            const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'Ocurrió un error al guardar el registro.');
+            this.confirmacionService.mostrarAdvertencia('Error de validación', msg);
+          }
         });
       }
     });

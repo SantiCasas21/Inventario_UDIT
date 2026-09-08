@@ -1,19 +1,19 @@
 <div class="premium-bg min-h-screen">
   <div class="admin-page">
     <!-- Encabezado -->
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
       <div class="transform transition duration-500 hover:scale-105">
-        <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 mb-1">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 mb-1">
           <span class="gradient-text">Insumos</span>
         </h1>
-        <p class="text-sm font-medium text-gray-500 flex items-center gap-2">
+        <p class="text-xs sm:text-sm font-medium text-gray-500 flex items-center gap-2">
           <mat-icon class="text-indigo-400" style="font-size: 18px; width: 18px; height: 18px;">inventory_2</mat-icon>
           Gestión de insumos del inventario
         </p>
       </div>
       @if (userService.hasRole(['admin', 'developer', 'assistant'])) {
-        <div>
-          <button mat-flat-button color="primary" class="rounded-full px-6 shadow-lg shadow-indigo-200 transition-transform hover:scale-105 btn-gloss" (click)="crearInsumo()">
+        <div class="w-full sm:w-auto">
+          <button mat-flat-button color="primary" class="w-full sm:w-auto rounded-full px-6 shadow-lg shadow-indigo-200 transition-transform hover:scale-105 btn-gloss" (click)="crearInsumo()">
             <mat-icon>add</mat-icon> Nuevo Insumo
           </button>
         </div>
@@ -29,14 +29,14 @@
 
     <!-- Tarjeta Principal -->
     <mat-card class="glass-card shadow-sm border-0 flex flex-col">
-      <mat-card-header class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white/40">
+      <mat-card-header class="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-2 bg-white/40">
         <div>
-          <mat-card-title class="text-lg font-bold text-gray-800">Listado de Insumos</mat-card-title>
-          <mat-card-subtitle class="text-xs font-medium text-gray-500 mt-1">{{ totalCount }} insumo(s) registrados</mat-card-subtitle>
+          <mat-card-title class="text-base sm:text-lg font-bold text-gray-800">Listado de Insumos</mat-card-title>
+          <mat-card-subtitle class="text-xs font-medium text-gray-500 mt-0.5">{{ totalCount }} insumo(s) registrados</mat-card-subtitle>
         </div>
       </mat-card-header>
 
-      <mat-card-content class="p-4 flex flex-col">
+      <mat-card-content class="p-3 sm:p-4 flex flex-col">
         <!-- Filtro paramétrico -->
         <div class="filter-section mb-4">
           <app-parametric-filter [config]="filterConfig" [resultCount]="totalCount" (filterChange)="onFilterChange($event)"></app-parametric-filter>
@@ -48,7 +48,7 @@
         </div>
 
         <!-- Tabla -->
-        <div class="overflow-auto" *ngIf="!loading && data.length > 0">
+        <div class="responsive-table-container overflow-auto" *ngIf="!loading && data.length > 0">
           <table mat-table [dataSource]="data" class="w-full premium-table">
             <ng-container matColumnDef="id">
               <th mat-header-cell *matHeaderCellDef (click)="onSort('id')" class="sortable">#</th>
@@ -80,20 +80,35 @@
             </ng-container>
             <ng-container matColumnDef="ubicaciones">
               <th mat-header-cell *matHeaderCellDef>Ubicación</th>
-              <td mat-cell *matCellDef="let el" class="text-gray-600">
+              <td mat-cell *matCellDef="let el">
                 <ng-container *ngIf="el.ubicacionesStock && el.ubicacionesStock.length > 0; else noUbi">
-                  <span *ngFor="let ubi of el.ubicacionesStock; let last = last">
-                    {{ ubi.ubicacionNombre }}<span *ngIf="!last">, </span>
-                  </span>
+                  <!-- Múltiples ubicaciones con desglose individual de stock -->
+                  <div *ngIf="el.ubicacionesStock.length > 1" class="flex flex-col gap-1 py-0.5">
+                    <div *ngFor="let ubi of el.ubicacionesStock" class="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-mono">
+                      <mat-icon class="text-indigo-400" style="font-size: 14px; width: 14px; height: 14px;">place</mat-icon>
+                      <span class="text-gray-700 font-medium">{{ ubi.ubicacionNombre }}</span>
+                      <span class="bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded border border-indigo-100 text-[11px]">
+                        ({{ ubi.stock }})
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Única ubicación (limpio, horizontal y sin stock redundante) -->
+                  <div *ngIf="el.ubicacionesStock.length === 1" class="inline-flex items-center gap-1.5 whitespace-nowrap text-sm text-gray-700 font-mono">
+                    <mat-icon class="text-indigo-500" style="font-size: 16px; width: 16px; height: 16px;">place</mat-icon>
+                    <span class="font-medium">{{ el.ubicacionesStock[0].ubicacionNombre }}</span>
+                  </div>
                 </ng-container>
-                <ng-template #noUbi>-</ng-template>
+                <ng-template #noUbi>
+                  <span class="text-gray-400 italic text-xs">-</span>
+                </ng-template>
               </td>
             </ng-container>
             <ng-container matColumnDef="valorMedida">
               <th mat-header-cell *matHeaderCellDef (click)="onSort('valorMedida')" class="sortable">Valor / Unidad</th>
               <td mat-cell *matCellDef="let el">
-                <span *ngIf="el.valorMedida" class="font-semibold text-gray-800">{{ el.valorMedida }} {{ el.unidadMedida }}</span>
-                <span *ngIf="!el.valorMedida" class="text-gray-400">-</span>
+                <span *ngIf="el.valorMedida !== null && el.valorMedida !== undefined" class="font-semibold text-gray-800">{{ el.valorMedida }} {{ el.unidadMedida }}</span>
+                <span *ngIf="el.valorMedida === null || el.valorMedida === undefined" class="text-gray-400">-</span>
               </td>
             </ng-container>
             <ng-container matColumnDef="precioReferencia">

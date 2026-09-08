@@ -1,0 +1,76 @@
+<div class="premium-bg min-h-screen">
+  <div class="admin-page">
+    <!-- Encabezado -->
+    <div class="flex items-center justify-between mb-6 sm:mb-8 flex-wrap gap-4">
+      <div class="transform transition duration-500 hover:scale-105">
+        <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-gray-900 mb-1 sm:mb-2 drop-shadow-sm">
+          <span class="gradient-text">Centro de Reportes</span>
+        </h1>
+        <p class="text-xs sm:text-base font-medium text-gray-500 flex items-center gap-2">
+          <mat-icon class="text-indigo-400" style="font-size: 20px; width: 20px; height: 20px;">analytics</mat-icon>
+          Consultas analíticas, trazabilidad de Kardex, control de mínimos y exportación a Excel
+        </p>
+      </div>
+    </div>
+
+    <!-- Grid de Tarjetas de Reportes -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <mat-card
+        *ngFor="let rep of reports"
+        class="glass-card report-hub-card border-none flex flex-col justify-between overflow-hidden relative group">
+
+        <!-- Barra superior coloreada -->
+        <div class="h-2 w-full" [style.background-color]="rep.color"></div>
+
+        <mat-card-header class="px-6 pt-6 pb-2">
+          <div class="flex items-center justify-between w-full">
+            <div class="flex items-center gap-4">
+              <div
+                class="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm"
+                [style.background-color]="rep.color + '18'"
+                [style.color]="rep.color">
+                <mat-icon style="font-size: 30px; width: 30px; height: 30px;">{{ rep.icon }}</mat-icon>
+              </div>
+              <div>
+                <mat-card-title class="text-2xl font-bold text-gray-900">{{ rep.title }}</mat-card-title>
+                <mat-card-subtitle class="text-sm font-semibold text-gray-500 mt-0.5">{{ rep.subtitle }}</mat-card-subtitle>
+              </div>
+            </div>
+            <span
+              class="text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider"
+              [style.background-color]="rep.color + '15'"
+              [style.color]="rep.color">
+              {{ rep.badge }}
+            </span>
+          </div>
+        </mat-card-header>
+
+        <mat-card-content class="px-6 py-4 flex-grow">
+          <p class="text-gray-600 text-sm leading-relaxed mb-6">
+            {{ rep.description }}
+          </p>
+
+          <!-- Lista de características -->
+          <div class="space-y-2 mb-4 bg-white/50 p-4 rounded-xl border border-white/60">
+            <div *ngFor="let feat of rep.features" class="flex items-center gap-2 text-xs font-medium text-gray-700">
+              <mat-icon class="text-emerald-500" style="font-size: 16px; width: 16px; height: 16px;">check_circle</mat-icon>
+              <span>{{ feat }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions class="px-6 pb-6 pt-0">
+          <button
+            mat-raised-button
+            [routerLink]="rep.link"
+            class="w-full py-2 shadow-md btn-gloss flex items-center justify-center gap-2"
+            [style.background-color]="rep.color"
+            style="color: white; height: 46px; border-radius: 12px; font-weight: 700;">
+            <mat-icon>launch</mat-icon>
+            Abrir Reporte e Imprimir / Exportar
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  </div>
+</div>

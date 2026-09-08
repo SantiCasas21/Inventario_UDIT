@@ -4,10 +4,14 @@
     [ngClass]="item.classes?.wrapper">
 
     <div
-        class="fuse-vertical-navigation-item"
-        [ngClass]="{'fuse-vertical-navigation-item-disabled': item.disabled}"
+        class="fuse-vertical-navigation-item cursor-pointer"
+        [ngClass]="{
+            'fuse-vertical-navigation-item-disabled': item.disabled,
+            'fuse-vertical-navigation-item-active': isActive
+        }"
         [matTooltip]="item.tooltip || ''"
         (click)="toggleCollapsable()">
+
 
         <!-- Icon -->
         <ng-container *ngIf="item.icon">

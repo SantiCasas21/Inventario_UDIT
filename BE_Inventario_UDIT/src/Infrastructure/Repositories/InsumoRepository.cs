@@ -26,8 +26,8 @@ namespace Infrastructure.Repositories
             int page = 1,
             int pageSize = 20)
         {
-            // Construir query base con includes
-            IQueryable<Insumo> query = _dbSet
+            // Construir query base con includes (sin tracking para lectura óptima)
+            IQueryable<Insumo> query = _dbSet.AsNoTracking()
                 .Include(i => i.Categoria)
                 .Include(i => i.Empaquetamiento);
 

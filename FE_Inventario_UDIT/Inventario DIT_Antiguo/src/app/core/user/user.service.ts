@@ -23,6 +23,9 @@ export class UserService {
     return this._user.asObservable();
   }
 
+  /**
+   * Verifica si el usuario actual posee alguno de los roles indicados.
+   */
   hasRole(roles: string | string[]): boolean {
     if (!this._currentUser || !this._currentUser.role) {
       return false;
@@ -34,8 +37,46 @@ export class UserService {
     return userRole === roles.toLowerCase();
   }
 
-  /** Update user data locally */
+  /**
+   * Verifica si el usuario actual posee un permiso específico (claim).
+   * El rol Admin siempre tiene acceso total.
+   */
+  hasPermission(permissions: string | string[]): boolean {
+    if (!this._currentUser) {
+      return false;
+    }
+    if (this._currentUser.role?.toLowerCase() === 'admin') {
+      return true;
+    }
+
+    const userPerms = (this._currentUser.permissions || []).map(p => p.toLowerCase());
+    if (Array.isArray(permissions)) {
+      return permissions.some(p => userPerms.includes(p.toLowerCase()));
+    }
+    return userPerms.includes(permissions.toLowerCase());
+  }
+
+  /**
+   * Determina si el usuario puede acceder según las reglas de roles o permisos especificadas.
+   */
+  canAccess(rule: { roles?: string | string[]; permission?: string | string[] }): boolean {
+    if (!rule.roles && !rule.permission) {
+      return true;
+    }
+    if (rule.permission && this.hasPermission(rule.permission)) {
+      return true;
+    }
+    if (rule.roles && this.hasRole(rule.roles)) {
+      return true;
+    }
+    return false;
+  }
+
+  /** Actualiza los datos del usuario localmente */
   update(userData: Partial<User>): void {
-    this._user.next(userData as User);
+    if (this._currentUser) {
+      this._currentUser = { ...this._currentUser, ...userData };
+      this._user.next(this._currentUser);
+    }
   }
 }

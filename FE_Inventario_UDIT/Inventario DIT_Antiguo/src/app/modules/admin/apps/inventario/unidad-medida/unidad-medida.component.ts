@@ -1,8 +1,4 @@
-﻿import { inject } from '@angular/core';
-import { UserService } from '@app/core/user/user.service';
-import { FuseConfirmationService } from '@fuse/services/confirmation';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { AfterViewInit, Component, ViewChild, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ViewChild, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { UnidadMedidaDto, UnidadMedidaService } from '@app/core/services/unidad-medida.service';
@@ -14,6 +10,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ConfirmacionService } from '@app/core/services/confirmacion.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { UserService } from '@app/core/user/user.service';
 
 @Component({
   selector: 'app-unidad-medida',
@@ -24,7 +23,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 })
 export class UnidadMedidaComponent implements OnInit, AfterViewInit {
   userService = inject(UserService);
-  fuseConfirmation = inject(FuseConfirmationService);
+  confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
   displayedColumns: string[] = ['id', 'nombre', 'idCategoria', 'acciones'];
@@ -46,11 +45,10 @@ export class UnidadMedidaComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     if (this.userService.hasRole('admin') && !this.displayedColumns.includes('eliminar')) { this.displayedColumns.push('eliminar'); }
-
     this.mostrarUnidades();
   }
 
-  mostrarUnidades(){
+  mostrarUnidades() {
     this.error = null;
     this.service.getAll().subscribe({
       next: (data) => {
@@ -66,9 +64,11 @@ export class UnidadMedidaComponent implements OnInit, AfterViewInit {
 
   abrirPopup(data: any, estado: any) {
     const _popup = this.dialog.open(PopupUnidadMedidaComponent, {
-      width: '400px',
-      enterAnimationDuration: '500ms',
-      exitAnimationDuration: '500ms',
+      width: '100%',
+      maxWidth: '520px',
+      panelClass: 'responsive-dialog-panel',
+      enterAnimationDuration: '300ms',
+      exitAnimationDuration: '300ms',
       data: { data, estado, endpoint: 'unidad-medida' }
     });
     
@@ -78,27 +78,17 @@ export class UnidadMedidaComponent implements OnInit, AfterViewInit {
   }
 
   eliminarRegistro(row: any) {
-    const dialog = this.fuseConfirmation.open({
-      title: 'Eliminar registro',
-      message: '¿Está seguro de eliminar este registro? Esta acción no se puede deshacer.',
-      icon: { name: 'heroicons_outline:trash', color: 'warn' },
-      actions: { confirm: { label: 'Sí, eliminar', color: 'warn' }, cancel: { label: 'Cancelar' } },
-    });
-    dialog.afterClosed().subscribe(result => {
-      if (result === 'confirmed') {
+    const nombre = row.nombre || `ID ${row.id}`;
+    this.confirmacionService.confirmarEliminacion('Unidad de Medida', nombre).subscribe(confirmado => {
+      if (confirmado) {
         this.service.delete(row.id).subscribe({
           next: () => {
-            this.snackBar.open('Registro eliminado', 'Cerrar', { duration: 3000 });
+            this.snackBar.open('Unidad de medida eliminada exitosamente', 'Cerrar', { duration: 3000 });
             this.ngOnInit();
           },
           error: (err: any) => {
-            const msg = err.message || 'No se puede eliminar este registro porque está siendo utilizado en insumos o movimientos del sistema.';
-            this.fuseConfirmation.open({
-              title: 'Error al eliminar',
-              message: msg,
-              icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
-              actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
-            });
+            const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'No se puede eliminar esta unidad de medida porque está siendo utilizada en insumos o movimientos del sistema.');
+            this.confirmacionService.mostrarAdvertencia('No es posible eliminar la unidad de medida', msg, `Unidad de Medida: "${nombre}"`);
           }
         });
       }

@@ -32,6 +32,12 @@ export interface FilterColumnConfig {
   searchable?: boolean;
   /** Placeholder para búsqueda interna */
   searchPlaceholder?: string;
+  /** Ancho personalizado para la columna (ej: '280px') */
+  width?: string;
+  /** Ancho mínimo para la columna (ej: '280px') */
+  minWidth?: string;
+  /** Ancho máximo para la columna (ej: '380px') */
+  maxWidth?: string;
 }
 
 /** Filtro aplicado (se muestra como breadcrumb/chip) */

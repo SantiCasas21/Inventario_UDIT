@@ -1,12 +1,17 @@
-import { NgIf } from '@angular/common';
+import { NgClass, NgIf } from '@angular/common';
 import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { FuseFullscreenComponent } from '@fuse/components/fullscreen';
 import { FuseLoadingBarComponent } from '@fuse/components/loading-bar';
 import { FuseNavigationService, FuseVerticalNavigationComponent } from '@fuse/components/navigation';
+import { FuseConfig, FuseConfigService, Scheme } from '@fuse/services/config';
 import { FuseMediaWatcherService } from '@fuse/services/media-watcher';
+import { AuthService } from 'app/core/auth/auth.service';
 import { NavigationService } from 'app/core/navigation/navigation.service';
 import { Navigation } from 'app/core/navigation/navigation.types';
 import { UserService } from 'app/core/user/user.service';
@@ -17,7 +22,6 @@ import { NotificationsComponent } from 'app/layout/common/notifications/notifica
 import { QuickChatComponent } from 'app/layout/common/quick-chat/quick-chat.component';
 import { SearchComponent } from 'app/layout/common/search/search.component';
 import { ShortcutsComponent } from 'app/layout/common/shortcuts/shortcuts.component';
-import { UserComponent } from 'app/layout/common/user/user.component';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -25,13 +29,19 @@ import { Subject, takeUntil } from 'rxjs';
     templateUrl  : './classy.component.html',
     encapsulation: ViewEncapsulation.None,
     standalone   : true,
-    imports      : [FuseLoadingBarComponent, FuseVerticalNavigationComponent, NotificationsComponent, UserComponent, NgIf, MatIconModule, MatButtonModule, LanguagesComponent, FuseFullscreenComponent, SearchComponent, ShortcutsComponent, MessagesComponent, RouterOutlet, QuickChatComponent],
+    imports      : [
+        FuseLoadingBarComponent, FuseVerticalNavigationComponent, NotificationsComponent,
+        NgIf, NgClass, MatIconModule, MatButtonModule, MatMenuModule, MatDividerModule, MatTooltipModule,
+        LanguagesComponent, FuseFullscreenComponent, SearchComponent, ShortcutsComponent, MessagesComponent,
+        RouterOutlet, RouterLink, QuickChatComponent
+    ],
 })
 export class ClassyLayoutComponent implements OnInit, OnDestroy
 {
     isScreenSmall: boolean;
     navigation: Navigation;
     user: User;
+    scheme: 'dark' | 'light' = 'light';
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
     /**
@@ -40,13 +50,16 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy
     constructor(
         private _activatedRoute: ActivatedRoute,
         private _router: Router,
+        private _authService: AuthService,
         private _navigationService: NavigationService,
         private _userService: UserService,
+        private _fuseConfigService: FuseConfigService,
         private _fuseMediaWatcherService: FuseMediaWatcherService,
         private _fuseNavigationService: FuseNavigationService,
     )
     {
     }
+
 
     // -----------------------------------------------------------------------------------------------------
     // @ Accessors
@@ -93,6 +106,14 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy
                 // Check if the screen is small
                 this.isScreenSmall = !matchingAliases.includes('md');
             });
+
+        // Subscribe to config changes for scheme
+        this._fuseConfigService.config$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe((config: FuseConfig) =>
+            {
+                this.scheme = config.scheme === 'dark' ? 'dark' : 'light';
+            });
     }
 
     /**
@@ -125,4 +146,40 @@ export class ClassyLayoutComponent implements OnInit, OnDestroy
             navigation.toggle();
         }
     }
+
+    /**
+     * Toggle between Light and Dark mode
+     */
+    toggleScheme(): void
+    {
+        const newScheme: Scheme = this.scheme === 'dark' ? 'light' : 'dark';
+        this._fuseConfigService.config = { scheme: newScheme };
+    }
+
+    getUserInitials(): string
+    {
+        const name = this.user?.nombreCompleto || this.user?.name || 'U';
+        const parts = name.trim().split(' ');
+        if (parts.length > 1) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    }
+
+    /** Actualizar estado del usuario (online, away, busy, etc.) */
+    updateUserStatus(status: string): void
+    {
+        this._userService.update({
+            status,
+        } as any);
+    }
+
+    /** Cerrar sesión */
+    signOut(): void
+    {
+        this._authService.signOut();
+        this._router.navigate(['/sign-in']);
+    }
 }
+
+

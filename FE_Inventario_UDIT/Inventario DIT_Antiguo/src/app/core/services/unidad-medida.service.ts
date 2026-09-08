@@ -27,6 +27,11 @@ export class UnidadMedidaService {
     return this.api.get<UnidadMedidaDto[]>(`${this.endpoint}/categoria/${idCategoria}`);
   }
 
+  getByCategorias(idsCategoria: number[]): Observable<UnidadMedidaDto[]> {
+    const params = idsCategoria.map(id => `ids=${id}`).join('&');
+    return this.api.get<UnidadMedidaDto[]>(`${this.endpoint}/por-categorias?${params}`);
+  }
+
   create(data: UnidadMedidaRequestDto): Observable<UnidadMedidaDto> {
     return this.api.post<UnidadMedidaDto>(this.endpoint, data);
   }

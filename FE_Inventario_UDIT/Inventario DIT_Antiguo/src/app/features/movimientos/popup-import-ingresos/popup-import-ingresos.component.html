@@ -1,0 +1,489 @@
+<div class="flex flex-col bg-white rounded-2xl overflow-hidden shadow-2xl transition-all duration-300"
+     [ngClass]="step === 'UPLOAD' ? 'w-[720px] max-w-[95vw] h-auto max-h-[85vh]' : 'w-[96vw] max-w-[1440px] h-[92vh] max-h-[900px]'">
+  
+  <!-- Header Modal -->
+  <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between shadow-md flex-shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-sm">
+        <mat-icon>upload_file</mat-icon>
+      </div>
+      <div>
+        <h2 class="text-base font-bold text-white tracking-tight m-0">Carga Masiva de Ingresos desde Excel</h2>
+        <p class="text-xs text-slate-400 m-0">Importa múltiples compras y despachos con autocompletado y validación de catálogos</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button mat-raised-button (click)="descargarPlantilla()" 
+              class="btn-template flex items-center gap-1.5 text-xs font-bold shadow-sm"
+              style="background-color: #636F03; color: white;"
+              matTooltip="Descarga el formato oficial sincronizado en tiempo real con la base de datos">
+        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">download</mat-icon>
+        <span>Descargar Plantilla Oficial (.xls)</span>
+      </button>
+      <button mat-icon-button (click)="cerrar()" class="text-slate-400 hover:text-white" matTooltip="Cerrar ventana">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Contenido: Paso 1 Carga de Archivo -->
+  <div *ngIf="step === 'UPLOAD'" class="p-6 md:p-8 flex flex-col justify-center items-center bg-slate-50/50">
+    <div class="w-full flex flex-col items-center">
+      
+      <!-- Card Informativa -->
+      <div class="w-full mb-6 p-4 rounded-xl bg-amber-50/90 border border-amber-200/90 flex items-start gap-3 shadow-xs">
+        <mat-icon class="text-amber-600 flex-shrink-0 mt-0.5">info</mat-icon>
+        <div class="text-xs text-amber-950 leading-relaxed">
+          <strong class="font-bold text-sm block mb-1 text-amber-900">¿Tienes la plantilla de Excel diligenciada?</strong>
+          <p class="m-0 text-amber-900">
+            Asegúrate de que tu archivo contenga las columnas requeridas (<span class="font-bold">CodigoFabrica</span> y <span class="font-bold">Cantidad</span>). Si aún no tienes la plantilla, haz clic en el botón superior <strong class="text-emerald-800 font-bold">"Descargar Plantilla Oficial (.xls)"</strong>. La plantilla se descarga <span class="underline font-bold">siempre sincronizada en tiempo real</span> con todas las categorías, empaquetamientos y proveedores de la base de datos.
+          </p>
+        </div>
+      </div>
+
+      <!-- Zona Drag & Drop -->
+      <div 
+        class="w-full border-2 border-dashed rounded-2xl p-8 md:p-10 flex flex-col items-center justify-center transition-all duration-200 cursor-pointer text-center"
+        [ngClass]="isDragging ? 'border-emerald-500 bg-emerald-50/60 scale-[1.01]' : 'border-slate-300 bg-white hover:border-emerald-400 hover:bg-slate-50 shadow-xs'"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+        (click)="fileInput.click()">
+        
+        <input #fileInput type="file" accept=".xlsx, .xls, .csv, .txt" class="hidden" (change)="onFileSelected($event)">
+        
+        <div *ngIf="!isProcessing" class="flex flex-col items-center gap-3">
+          <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-inner">
+            <mat-icon style="font-size: 28px; width: 28px; height: 28px;">cloud_upload</mat-icon>
+          </div>
+          <div>
+            <h3 class="text-sm md:text-base font-bold text-slate-800 m-0">Arrastra tu archivo Excel aquí o haz clic para seleccionarlo</h3>
+            <p class="text-xs text-slate-500 mt-1 mb-0">Formatos soportados: Microsoft Excel (.xlsx, .xls) o CSV (.csv)</p>
+          </div>
+          <button mat-raised-button type="button" class="mt-2 btn-gloss text-xs font-bold" style="background-color: #636F03; color: white;">
+            <mat-icon style="font-size: 18px; width: 18px; height: 18px;">folder_open</mat-icon> Seleccionar Archivo desde el equipo
+          </button>
+        </div>
+
+        <div *ngIf="isProcessing" class="flex flex-col items-center gap-3 py-6">
+          <mat-spinner diameter="36" style="color: #636F03;"></mat-spinner>
+          <p class="text-sm font-semibold text-slate-700 m-0">Leyendo y validando registros del archivo Excel...</p>
+          <span class="text-xs text-slate-500">{{ selectedFileName }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenido: Paso 2 Previsualización, Edición por Fila y Cruce de Datos -->
+  <div *ngIf="step === 'PREVIEW'" class="flex-1 min-h-0 min-w-0 flex flex-col bg-slate-50">
+    
+    <!-- Barra de Métricas y Pestañas de Filtro -->
+    <div class="px-6 py-3 bg-white border-b border-slate-200 flex items-center justify-between flex-wrap gap-3 shadow-sm flex-shrink-0">
+      
+      <!-- Pestañas de Filtro de Filas -->
+      <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+        <button type="button" 
+                (click)="tabFiltro = 'TODOS'"
+                class="px-3 py-1 rounded-lg text-xs font-bold transition-all"
+                [ngClass]="tabFiltro === 'TODOS' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'">
+          Todos ({{ totalFilas }})
+        </button>
+        <button type="button" 
+                (click)="tabFiltro = 'LISTOS'"
+                class="px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                [ngClass]="tabFiltro === 'LISTOS' ? 'bg-emerald-600 text-white shadow-xs' : 'text-emerald-700 hover:text-emerald-900'">
+          <mat-icon style="font-size: 13px; width: 13px; height: 13px;">check_circle</mat-icon>
+          Listos ({{ totalValidas }})
+        </button>
+        <button type="button" 
+                (click)="tabFiltro = 'PENDIENTES'"
+                class="px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                [ngClass]="tabFiltro === 'PENDIENTES' ? 'bg-amber-600 text-white shadow-xs' : 'text-amber-700 hover:text-amber-900'">
+          <mat-icon style="font-size: 13px; width: 13px; height: 13px;">warning</mat-icon>
+          Pendientes ({{ totalFilas - totalValidas }})
+        </button>
+      </div>
+
+      <!-- Métricas Resumen -->
+      <div class="flex items-center gap-3 flex-wrap">
+        <div *ngIf="totalInsumosNuevos > 0" class="flex items-center gap-1 text-xs text-rose-800 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg">
+          <mat-icon style="font-size: 13px; width: 13px; height: 13px;">add_circle</mat-icon>
+          <span><strong>{{ totalInsumosNuevos }}</strong> insumos por crear</span>
+        </div>
+
+        <div *ngIf="totalProveedoresNuevos > 0" class="flex items-center gap-1 text-xs text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+          <mat-icon style="font-size: 13px; width: 13px; height: 13px;">business</mat-icon>
+          <span><strong>{{ totalProveedoresNuevos }}</strong> proveedores por crear</span>
+        </div>
+
+        <div *ngIf="totalDuplicados > 0" class="flex items-center gap-1 text-xs text-blue-800 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg"
+             matTooltip="Hay códigos de fábrica repetidos en el archivo Excel">
+          <mat-icon style="font-size: 13px; width: 13px; height: 13px;">content_copy</mat-icon>
+          <span><strong>{{ totalDuplicados }}</strong> códigos repetidos</span>
+        </div>
+
+        <!-- Inversión Estimada -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs font-bold text-slate-900 bg-emerald-50 text-emerald-900 border border-emerald-200 px-3 py-1 rounded-lg">
+            Inversión: $ {{ totalInversionEstimada | number:'1.0-0' }} COP
+          </span>
+        </div>
+
+        <button mat-stroked-button (click)="cambiarArchivo()" class="text-xs text-slate-600">
+          <mat-icon style="font-size: 14px; width: 14px; height: 14px;">sync</mat-icon> Cambiar Archivo
+        </button>
+      </div>
+    </div>
+
+    <!-- Barra de Navegación y Ayuda -->
+    <div class="px-6 py-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-emerald-700 text-sm">swap_horiz</mat-icon>
+        <span class="font-medium">Navegación completa: Desplázate horizontalmente con la barra inferior para ver y editar todas las columnas (Ubicación, Proveedor, Tipo de Compra, etc.).</span>
+      </div>
+      <div class="text-[11px] text-slate-500 font-semibold">
+        Mostrando {{ filasFiltradas.length }} de {{ totalFilas }} filas
+      </div>
+    </div>
+
+    <!-- Contenedor Scrollable Horizontal y Vertical Directo -->
+    <div class="flex-1 min-h-0 min-w-0 p-4 table-scroll-viewport">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 inline-block min-w-full">
+        <table class="table-fixed text-left text-xs border-collapse" style="min-width: 2200px; width: 100%;">
+          
+          <colgroup>
+            <col style="width: 50px;">   <!-- # -->
+            <col style="width: 140px;">  <!-- Estado -->
+            <col style="width: 190px;">  <!-- Cód. Fábrica -->
+            <col style="width: 260px;">  <!-- Descripción -->
+            <col style="width: 210px;">  <!-- Categoría -->
+            <col style="width: 190px;">  <!-- Empaquetamiento -->
+            <col style="width: 140px;">  <!-- Medida / Dimensión -->
+            <col style="width: 110px;">  <!-- Cantidad -->
+            <col style="width: 130px;">  <!-- Precio Unit. -->
+            <col style="width: 240px;">  <!-- Ubicación Destino -->
+            <col style="width: 220px;">  <!-- Proveedor -->
+            <col style="width: 180px;">  <!-- Tipo Compra -->
+            <col style="width: 220px;">  <!-- Observación -->
+            <col style="width: 110px;">  <!-- Acciones -->
+          </colgroup>
+
+          <thead class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider sticky top-0 z-20 border-b border-slate-200 shadow-2xs">
+            <tr>
+              <th class="p-3 text-center sticky left-0 bg-slate-100 z-30 border-r border-slate-200">#</th>
+              <th class="p-3">Estado</th>
+              <th class="p-3">Cód. Fábrica *</th>
+              <th class="p-3">Descripción</th>
+              <th class="p-3">Categoría</th>
+              <th class="p-3">Empaquetamiento</th>
+              <th class="p-3 text-center">Medida / Dimensión</th>
+              <th class="p-3 text-center">Cantidad *</th>
+              <th class="p-3 text-center">Precio Unit. ($)</th>
+              <th class="p-3">Ubicación Destino *</th>
+              <th class="p-3">Proveedor</th>
+              <th class="p-3">Tipo Compra</th>
+              <th class="p-3">Observación</th>
+              <th class="p-3 text-center sticky right-0 bg-slate-100 z-30 border-l border-slate-200">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr *ngFor="let item of filasFiltradas; trackBy: trackByItem" 
+                class="transition-colors hover:bg-slate-50/80"
+                [ngClass]="editandoFilaIndex === item.originalIndex ? 'bg-amber-50/70 ring-2 ring-amber-400 ring-inset' : (item.row.estadoValidacion !== 'OK' ? 'bg-rose-50/15' : '')">
+              
+              <!-- # Columna Fija Izquierda -->
+              <td class="p-3 text-center font-bold sticky left-0 z-10 border-r border-slate-100"
+                  [ngClass]="editandoFilaIndex === item.originalIndex ? 'bg-amber-100 text-amber-900' : 'bg-white text-slate-400'">
+                {{ item.originalIndex + 1 }}
+              </td>
+
+              <!-- Estado Badge -->
+              <td class="p-3">
+                <span *ngIf="item.row.estadoValidacion === 'OK'" 
+                      class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-fit">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px;">check_circle</mat-icon> Listo
+                </span>
+                
+                <span *ngIf="item.row.estadoValidacion === 'INSUMO_NO_REGISTRADO'" 
+                      class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 flex items-center gap-1 w-fit"
+                      matTooltip="Insumo no existe. Haz clic en '+ Crear Insumo' para registrarlo con los datos prellenados.">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px;">add_circle</mat-icon> Insumo Nuevo
+                </span>
+
+                <span *ngIf="item.row.estadoValidacion === 'PROVEEDOR_NO_REGISTRADO'" 
+                      class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 w-fit"
+                      matTooltip="El proveedor no existe en el sistema.">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px;">business</mat-icon> Prov. Pendiente
+                </span>
+
+                <span *ngIf="item.row.estadoValidacion === 'CATEGORIA_NO_REGISTRADA'" 
+                      class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 w-fit">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px;">category</mat-icon> Cat. No Existe
+                </span>
+
+                <span *ngIf="item.row.estadoValidacion === 'EMPAQUETAMIENTO_NO_REGISTRADO'" 
+                      class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 w-fit">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px;">inventory_2</mat-icon> Empaque Pend.
+                </span>
+
+                <span *ngIf="item.row.estadoValidacion === 'REQUIERE_UBICACION'" 
+                      class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 flex items-center gap-1 w-fit"
+                      matTooltip="Seleccione una ubicación para el ingreso">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px;">place</mat-icon> Falta Ubicación
+                </span>
+
+                <span *ngIf="item.row.estadoValidacion === 'CANTIDAD_INVALIDA'" 
+                      class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 flex items-center gap-1 w-fit">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px;">priority_high</mat-icon> Cant. Inválida
+                </span>
+              </td>
+
+              <!-- Cód. Fábrica + Enlace de Crear Rápido con Prellenado -->
+              <td class="p-3">
+                <div class="flex flex-col gap-1">
+                  <div class="flex items-center gap-1">
+                    <span class="font-black text-slate-900 text-xs">{{ item.row.codigoFabrica }}</span>
+                    <span *ngIf="item.row.esDuplicadoEnLote" class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-100 text-blue-700" matTooltip="Código repetido en el archivo">Repetido</span>
+                  </div>
+
+                  <!-- Botón Crear Rápido con Permisos -->
+                  <div *ngIf="!item.row.insumoExiste">
+                    <button *ngIf="canCreateInsumo" 
+                            type="button"
+                            mat-button 
+                            (click)="crearInsumoRapido(item.row)" 
+                            class="btn-crear-rapido text-[11px] font-bold text-rose-600 hover:text-rose-800 underline p-0 h-auto min-w-0 text-left flex items-center gap-0.5">
+                      + Crear Insumo ahora
+                    </button>
+                    <span *ngIf="!canCreateInsumo" 
+                          class="text-[10px] text-slate-500 italic flex items-center gap-0.5"
+                          matTooltip="No tienes permiso para crear insumos. Contacta con el Administrador o elimina esta fila.">
+                      <mat-icon style="font-size: 12px; width: 12px; height: 12px;">lock</mat-icon> Sin permiso creación
+                    </span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Descripción -->
+              <td class="p-3">
+                <div *ngIf="editandoFilaIndex === item.originalIndex">
+                  <input type="text" [(ngModel)]="item.row.descripcion" (ngModelChange)="onValorChange(item.row)"
+                         class="w-full text-xs p-1.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div *ngIf="editandoFilaIndex !== item.originalIndex" class="text-slate-700 truncate" [matTooltip]="item.row.descripcion || 'Sin descripción'">
+                  {{ item.row.descripcion || (item.row.insumoExiste ? 'Sin descripción' : 'Pendiente de registrar') }}
+                </div>
+              </td>
+
+              <!-- Categoría -->
+              <td class="p-3">
+                <div *ngIf="editandoFilaIndex === item.originalIndex">
+                  <mat-form-field appearance="outline" class="w-full compact-field" subscriptSizing="dynamic">
+                    <mat-select [value]="item.row.idCategoria" (valueChange)="onCategoriaChange(item.row, $event)">
+                      <mat-option [value]="null">-- Sin categoría --</mat-option>
+                      <mat-option *ngFor="let c of categorias" [value]="c.id">{{ c.nombre }}</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+                <div *ngIf="editandoFilaIndex !== item.originalIndex">
+                  <span *ngIf="item.row.categoriaNombre" class="font-medium text-slate-800">{{ item.row.categoriaNombre }}</span>
+                  <span *ngIf="!item.row.categoriaNombre && item.row.categoriaTextoExcel" class="text-amber-700 font-semibold text-[11px]">⚠️ "{{ item.row.categoriaTextoExcel }}"</span>
+                  <span *ngIf="!item.row.categoriaNombre && !item.row.categoriaTextoExcel" class="text-slate-400 italic">--</span>
+                </div>
+              </td>
+
+              <!-- Empaquetamiento -->
+              <td class="p-3">
+                <div *ngIf="editandoFilaIndex === item.originalIndex">
+                  <mat-form-field appearance="outline" class="w-full compact-field" subscriptSizing="dynamic">
+                    <mat-select [value]="item.row.idEmpaquetamiento" (valueChange)="onEmpaquetamientoChange(item.row, $event)">
+                      <mat-option [value]="null">-- Sin empaque --</mat-option>
+                      <mat-option *ngFor="let e of empaquetamientos" [value]="e.id">{{ e.nombre }}</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+                <div *ngIf="editandoFilaIndex !== item.originalIndex">
+                  <span *ngIf="item.row.empaquetamientoNombre" class="font-medium text-slate-800">{{ item.row.empaquetamientoNombre }}</span>
+                  <div *ngIf="!item.row.empaquetamientoNombre && item.row.empaquetamientoTextoExcel" class="flex flex-col">
+                    <span class="text-amber-700 font-semibold text-[11px]">⚠️ "{{ item.row.empaquetamientoTextoExcel }}"</span>
+                    <button *ngIf="canCreateEmpaquetamiento" type="button" mat-button (click)="crearEmpaquetamientoRapido(item.row)" class="text-[10px] font-bold text-amber-800 underline p-0 h-auto text-left">
+                      + Crear empaque
+                    </button>
+                    <span *ngIf="!canCreateEmpaquetamiento" class="text-[9px] text-slate-500 italic" matTooltip="No tienes permiso para crear empaquetamientos. Contacta al Administrador.">Sin permiso</span>
+                  </div>
+                  <span *ngIf="!item.row.empaquetamientoNombre && !item.row.empaquetamientoTextoExcel" class="text-slate-400 italic">--</span>
+                </div>
+              </td>
+
+              <!-- Medida / Dimensión -->
+              <td class="p-3 text-center">
+                <div *ngIf="editandoFilaIndex === item.originalIndex" class="flex items-center gap-1">
+                  <input type="number" [(ngModel)]="item.row.valorMedida" (ngModelChange)="onValorChange(item.row)" placeholder="Valor"
+                         class="w-16 text-center text-xs p-1 rounded-lg border border-slate-300">
+                  <input type="text" [(ngModel)]="item.row.unidadMedida" (ngModelChange)="onValorChange(item.row)" placeholder="Unidad"
+                         class="w-16 text-center text-xs p-1 rounded-lg border border-slate-300">
+                </div>
+                <div *ngIf="editandoFilaIndex !== item.originalIndex">
+                  <span *ngIf="item.row.valorMedida" class="font-bold text-slate-900">{{ item.row.valorMedida }}</span>
+                  <span *ngIf="item.row.unidadMedida" class="text-slate-600 ml-1 font-medium">{{ item.row.unidadMedida }}</span>
+                  <span *ngIf="!item.row.valorMedida && !item.row.unidadMedida" class="text-slate-400 italic">--</span>
+                </div>
+              </td>
+
+              <!-- Cantidad -->
+              <td class="p-3 text-center">
+                <div *ngIf="editandoFilaIndex === item.originalIndex">
+                  <input type="number" [(ngModel)]="item.row.cantidad" (ngModelChange)="onValorChange(item.row)" min="1"
+                         class="w-20 text-center font-bold text-xs p-1.5 rounded-lg border border-slate-300 bg-white">
+                </div>
+                <span *ngIf="editandoFilaIndex !== item.originalIndex" class="font-black text-slate-900 text-xs bg-slate-100 px-2 py-0.5 rounded-md">
+                  {{ item.row.cantidad }}
+                </span>
+              </td>
+
+              <!-- Precio Unitario -->
+              <td class="p-3 text-center">
+                <div *ngIf="editandoFilaIndex === item.originalIndex">
+                  <input type="number" [(ngModel)]="item.row.precioUnitario" (ngModelChange)="onValorChange(item.row)" placeholder="Auto"
+                         class="w-24 text-right font-medium text-xs p-1.5 rounded-lg border border-slate-300 bg-white">
+                </div>
+                <span *ngIf="editandoFilaIndex !== item.originalIndex" class="font-medium text-emerald-800 text-xs">
+                  {{ item.row.precioUnitario ? ('$' + (item.row.precioUnitario | number:'1.0-0')) : 'Auto' }}
+                </span>
+              </td>
+
+              <!-- Ubicación Destino Dropdown -->
+              <td class="p-3">
+                <div *ngIf="editandoFilaIndex === item.originalIndex">
+                  <mat-form-field appearance="outline" class="w-full compact-field" subscriptSizing="dynamic">
+                    <mat-select [value]="item.row.idUbicacion" (valueChange)="onUbicacionChange(item.row, $event)" placeholder="Ubicación...">
+                      <mat-option *ngFor="let u of getUbicacionesDisponibles(item.row)" [value]="u.idUbicacion">
+                        <div class="flex items-center justify-between w-full text-xs">
+                          <span>{{ u.ubicacionNombre }}</span>
+                          <span class="text-[10px] px-1.5 py-0.2 rounded font-bold ml-2" [ngClass]="u.stock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'">
+                            {{ u.stock }}
+                          </span>
+                        </div>
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+                <div *ngIf="editandoFilaIndex !== item.originalIndex">
+                  <span *ngIf="item.row.ubicacionNombre" class="font-bold text-slate-800 flex items-center gap-1">
+                    <mat-icon style="font-size: 13px; width: 13px; height: 13px;" class="text-emerald-700">place</mat-icon>
+                    {{ item.row.ubicacionNombre }}
+                  </span>
+                  <span *ngIf="!item.row.ubicacionNombre" class="text-rose-700 font-bold text-[11px] flex items-center gap-0.5">
+                    <mat-icon style="font-size: 13px; width: 13px; height: 13px;">priority_high</mat-icon> Falta seleccionar
+                  </span>
+                </div>
+              </td>
+
+              <!-- Proveedor -->
+              <td class="p-3">
+                <div *ngIf="editandoFilaIndex === item.originalIndex">
+                  <mat-form-field appearance="outline" class="w-full compact-field" subscriptSizing="dynamic">
+                    <mat-select [value]="item.row.idProveedor" (valueChange)="onProveedorChange(item.row, $event)" placeholder="Proveedor...">
+                      <mat-option [value]="null">-- Sin proveedor --</mat-option>
+                      <mat-option *ngFor="let p of proveedores" [value]="p.id">{{ p.nombre }}</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+                <div *ngIf="editandoFilaIndex !== item.originalIndex">
+                  <span *ngIf="item.row.proveedorNombre" class="font-medium text-slate-800">{{ item.row.proveedorNombre }}</span>
+                  <div *ngIf="!item.row.proveedorNombre && item.row.proveedorTextoExcel" class="flex flex-col">
+                    <span class="text-amber-700 font-semibold text-[11px]">⚠️ "{{ item.row.proveedorTextoExcel }}"</span>
+                    <button *ngIf="canCreateProveedor" type="button" mat-button (click)="crearProveedorRapido(item.row)" class="text-[10px] font-bold text-amber-800 underline p-0 h-auto text-left">
+                      + Crear Proveedor
+                    </button>
+                    <span *ngIf="!canCreateProveedor" class="text-[9px] text-slate-500 italic" matTooltip="No tienes permiso para crear proveedores. Contacta al Administrador.">Sin permiso</span>
+                  </div>
+                  <span *ngIf="!item.row.proveedorNombre && !item.row.proveedorTextoExcel" class="text-slate-400 italic">--</span>
+                </div>
+              </td>
+
+              <!-- Tipo Compra -->
+              <td class="p-3">
+                <div *ngIf="editandoFilaIndex === item.originalIndex">
+                  <mat-form-field appearance="outline" class="w-full compact-field" subscriptSizing="dynamic">
+                    <mat-select [(ngModel)]="item.row.idTipoCompra" (ngModelChange)="onValorChange(item.row)" placeholder="Tipo...">
+                      <mat-option [value]="null">-- Sin tipo --</mat-option>
+                      <mat-option *ngFor="let t of tiposCompra" [value]="t.id">{{ t.nombre }}</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+                <div *ngIf="editandoFilaIndex !== item.originalIndex">
+                  <span *ngIf="item.row.tipoCompraNombre" class="text-slate-700">{{ item.row.tipoCompraNombre }}</span>
+                  <span *ngIf="!item.row.tipoCompraNombre" class="text-slate-400 italic">--</span>
+                </div>
+              </td>
+
+              <!-- Observación -->
+              <td class="p-3">
+                <div *ngIf="editandoFilaIndex === item.originalIndex">
+                  <input type="text" [(ngModel)]="item.row.observacion" (ngModelChange)="onValorChange(item.row)" placeholder="Notas..."
+                         class="w-full text-xs p-1.5 rounded-lg border border-slate-300 bg-white">
+                </div>
+                <span *ngIf="editandoFilaIndex !== item.originalIndex" class="text-slate-600 truncate block" [matTooltip]="item.row.observacion || ''">
+                  {{ item.row.observacion || '--' }}
+                </span>
+              </td>
+
+              <!-- Acciones: Lápiz y X (Columna Fija Derecha) -->
+              <td class="p-3 text-center sticky right-0 z-10 border-l border-slate-100"
+                  [ngClass]="editandoFilaIndex === item.originalIndex ? 'bg-amber-50' : 'bg-white'">
+                <div class="flex items-center justify-center gap-1.5">
+                  <!-- Botón Lápiz / Guardar -->
+                  <button type="button" 
+                          (click)="$event.stopPropagation(); toggleEditarFila(item.originalIndex)" 
+                          class="w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-xs cursor-pointer"
+                          [ngClass]="editandoFilaIndex === item.originalIndex ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'"
+                          [matTooltip]="editandoFilaIndex === item.originalIndex ? 'Guardar cambios de fila (✓)' : 'Editar fila (✏️)'">
+                    <mat-icon style="font-size: 16px; width: 16px; height: 16px;">
+                      {{ editandoFilaIndex === item.originalIndex ? 'check' : 'edit' }}
+                    </mat-icon>
+                  </button>
+
+                  <!-- Botón X (Eliminar Fila) -->
+                  <button type="button" 
+                          (click)="$event.stopPropagation(); eliminarFila(item.originalIndex)" 
+                          class="w-7 h-7 rounded-lg flex items-center justify-center transition-all bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-800 shadow-xs cursor-pointer" 
+                          matTooltip="Eliminar esta fila de la importación">
+                    <mat-icon style="font-size: 16px; width: 16px; height: 16px;">close</mat-icon>
+                  </button>
+                </div>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer Modal con Acciones -->
+    <div class="px-6 py-4 bg-white border-t border-slate-200 flex items-center justify-between flex-shrink-0 shadow-lg">
+      <div class="flex items-center gap-2 text-xs text-slate-500">
+        <mat-icon class="text-emerald-600 text-sm">verified</mat-icon>
+        <span>Verifique los datos antes de confirmar. Se mostrará un resumen final antes de asentar los movimientos en el Kardex.</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button mat-stroked-button (click)="cerrar()" [disabled]="isSubmitting" class="text-xs">
+          Cancelar
+        </button>
+
+        <button mat-raised-button 
+                color="primary" 
+                (click)="confirmarIngresoMasivo()" 
+                [disabled]="!todasValidas || isSubmitting"
+                class="btn-gloss flex items-center gap-2 font-bold"
+                style="background-color: #636F03; color: white;">
+          <mat-spinner *ngIf="isSubmitting" diameter="18" style="color: white;"></mat-spinner>
+          <mat-icon *ngIf="!isSubmitting">save</mat-icon>
+          <span>Confirmar e Ingresar Todos ({{ totalFilas }} insumos)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

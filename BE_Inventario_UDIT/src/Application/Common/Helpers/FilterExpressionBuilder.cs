@@ -29,8 +29,9 @@ namespace Application.Common.Helpers
             if (filter.IdsEmpaquetamiento?.Count > 0)
                 predicate = predicate.And(i => filter.IdsEmpaquetamiento.Contains(i.IdEmpaquetamiento));
 
-            // Nota: El filtro por IdsUbicacion ya no se hace aquí porque Insumo ya no tiene IdUbicacion.
-            // Se debe manejar en InsumoService cruzando con los datos de MovimientoInventario.
+            // Multi-select: insumos específicos (usado para filtro por Ubicación desde Movimientos)
+            if (filter.IdsInsumo?.Count > 0)
+                predicate = predicate.And(i => filter.IdsInsumo.Contains(i.Id));
 
             // Multi-select: Unidades de Medida
             if (filter.UnidadesMedida?.Count > 0)
@@ -148,12 +149,15 @@ namespace Application.Common.Helpers
                     m.Observacion != null && m.Observacion.Contains(search));
             }
 
-            // Texto: búsqueda por código de fábrica del insumo
+            // Texto: búsqueda por código de fábrica o descripción del insumo
             if (!string.IsNullOrWhiteSpace(filter.CodigoFabricaSearch))
             {
                 var search = filter.CodigoFabricaSearch.Trim();
                 predicate = predicate.And(m =>
-                    m.Insumo != null && m.Insumo.CodigoFabrica.Contains(search));
+                    m.Insumo != null && (
+                        m.Insumo.CodigoFabrica.Contains(search) ||
+                        (m.Insumo.Descripcion != null && m.Insumo.Descripcion.Contains(search))
+                    ));
             }
 
             return predicate;

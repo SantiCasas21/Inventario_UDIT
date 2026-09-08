@@ -1,0 +1,33 @@
+// ────────────────────────────────────────────────────────────────────────────
+// Estilos específicos para la página de Roles y Permisos (Estilo Premium UDIT)
+// ────────────────────────────────────────────────────────────────────────────
+
+.role-summary-card {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+// ── Checkboxes con estilo accesible y limpio ─────────────────────────────────
+::ng-deep mat-checkbox {
+  .mdc-checkbox {
+    padding: 6px;
+  }
+}

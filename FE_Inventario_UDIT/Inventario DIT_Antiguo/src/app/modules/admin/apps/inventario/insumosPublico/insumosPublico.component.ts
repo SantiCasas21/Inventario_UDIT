@@ -1,5 +1,5 @@
 import { UserService } from '@app/core/user/user.service';
-import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { ConfirmacionService } from '@app/core/services/confirmacion.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { InsumoService } from '@app/core/services/insumo.service';
 import { AfterViewInit, Component, ViewChild, inject } from '@angular/core';
@@ -22,7 +22,7 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class InsumosPublicoComponent implements AfterViewInit {
   userService = inject(UserService);
-  fuseConfirmation = inject(FuseConfirmationService);
+  confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
   displayedColumns: string[] = ['editar', 'id', 'idnombreinsumo', 'codfabrica', 'valor', 'idempaquetamiento', 'descripcion', 'idubicacion', 'cantidad'];
@@ -65,31 +65,20 @@ export class InsumosPublicoComponent implements AfterViewInit {
   }
 
   eliminarRegistro(row: any) {
-    const dialog = this.fuseConfirmation.open({
-      title: 'Eliminar registro',
-      message: '\u00bfEst\u00e1 seguro de eliminar este registro? Esta acci\u00f3n no se puede deshacer.',
-      icon: { name: 'heroicons_outline:trash', color: 'warn' },
-      actions: { confirm: { label: 'S\u00ed, eliminar', color: 'warn' }, cancel: { label: 'Cancelar' } },
-    });
-    dialog.afterClosed().subscribe(result => {
-      if (result === 'confirmed') {
+    const nombre = row.descripcion || `ID ${row.id}`;
+    this.confirmacionService.confirmarEliminacion('Insumo', nombre).subscribe(confirmado => {
+      if (confirmado) {
         this.newInsumoService.delete(row.id).subscribe({
           next: () => {
-            this.snackBar.open('Registro eliminado', 'Cerrar', { duration: 3000 });
+            this.snackBar.open('Registro eliminado exitosamente', 'Cerrar', { duration: 3000 });
             this.ngOnInit();
           },
           error: (err:any) => {
-            const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'No se puede eliminar este registro porque est\u00e1 siendo utilizado en insumos o movimientos del sistema.');
-            this.fuseConfirmation.open({
-              title: 'Error al eliminar',
-              message: msg,
-              icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
-              actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
-            });
+            const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'No se puede eliminar este registro porque está siendo utilizado en insumos o movimientos del sistema.');
+            this.confirmacionService.mostrarAdvertencia('No es posible eliminar el insumo', msg, `Insumo: "${nombre}"`);
           }
         });
       }
     });
   }
-}
 

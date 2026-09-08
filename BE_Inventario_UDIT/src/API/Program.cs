@@ -8,6 +8,7 @@ using Domain.Entities.Catalogos;
 using Infrastructure.Data;
 using Infrastructure.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -24,15 +25,28 @@ builder.Services.AddInfrastructure(builder.Configuration);
 // ==========================================
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 8;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireLowercase = true;
+    options.Password.RequireDigit = true;           // Al menos 1 número
+    options.Password.RequiredLength = 6;            // Mínimo 6 caracteres
+    options.Password.RequireNonAlphanumeric = true; // Al menos 1 símbolo especial
+    options.Password.RequireUppercase = true;       // Al menos 1 mayúscula
+    options.Password.RequireLowercase = false;
     options.User.RequireUniqueEmail = true;
+
+    // Bloqueo por intentos fallidos (prevención de fuerza bruta)
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
+
+// Configuración de Cookies seguras para HTTPS
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+});
 
 // ==========================================
 // JWT Authentication
@@ -152,6 +166,7 @@ builder.Services.AddScoped<IProyectoService, ProyectoService>();
 builder.Services.AddScoped<IProveedorService, ProveedorService>();
 builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+builder.Services.AddScoped<IExcelParserService, ExcelParserService>();
 
 // ==========================================
 // Controllers
@@ -205,6 +220,26 @@ builder.Services.AddCors(options =>
 });
 
 // ==========================================
+// Reverse Proxy & SSL / TLS Forwarded Headers
+// ==========================================
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// ==========================================
+// HSTS (HTTP Strict Transport Security) en Producción
+// ==========================================
+builder.Services.AddHsts(options =>
+{
+    options.Preload = true;
+    options.IncludeSubDomains = true;
+    options.MaxAge = TimeSpan.FromDays(365); // 1 año recomendado para SSL
+});
+
+// ==========================================
 // Health Checks
 // ==========================================
 builder.Services.AddHealthChecks();
@@ -215,18 +250,26 @@ var app = builder.Build();
 // Middleware Pipeline
 // ==========================================
 
+// 1. Forwarded Headers DEBE ir al inicio antes de redirecciones para procesar X-Forwarded-Proto
+app.UseForwardedHeaders();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseCors("CorsPolicy");
-
-if (!app.Environment.IsDevelopment())
+else
 {
-    app.UseHttpsRedirection();
+    // Forzar HTTP Strict Transport Security solo si está habilitado en configuración
+    // (Se mantiene en false para certificados autofirmados / IP para permitir el bypass del navegador)
+    if (app.Configuration.GetValue<bool>("Security:EnableHsts", false))
+    {
+        app.UseHsts();
+    }
 }
+
+app.UseHttpsRedirection();
+app.UseCors("CorsPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -239,16 +282,25 @@ app.MapHealthChecks("/health");
 // ==========================================
 if (app.Environment.IsDevelopment())
 {
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.MigrateAsync();
 
-    // Seed de roles y admin por defecto
-    await DbInitializer.SeedAsync(scope.ServiceProvider);
+        // Seed de roles y admin por defecto
+        await DbInitializer.SeedAsync(scope.ServiceProvider);
 
-    // Clasificación inteligente de empaquetamientos sin familia (idempotente)
-    var empaquetamientoService = scope.ServiceProvider.GetRequiredService<IEmpaquetamientoService>();
-    await empaquetamientoService.ClasificarPendientesAsync();
+        // Clasificación inteligente de empaquetamientos sin familia (idempotente)
+        var empaquetamientoService = scope.ServiceProvider.GetRequiredService<IEmpaquetamientoService>();
+        await empaquetamientoService.ClasificarPendientesAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error durante la migración o inicialización de la base de datos.");
+    }
 }
 
 app.Run();
+

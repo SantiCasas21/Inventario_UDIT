@@ -8,6 +8,10 @@
 
             <!-- Title -->
             <div class="mt-8 text-4xl font-extrabold tracking-tight leading-tight">Iniciar Sesión</div>
+            <div class="mt-1.5 font-medium text-sm text-gray-500">
+                Ingresa con tus credenciales institucionales
+            </div>
+
 
             <!-- Alert -->
             <fuse-alert
@@ -40,12 +44,13 @@
 
                 <!-- Password field -->
                 <mat-form-field class="w-full">
-                    <mat-label>Cotraseña</mat-label>
+                    <mat-label>Contraseña</mat-label>
                     <input
                         id="password"
                         matInput
                         type="password"
                         [formControlName]="'password'"
+
                         #passwordField>
                     <button
                         mat-icon-button

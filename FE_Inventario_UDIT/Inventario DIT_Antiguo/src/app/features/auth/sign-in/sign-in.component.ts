@@ -78,9 +78,13 @@ export class AuthSignInComponent implements OnInit
         const { username, password } = this.signInForm.value;
 
         this._authService.signIn({ username, password }).subscribe({
-            next: () => {
-                const redirectURL = this._activatedRoute.snapshot.queryParamMap.get('redirectURL') || '/signed-in-redirect';
-                this._router.navigateByUrl(redirectURL);
+            next: (res) => {
+                if (res?.debeCambiarPassword) {
+                    this._router.navigateByUrl('/cambiar-password-inicial');
+                } else {
+                    const redirectURL = this._activatedRoute.snapshot.queryParamMap.get('redirectURL') || '/signed-in-redirect';
+                    this._router.navigateByUrl(redirectURL);
+                }
             },
             error: (err) => {
                 this.signInForm.enable();
@@ -89,5 +93,6 @@ export class AuthSignInComponent implements OnInit
                 this.showAlert = true;
             },
         });
+
     }
 }

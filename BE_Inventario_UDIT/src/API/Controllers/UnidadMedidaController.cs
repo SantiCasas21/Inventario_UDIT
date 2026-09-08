@@ -49,7 +49,37 @@ namespace API.Controllers
         public async Task<IActionResult> GetByCategoria(int idCategoria)
         {
             var items = await _repository.FindAsync(x => x.IdCategoria == idCategoria);
-            var dtos = items.Select(x => new UnidadMedidaDto
+            var dtos = items.OrderBy(x => x.Nombre).Select(x => new UnidadMedidaDto
+            {
+                Id = x.Id,
+                Nombre = x.Nombre,
+                IdCategoria = x.IdCategoria
+            });
+            return Ok(OperationResult<IEnumerable<UnidadMedidaDto>>.Ok(dtos));
+        }
+
+        [HttpGet("por-categoria/{idCategoria}")]
+        public async Task<IActionResult> GetPorCategoria(int idCategoria)
+        {
+            var items = await _repository.FindAsync(x => x.IdCategoria == idCategoria);
+            var dtos = items.OrderBy(x => x.Nombre).Select(x => new UnidadMedidaDto
+            {
+                Id = x.Id,
+                Nombre = x.Nombre,
+                IdCategoria = x.IdCategoria
+            });
+            return Ok(OperationResult<IEnumerable<UnidadMedidaDto>>.Ok(dtos));
+        }
+
+        // GET /api/unidad-medida/por-categorias?ids=1&ids=2
+        [HttpGet("por-categorias")]
+        public async Task<IActionResult> GetPorCategorias([FromQuery] int[] ids)
+        {
+            if (ids == null || ids.Length == 0)
+                return Ok(OperationResult<IEnumerable<UnidadMedidaDto>>.Ok(Enumerable.Empty<UnidadMedidaDto>()));
+
+            var items = await _repository.FindAsync(x => ids.Contains(x.IdCategoria));
+            var dtos = items.OrderBy(x => x.Nombre).Select(x => new UnidadMedidaDto
             {
                 Id = x.Id,
                 Nombre = x.Nombre,

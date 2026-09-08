@@ -37,11 +37,16 @@ export const appRoutes: Route[] = [
     data: { layout: 'empty' },
     children: [
       { path: 'sign-out', loadChildren: () => import('app/features/auth/sign-out/sign-out.routes') },
+      { 
+        path: 'cambiar-password-inicial', 
+        loadComponent: () => import('app/features/auth/cambiar-password-inicial/cambiar-password-inicial.component').then(m => m.CambiarPasswordInicialComponent) 
+      },
     ],
   },
 
+
   // ============================================================
-  // APP — páginas protegidas
+  // APP — páginas protegidas (con permisos y roles granulares)
   // ============================================================
   {
     path: '',
@@ -50,72 +55,133 @@ export const appRoutes: Route[] = [
     component: LayoutComponent,
     resolve: { initialData: initialDataResolver },
     children: [
+      // ── Principal ──────────────────────────────────────────
       { path: 'dashboard', loadChildren: () => import('app/features/dashboard/dashboard.routes') },
-    ],
-  },
-  {
-    path: '',
-    canActivate: [AuthGuard],
-    canActivateChild: [AuthGuard],
-    component: LayoutComponent,
-    resolve: { initialData: initialDataResolver },
-    children: [
-      { path: 'insumos', loadChildren: () => import('app/features/insumos/insumos.routes') },
-    ],
-  },
-  {
-    path: '',
-    canActivate: [AuthGuard],
-    canActivateChild: [AuthGuard],
-    component: LayoutComponent,
-    resolve: { initialData: initialDataResolver },
-    children: [
-      { path: 'movimientos', loadChildren: () => import('app/features/movimientos/movimientos.routes') },
-    ],
-  },
-  {
-    path: '',
-    canActivate: [AuthGuard],
-    canActivateChild: [AuthGuard],
-    component: LayoutComponent,
-    resolve: { initialData: initialDataResolver },
-    children: [
-      { path: 'reportes', loadChildren: () => import('app/features/reportes/reportes.routes') },
-    ],
-  },
-  {
-    path: '',
-    canActivate: [AuthGuard],
-    canActivateChild: [AuthGuard],
-    component: LayoutComponent,
-    resolve: { initialData: initialDataResolver },
-    children: [
-      { path: 'usuarios', loadChildren: () => import('app/features/usuarios/usuarios.routes') },
-    ],
-  },
+      { path: 'perfil', loadChildren: () => import('app/features/perfil/perfil.routes') },
 
-  // ============================================================
-  // ADMIN — Páginas de administración de catálogos
-  // ============================================================
-  {
-    path: '',
-    canActivate: [AuthGuard, RoleGuard],
-    canActivateChild: [AuthGuard, RoleGuard],
-    data: { roles: ['admin', 'developer'] },
-    component: LayoutComponent,
-    resolve: { initialData: initialDataResolver },
-    children: [
-      { path: 'empaquetamiento', loadChildren: () => import('app/modules/admin/apps/inventario/empaquetamiento/empaquetamiento.routes') },
-      { path: 'estadoproyecto', loadChildren: () => import('app/modules/admin/apps/inventario/estadoproyecto/estadoproyecto.routes') },
-      { path: 'estadosalida', loadChildren: () => import('app/modules/admin/apps/inventario/estadosalida/estadosalida.routes') },
-      { path: 'categorias', loadChildren: () => import('app/modules/admin/apps/inventario/nombreinsumo/nombreinsumo.routes') },
-      { path: 'personal', loadChildren: () => import('app/modules/admin/apps/inventario/personal/personal.routes') },
-      { path: 'proveedores', loadChildren: () => import('app/modules/admin/apps/inventario/proveedores/proveedores.routes') },
-      { path: 'proyectos', loadChildren: () => import('app/modules/admin/apps/inventario/proyectos/proyectos.routes') },
-      { path: 'tipocompra', loadChildren: () => import('app/modules/admin/apps/inventario/tipocompra/tipocompra.routes') },
-      { path: 'ubicaciones', loadChildren: () => import('app/modules/admin/apps/inventario/ubicaciones/ubicaciones.routes') },
-      { path: 'unidades-medida', loadChildren: () => import('app/modules/admin/apps/inventario/unidad-medida/unidad-medida.routes') },
-      { path: 'auditoria', loadChildren: () => import('app/modules/admin/apps/auditoria/auditoria.routes') },
+      // ── Inventario ─────────────────────────────────────────
+
+      {
+        path: 'inventario',
+        canActivate: [RoleGuard],
+        data: { permission: ['insumos.ver', 'movimientos.ver'] },
+        loadComponent: () => import('app/features/hubs/inventario-hub.component').then(m => m.InventarioHubComponent)
+      },
+      {
+        path: 'insumos',
+        canActivate: [RoleGuard],
+        data: { permission: 'insumos.ver' },
+        loadChildren: () => import('app/features/insumos/insumos.routes')
+      },
+      {
+        path: 'movimientos',
+        canActivate: [RoleGuard],
+        data: { permission: 'movimientos.ver' },
+        loadChildren: () => import('app/features/movimientos/movimientos.routes')
+      },
+
+      // ── Reportes ───────────────────────────────────────────
+      {
+        path: 'reportes',
+        canActivate: [RoleGuard],
+        data: { permission: 'reportes.ver' },
+        loadChildren: () => import('app/features/reportes/reportes.routes')
+      },
+
+      // ── Sistema y Control ──────────────────────────────────
+      {
+        path: 'sistema',
+        canActivate: [RoleGuard],
+        data: { permission: ['usuarios.ver', 'roles.gestionar', 'auditoria.ver'] },
+        loadComponent: () => import('app/features/hubs/sistema-hub.component').then(m => m.SistemaHubComponent)
+      },
+      {
+        path: 'usuarios',
+        canActivate: [RoleGuard],
+        data: { permission: 'usuarios.ver' },
+        loadChildren: () => import('app/features/usuarios/usuarios.routes')
+      },
+      {
+        path: 'roles-permisos',
+        canActivate: [RoleGuard],
+        data: { permission: 'roles.gestionar' },
+        loadChildren: () => import('app/features/roles/roles-permisos.routes').then(m => m.rolesRoutes)
+      },
+      {
+        path: 'auditoria',
+        canActivate: [RoleGuard],
+        data: { permission: 'auditoria.ver' },
+        loadChildren: () => import('app/modules/admin/apps/auditoria/auditoria.routes')
+      },
+
+      // ── Catálogos Maestros ─────────────────────────────────
+      {
+        path: 'catalogos',
+        canActivate: [RoleGuard],
+        data: {
+          permission: [
+            'catalogos.categorias.ver', 'catalogos.unidades.ver', 'catalogos.empaquetamiento.ver',
+            'catalogos.ubicaciones.ver', 'catalogos.proveedores.ver', 'catalogos.proyectos.ver',
+            'catalogos.tipocompra.ver', 'catalogos.estadoproyecto.ver', 'catalogos.estadosalida.ver'
+          ]
+        },
+        loadComponent: () => import('app/features/hubs/catalogos-hub.component').then(m => m.CatalogosHubComponent)
+      },
+      {
+        path: 'categorias',
+        canActivate: [RoleGuard],
+        data: { permission: 'catalogos.categorias.ver' },
+        loadChildren: () => import('app/modules/admin/apps/inventario/nombreinsumo/nombreinsumo.routes')
+      },
+      {
+        path: 'unidades-medida',
+        canActivate: [RoleGuard],
+        data: { permission: 'catalogos.unidades.ver' },
+        loadChildren: () => import('app/modules/admin/apps/inventario/unidad-medida/unidad-medida.routes')
+      },
+      {
+        path: 'empaquetamiento',
+        canActivate: [RoleGuard],
+        data: { permission: 'catalogos.empaquetamiento.ver' },
+        loadChildren: () => import('app/modules/admin/apps/inventario/empaquetamiento/empaquetamiento.routes')
+      },
+      {
+        path: 'ubicaciones',
+        canActivate: [RoleGuard],
+        data: { permission: 'catalogos.ubicaciones.ver' },
+        loadChildren: () => import('app/modules/admin/apps/inventario/ubicaciones/ubicaciones.routes')
+      },
+      {
+        path: 'proveedores',
+        canActivate: [RoleGuard],
+        data: { permission: 'catalogos.proveedores.ver' },
+        loadChildren: () => import('app/modules/admin/apps/inventario/proveedores/proveedores.routes')
+      },
+      {
+        path: 'proyectos',
+        canActivate: [RoleGuard],
+        data: { permission: 'catalogos.proyectos.ver' },
+        loadChildren: () => import('app/modules/admin/apps/inventario/proyectos/proyectos.routes')
+      },
+      {
+        path: 'tipocompra',
+        canActivate: [RoleGuard],
+        data: { permission: 'catalogos.tipocompra.ver' },
+        loadChildren: () => import('app/modules/admin/apps/inventario/tipocompra/tipocompra.routes')
+      },
+      {
+        path: 'estadoproyecto',
+        canActivate: [RoleGuard],
+        data: { permission: 'catalogos.estadoproyecto.ver' },
+        loadChildren: () => import('app/modules/admin/apps/inventario/estadoproyecto/estadoproyecto.routes')
+      },
+      {
+        path: 'estadosalida',
+        canActivate: [RoleGuard],
+        data: { permission: 'catalogos.estadosalida.ver' },
+        loadChildren: () => import('app/modules/admin/apps/inventario/estadosalida/estadosalida.routes')
+      },
+
     ],
   },
 ];

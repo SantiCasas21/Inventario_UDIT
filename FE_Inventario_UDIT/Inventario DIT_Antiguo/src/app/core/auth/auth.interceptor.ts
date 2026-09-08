@@ -19,7 +19,9 @@ export const authInterceptor = (req: HttpRequest<unknown>, next: HttpHandlerFn):
     return next(req);
   }
 
-  const token = authService.accessToken;
+  // No enviar tokens previos en endpoints públicos de autenticación
+  const isPublicAuth = req.url.includes('/auth/login') || (req.url.includes('/auth/register') && !authService.accessToken);
+  const token = !isPublicAuth ? authService.accessToken : null;
   let newReq = req;
 
   if (token) {
@@ -27,6 +29,7 @@ export const authInterceptor = (req: HttpRequest<unknown>, next: HttpHandlerFn):
       headers: req.headers.set('Authorization', `Bearer ${token}`),
     });
   }
+
 
   return next(newReq).pipe(
     catchError((error) => {

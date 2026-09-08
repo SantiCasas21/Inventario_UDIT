@@ -1,5 +1,4 @@
 import { inject } from '@angular/core';
-import { FuseConfirmationService } from '@fuse/services/confirmation';
 import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,16 +9,19 @@ import { CatalogoService } from '@app/core/services/catalogo.service';
 import { CatalogoDto, CatalogoRequestDto, EmpaquetamientoDto } from '@app/core/models';
 import { MatButtonModule } from '@angular/material/button';
 import { clasificarEmpaquetamiento } from '@shared/helpers/empaquetamiento-clasificador';
+import { ConfirmacionService } from '@app/core/services/confirmacion.service';
+import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-popup-empaquetamiento',
   standalone: true,
-  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, ReactiveFormsModule, MatButtonModule, MatDialogModule],
+  imports: [CommonModule, FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, ReactiveFormsModule, MatButtonModule, MatIconModule, MatDialogModule],
   templateUrl: './popup-empaquetamiento.component.html',
   styleUrl: './popup-empaquetamiento.component.scss'
 })
 export class PopupEmpaquetamientoComponent {
-  fuseConfirmation = inject(FuseConfirmationService);
+  confirmacionService = inject(ConfirmacionService);
 
   inputData:any;
   form:FormGroup;
@@ -66,36 +68,49 @@ export class PopupEmpaquetamientoComponent {
 
   private onError(err:any): void {
     const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'Ocurrió un error al guardar el registro.');
-    this.fuseConfirmation.open({
-      title: 'Error de validación',
-      message: msg,
-      icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
-      actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
-    });
+    this.confirmacionService.mostrarAdvertencia('Error de validación', msg);
   }
 
   guardarEmpaquetamiento(){
-    const endpoint = this.data.endpoint || 'empaquetamiento';
-    const payload = {
-      nombre: this.form.value.nombre,
-      idFamiliaEmpaquetamiento: this.form.value.idFamiliaEmpaquetamiento ?? null
-    } as CatalogoRequestDto;
-    this.service.create(endpoint, payload).subscribe({
-      next:() => { this.cerrarPopup(); },
-      error: (err:any) => this.onError(err)
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    const nombre = this.form.value.nombre;
+    this.confirmacionService.confirmarGuardado('Empaquetamiento', false, nombre).subscribe(confirmado => {
+      if (confirmado) {
+        const endpoint = this.data.endpoint || 'empaquetamiento';
+        const payload = {
+          nombre: this.form.value.nombre,
+          idFamiliaEmpaquetamiento: this.form.value.idFamiliaEmpaquetamiento ?? null
+        } as CatalogoRequestDto;
+        this.service.create(endpoint, payload).subscribe({
+          next:() => { this.cerrarPopup(); },
+          error: (err:any) => this.onError(err)
+        });
+      }
     });
   }
 
   actualizarEmpaquetamiento(){
-    const endpoint = this.data.endpoint || 'empaquetamiento';
-    const id: number = this.data.data.id;
-    const payload = {
-      nombre: this.form.value.nombre,
-      idFamiliaEmpaquetamiento: this.form.value.idFamiliaEmpaquetamiento ?? null
-    } as CatalogoRequestDto;
-    this.service.update(endpoint, id, payload).subscribe({
-      next:() => { this.cerrarPopup(); },
-      error: (err:any) => this.onError(err)
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    const nombre = this.form.value.nombre;
+    this.confirmacionService.confirmarGuardado('Empaquetamiento', true, nombre).subscribe(confirmado => {
+      if (confirmado) {
+        const endpoint = this.data.endpoint || 'empaquetamiento';
+        const id: number = this.data.data.id;
+        const payload = {
+          nombre: this.form.value.nombre,
+          idFamiliaEmpaquetamiento: this.form.value.idFamiliaEmpaquetamiento ?? null
+        } as CatalogoRequestDto;
+        this.service.update(endpoint, id, payload).subscribe({
+          next:() => { this.cerrarPopup(); },
+          error: (err:any) => this.onError(err)
+        });
+      }
     });
   }
 }

@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Subject, takeUntil } from 'rxjs';
 import { DashboardService } from '@app/core/services/dashboard.service';
+import { UserService } from '@app/core/user/user.service';
 import { DashboardDto, IrregularidadDto } from '@app/core/models';
 import { PopupUnificarComponent } from 'app/modules/admin/apps/inventario/popup/popupUnificar/popup-unificar.component';
 import { TipoMovimientoBadgePipe } from '@app/shared/pipes/tipo-movimiento-badge.pipe';
@@ -32,11 +33,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private dashboardService: DashboardService, private dialog: MatDialog) {}
+  constructor(
+    private dashboardService: DashboardService,
+    private userService: UserService,
+    private dialog: MatDialog
+  ) {}
+
+  get canUnificar(): boolean {
+    return this.userService.hasPermission('insumos.unificar');
+  }
 
   ngOnInit(): void {
     this.loadDashboard();
   }
+
 
   ngOnDestroy(): void {
     this.destroy$.next();

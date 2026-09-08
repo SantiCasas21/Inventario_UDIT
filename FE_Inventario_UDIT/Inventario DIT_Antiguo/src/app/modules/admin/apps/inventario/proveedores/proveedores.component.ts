@@ -1,8 +1,4 @@
-import { inject } from '@angular/core';
-import { UserService } from '@app/core/user/user.service';
-import { FuseConfirmationService } from '@fuse/services/confirmation';
-import { MatSnackBar } from '@angular/material/snack-bar';
-﻿import { AfterViewInit, Component, ViewChild, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ViewChild, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { ProveedorFullDto } from '@app/core/models';
@@ -15,6 +11,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ConfirmacionService } from '@app/core/services/confirmacion.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { UserService } from '@app/core/user/user.service';
 
 @Component({
   selector: 'app-proveedores',
@@ -25,14 +24,14 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 })
 export class ProveedoresComponent implements OnInit, AfterViewInit {
   userService = inject(UserService);
-  fuseConfirmation = inject(FuseConfirmationService);
+  confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
   displayedColumns: string[] = ['editar', 'id', 'nombre', 'contacto', 'direccion'];
   dataSource = new MatTableDataSource<ProveedorFullDto>();
   error: string | null = null;
 
-  constructor(private service:ProveedorFullService, private dialog:MatDialog) { }
+  constructor(private service: ProveedorFullService, private dialog: MatDialog) { }
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
 
@@ -50,7 +49,7 @@ export class ProveedoresComponent implements OnInit, AfterViewInit {
     this.mostrarProveedores();
   }
 
-  mostrarProveedores(){
+  mostrarProveedores() {
     this.error = null;
     this.service.getAll().subscribe({
       next: (data) => {
@@ -58,50 +57,41 @@ export class ProveedoresComponent implements OnInit, AfterViewInit {
         this.dataSource.paginator = this.paginator;
       },
       error: (err) => {
-        this.error = 'Error al cargar datos: ' + (err.message || 'Error de conexi\u00f3n');
+        this.error = 'Error al cargar datos: ' + (err.message || 'Error de conexión');
         console.error('Error loading proveedores', err);
       }
     });
   }
 
-  abrirPopup(data:any, estado:any){
-    var _popup = this.dialog.open(PopupProveedoresComponent,{
-      width:'30%',
-      enterAnimationDuration: '500ms',
-      exitAnimationDuration: '500ms',
-      data:{data, estado}
-    })
-    _popup.afterClosed().subscribe(item => {
+  abrirPopup(data: any, estado: any) {
+    var _popup = this.dialog.open(PopupProveedoresComponent, {
+      width: '100%',
+      maxWidth: '520px',
+      panelClass: 'responsive-dialog-panel',
+      enterAnimationDuration: '300ms',
+      exitAnimationDuration: '300ms',
+      data: { data, estado }
+    });
+    _popup.afterClosed().subscribe(() => {
       this.mostrarProveedores();
-    })
+    });
   }
 
   eliminarRegistro(row: any) {
-    const dialog = this.fuseConfirmation.open({
-      title: 'Eliminar registro',
-      message: '\u00bfEst\u00e1 seguro de eliminar este registro? Esta acci\u00f3n no se puede deshacer.',
-      icon: { name: 'heroicons_outline:trash', color: 'warn' },
-      actions: { confirm: { label: 'S\u00ed, eliminar', color: 'warn' }, cancel: { label: 'Cancelar' } },
-    });
-    dialog.afterClosed().subscribe(result => {
-      if (result === 'confirmed') {
+    const nombre = row.nombre || `ID ${row.id}`;
+    this.confirmacionService.confirmarEliminacion('Proveedor', nombre).subscribe(confirmado => {
+      if (confirmado) {
         this.service.delete(row.id).subscribe({
           next: () => {
-            this.snackBar.open('Registro eliminado', 'Cerrar', { duration: 3000 });
+            this.snackBar.open('Proveedor eliminado exitosamente', 'Cerrar', { duration: 3000 });
             this.ngOnInit();
           },
-          error: (err:any) => {
-            const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'No se puede eliminar este registro porque est\u00e1 siendo utilizado en insumos o movimientos del sistema.');
-            this.fuseConfirmation.open({
-              title: 'Error al eliminar',
-              message: msg,
-              icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
-              actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
-            });
+          error: (err: any) => {
+            const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'No se puede eliminar este Proveedor porque está asociado a movimientos en el sistema.');
+            this.confirmacionService.mostrarAdvertencia('No es posible eliminar el proveedor', msg, `Proveedor: "${nombre}"`);
           }
         });
       }
     });
   }
 }
-

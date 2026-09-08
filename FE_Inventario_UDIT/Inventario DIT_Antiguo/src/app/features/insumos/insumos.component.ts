@@ -16,7 +16,7 @@ import { InsumoDto, InsumoFilter, PagedResult } from '@app/core/models';
 import { ParametricFilterComponent } from '@shared/components/parametric-filter/parametric-filter.component';
 import { INSUMO_FILTER_CONFIG } from '@shared/config/insumo-filter.config';
 import { PopupInsumosComponent } from 'app/modules/admin/apps/inventario/popup/popupInsumos/popup-insumos.component';
-import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { ConfirmacionService } from '@app/core/services/confirmacion.service';
 import { UserService } from '@app/core/user/user.service';
 import { CategoriaBadgePipe } from '@app/shared/pipes/categoria-badge.pipe';
 
@@ -55,7 +55,7 @@ export class InsumosComponent implements OnInit, OnDestroy {
     private insumoService: InsumoService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private fuseConfirmation: FuseConfirmationService,
+    private confirmacionService: ConfirmacionService,
     public userService: UserService,
   ) {}
 
@@ -164,7 +164,9 @@ export class InsumosComponent implements OnInit, OnDestroy {
 
   crearInsumo(): void {
     const popup = this.dialog.open(PopupInsumosComponent, {
-      width: '500px',
+      width: '100%',
+      maxWidth: '540px',
+      panelClass: 'responsive-dialog-panel',
       enterAnimationDuration: '300ms',
       exitAnimationDuration: '300ms',
       data: { estado: 1, data: null }
@@ -179,7 +181,9 @@ export class InsumosComponent implements OnInit, OnDestroy {
 
   editarInsumo(insumo: InsumoDto): void {
     const popup = this.dialog.open(PopupInsumosComponent, {
-      width: '500px',
+      width: '100%',
+      maxWidth: '540px',
+      panelClass: 'responsive-dialog-panel',
       enterAnimationDuration: '300ms',
       exitAnimationDuration: '300ms',
       data: { estado: 2, data: insumo }
@@ -193,20 +197,21 @@ export class InsumosComponent implements OnInit, OnDestroy {
   }
 
   eliminarInsumo(insumo: InsumoDto): void {
-    const dialog = this.fuseConfirmation.open({
-      title: 'Eliminar insumo',
-      message: `¿Está seguro de eliminar "${insumo.codigoFabrica}" (ID: ${insumo.id})? Esta acción no se puede deshacer.`,
-      icon: { name: 'heroicons_outline:trash', color: 'warn' },
-      actions: { confirm: { label: 'Sí, eliminar', color: 'warn' }, cancel: { label: 'Cancelar' } },
-    });
-    dialog.afterClosed().subscribe(result => {
-      if (result === 'confirmed') {
+    this.confirmacionService.confirmarEliminacion('Insumo', insumo.codigoFabrica).subscribe(confirmado => {
+      if (confirmado) {
         this.insumoService.delete(insumo.id).subscribe({
           next: () => {
-            this.snackBar.open(`Insumo "${insumo.codigoFabrica}" eliminado`, 'Cerrar', { duration: 3000 });
+            this.snackBar.open(`Insumo "${insumo.codigoFabrica}" eliminado exitosamente`, 'Cerrar', { duration: 3000 });
             this.loadData();
           },
-          error: (err) => this.snackBar.open('Error: ' + (err.message || 'Error al eliminar'), 'Cerrar', { duration: 5000 })
+          error: (err) => {
+            const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'No se pudo eliminar el insumo.');
+            this.confirmacionService.mostrarAdvertencia(
+              'No es posible eliminar el insumo',
+              msg,
+              `El insumo "${insumo.codigoFabrica}" posee registros o dependencias en el sistema`
+            );
+          }
         });
       }
     });

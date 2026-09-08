@@ -17,6 +17,10 @@ export class TipoMovimientoBadgePipe implements PipeTransform {
       case 'UNIFICAR':
       case 'UNIFICACION': return 'badge-unificar';
       case 'TRASLADO': return 'badge-traslado';
+      case 'CONSULTAR':
+      case 'CONSULTA': return 'badge-consultar';
+      case 'EXPORTAR':
+      case 'EXPORTACION': return 'badge-exportar';
       default: return 'badge-info';
     }
   }

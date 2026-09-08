@@ -1,0 +1,232 @@
+<div class="premium-bg min-h-screen">
+  <div class="admin-page">
+    <!-- Encabezado con navegación de vuelta al Hub -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+      <div class="transform transition duration-500 hover:scale-105">
+        <div class="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-widest mb-1">
+          <mat-icon style="font-size: 16px; width: 16px; height: 16px;">receipt_long</mat-icon>
+          Reporte Oficial
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-gray-900 mb-1 drop-shadow-sm">
+          <span class="gradient-text">Kardex por Insumo</span>
+        </h1>
+        <p class="text-xs sm:text-sm font-medium text-gray-500">
+          Trazabilidad cronológica detallada y cálculo de saldos acumulados
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+        <button mat-stroked-button routerLink="/reportes" class="flex items-center gap-1 flex-1 sm:flex-initial justify-center">
+          <mat-icon>arrow_back</mat-icon> Todos los Reportes
+        </button>
+        <button
+          mat-raised-button
+          color="primary"
+          [disabled]="kardexData.length === 0 || loading"
+          (click)="exportarExcel()"
+          class="btn-gloss flex items-center gap-2 flex-1 sm:flex-initial justify-center"
+          style="background-color: #059669; color: white;">
+          <mat-icon>download</mat-icon> Exportar a Excel (.xlsx)
+        </button>
+      </div>
+    </div>
+
+    <!-- Filtros de Consulta -->
+    <mat-card class="glass-card mb-6 border-none">
+      <mat-card-content class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <!-- Autocomplete Insumo -->
+          <mat-form-field appearance="outline" class="md:col-span-5 w-full">
+            <mat-label>Insumo (Escribe código o descripción)</mat-label>
+            <mat-icon matPrefix class="text-indigo-400 mr-2">search</mat-icon>
+            <input type="text" matInput [formControl]="kardexInsumoCtrl" [matAutocomplete]="autoKardex" placeholder="Ej: CAB-001, resistencia...">
+            <button *ngIf="kardexInsumoCtrl.value" matSuffix mat-icon-button type="button" (click)="kardexInsumoCtrl.setValue('')" matTooltip="Limpiar">
+              <mat-icon class="text-gray-400">close</mat-icon>
+            </button>
+            <mat-autocomplete #autoKardex="matAutocomplete" [displayWith]="displayInsumo">
+              <mat-option *ngFor="let i of filteredInsumos$ | async" [value]="i">
+                <div class="flex flex-col py-1">
+                  <span class="font-bold text-gray-800">{{ i.codigoFabrica }}</span>
+                  <span class="text-xs text-gray-500 truncate">{{ i.descripcion }} (Cat: {{ i.categoria || 'General' }})</span>
+                </div>
+              </mat-option>
+            </mat-autocomplete>
+          </mat-form-field>
+
+          <!-- Fecha Desde -->
+          <mat-form-field appearance="outline" class="md:col-span-3 w-full">
+            <mat-label>Fecha Desde</mat-label>
+            <input matInput [matDatepicker]="pickerDesde" [(ngModel)]="desde" placeholder="DD/MM/AAAA">
+            <mat-datepicker-toggle matSuffix [for]="pickerDesde"></mat-datepicker-toggle>
+            <mat-datepicker #pickerDesde></mat-datepicker>
+          </mat-form-field>
+
+          <!-- Fecha Hasta -->
+          <mat-form-field appearance="outline" class="md:col-span-3 w-full">
+            <mat-label>Fecha Hasta</mat-label>
+            <input matInput [matDatepicker]="pickerHasta" [(ngModel)]="hasta" placeholder="DD/MM/AAAA">
+            <mat-datepicker-toggle matSuffix [for]="pickerHasta"></mat-datepicker-toggle>
+            <mat-datepicker #pickerHasta></mat-datepicker>
+          </mat-form-field>
+
+          <!-- Botón Consultar -->
+          <div class="md:col-span-1 flex justify-end">
+            <button
+              mat-raised-button
+              color="primary"
+              (click)="consultar()"
+              [disabled]="loading"
+              class="w-full h-14 btn-gloss flex items-center justify-center">
+              <mat-icon *ngIf="!loading">search</mat-icon>
+              <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
+            </button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Métricas Resumen Superior -->
+    <div *ngIf="kardexData.length > 0" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+          <mat-icon>south_west</mat-icon>
+        </div>
+        <div>
+          <span class="text-xs font-bold text-emerald-700 uppercase tracking-wide">Total Entradas</span>
+          <p class="text-2xl font-black text-emerald-900 m-0">+{{ totalIngresos }}</p>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+          <mat-icon>north_east</mat-icon>
+        </div>
+        <div>
+          <span class="text-xs font-bold text-amber-700 uppercase tracking-wide">Total Salidas</span>
+          <p class="text-2xl font-black text-amber-900 m-0">-{{ totalSalidas }}</p>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
+          <mat-icon>account_balance_wallet</mat-icon>
+        </div>
+        <div>
+          <span class="text-xs font-bold text-indigo-700 uppercase tracking-wide">Saldo Final en Kardex</span>
+          <p class="text-2xl font-black text-indigo-900 m-0">{{ saldoFinal }} uds</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de Resultados -->
+    <mat-card class="glass-card border-none overflow-hidden shadow-lg">
+      <mat-card-header class="px-6 py-4 border-b border-gray-100 bg-white/40 flex justify-between items-center">
+        <mat-card-title class="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <mat-icon class="text-indigo-500">list_alt</mat-icon>
+          Movimientos Registrados ({{ kardexData.length }} filas)
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content class="p-0">
+        <div *ngIf="loading" class="flex justify-center items-center py-16">
+          <mat-spinner diameter="40"></mat-spinner>
+          <span class="ml-4 text-gray-500 font-medium">Calculando trazabilidad y saldos...</span>
+        </div>
+
+        <div *ngIf="!loading && kardexData.length === 0" class="text-center py-16 text-gray-400">
+          <mat-icon style="font-size: 48px; width: 48px; height: 48px;" class="mb-2">find_in_page</mat-icon>
+          <p class="text-base font-semibold m-0">Selecciona un insumo y presiona Consultar para ver el Kardex</p>
+        </div>
+
+        <div *ngIf="!loading && kardexData.length > 0" class="responsive-table-container overflow-x-auto">
+          <table mat-table [dataSource]="kardexData" class="w-full">
+            <!-- Fecha -->
+            <ng-container matColumnDef="fecha">
+              <th mat-header-cell *matHeaderCellDef class="font-bold text-gray-700">Fecha</th>
+              <td mat-cell *matCellDef="let r" class="text-xs text-gray-600 font-medium whitespace-nowrap">
+                {{ r.fecha | date:'dd/MM/yyyy HH:mm' }}
+              </td>
+            </ng-container>
+
+            <!-- Tipo Movimiento -->
+            <ng-container matColumnDef="tipoMovimiento">
+              <th mat-header-cell *matHeaderCellDef class="font-bold text-gray-700">Tipo</th>
+              <td mat-cell *matCellDef="let r">
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap"
+                      [ngClass]="{
+                        'bg-emerald-100 text-emerald-800': r.tipoMovimiento === 'Ingreso',
+                        'bg-rose-100 text-rose-800': r.tipoMovimiento === 'Salida',
+                        'bg-amber-100 text-amber-800': r.tipoMovimiento === 'Ajuste',
+                        'bg-blue-100 text-blue-800': r.tipoMovimiento === 'Traslado',
+                        'bg-purple-100 text-purple-800': r.tipoMovimiento === 'Unificacion'
+                      }">
+                  {{ r.tipoMovimiento }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Cantidad -->
+            <ng-container matColumnDef="cantidad">
+              <th mat-header-cell *matHeaderCellDef class="font-bold text-gray-700 text-right">Cantidad</th>
+              <td mat-cell *matCellDef="let r" class="text-right font-bold text-sm whitespace-nowrap"
+                  [ngClass]="r.tipoMovimiento === 'Ingreso' ? 'text-emerald-600' : 'text-gray-800'">
+                {{ r.tipoMovimiento === 'Ingreso' ? '+' : '' }}{{ r.cantidad }}
+              </td>
+            </ng-container>
+
+            <!-- Ubicación -->
+            <ng-container matColumnDef="ubicacion">
+              <th mat-header-cell *matHeaderCellDef class="font-bold text-gray-700">Ubicación</th>
+              <td mat-cell *matCellDef="let r" class="text-xs text-gray-600 truncate max-w-40">
+                {{ r.ubicacion || '-' }}
+              </td>
+            </ng-container>
+
+            <!-- Saldo Acumulado -->
+            <ng-container matColumnDef="saldoAcumulado">
+              <th mat-header-cell *matHeaderCellDef class="font-bold text-gray-700 text-right">Saldo Acumulado</th>
+              <td mat-cell *matCellDef="let r" class="text-right font-black text-indigo-700 bg-indigo-50/30 whitespace-nowrap">
+                {{ r.saldoAcumulado }}
+              </td>
+            </ng-container>
+
+            <!-- Proyecto -->
+            <ng-container matColumnDef="proyecto">
+              <th mat-header-cell *matHeaderCellDef class="font-bold text-gray-700">Proyecto</th>
+              <td mat-cell *matCellDef="let r" class="text-xs text-gray-600 truncate max-w-40">
+                {{ r.proyecto || '-' }}
+              </td>
+            </ng-container>
+
+            <!-- Proveedor -->
+            <ng-container matColumnDef="proveedor">
+              <th mat-header-cell *matHeaderCellDef class="font-bold text-gray-700">Proveedor</th>
+              <td mat-cell *matCellDef="let r" class="text-xs text-gray-600 truncate max-w-40">
+                {{ r.proveedor || '-' }}
+              </td>
+            </ng-container>
+
+            <!-- Usuario Registro -->
+            <ng-container matColumnDef="usuarioRegistro">
+              <th mat-header-cell *matHeaderCellDef class="font-bold text-gray-700">Usuario</th>
+              <td mat-cell *matCellDef="let r" class="text-xs text-gray-600 font-medium">
+                {{ r.usuarioRegistro || '-' }}
+              </td>
+            </ng-container>
+
+            <!-- Observación -->
+            <ng-container matColumnDef="observacion">
+              <th mat-header-cell *matHeaderCellDef class="font-bold text-gray-700">Observación</th>
+              <td mat-cell *matCellDef="let r" class="text-xs text-gray-500 italic truncate max-w-60">
+                {{ r.observacion || '-' }}
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="columns"></tr>
+            <tr mat-row *matRowDef="let row; columns: columns;" class="hover:bg-indigo-50/30 transition-colors"></tr>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

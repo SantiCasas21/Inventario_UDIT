@@ -7,9 +7,11 @@ export const INSUMO_FILTER_CONFIG: ParametricFilterConfig = {
   columns: [
     {
       key: 'textSearch',
-      label: 'Código Fabricante',
+      label: 'Código Fabricante / Descripción',
       type: 'text-search',
-      searchPlaceholder: 'Cód. Fábrica / Descripción...',
+      searchPlaceholder: 'Cód. Fábrica o Descripción...',
+      minWidth: '280px',
+      maxWidth: '380px',
     },
     {
       key: 'idsCategoria',
@@ -47,7 +49,10 @@ export const INSUMO_FILTER_CONFIG: ParametricFilterConfig = {
       key: 'unidadesMedida',
       label: 'Unidad de Medida',
       type: 'multi-select',
-      optionsUrl: 'unidad-medida', // calls CatalogoService.getAll('unidad-medida') or custom service handled by ParametricFilterComponent
+      optionsUrl: 'unidad-medida',
+      // Las opciones de unidad de medida se recargan según las categorías seleccionadas
+      dependsOn: 'idsCategoria',
+      optionsByCategoriaUrl: 'unidad-medida',
       optionsValueField: 'nombre',
       searchable: true,
       searchPlaceholder: 'Buscar unidad...',

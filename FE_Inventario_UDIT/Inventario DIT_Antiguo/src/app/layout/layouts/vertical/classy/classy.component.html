@@ -10,42 +10,144 @@
     [opened]="!isScreenSmall">
     <!-- Navigation header hook -->
     <ng-container fuseVerticalNavigationContentHeader>
-        <div class="flex items-center w-full p-4 pl-6">
-            <!-- Logo -->
-            <div class="flex items-center justify-center">
-                <img
-                    class="w-8"
-                    src="assets/images/logo/logodit.ico">
+        <!-- Brand Top Bar -->
+        <div class="flex items-center w-full px-5 py-4 border-b border-white/10 bg-black/20">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-white/10 shadow-inner p-1 border border-white/15">
+                    <img class="w-7 h-7 object-contain drop-shadow" src="assets/images/logo/logodit.ico" alt="UDIT">
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-extrabold text-sm tracking-tight text-white flex items-center gap-1.5 leading-none">
+                        INVENTARIO <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-600/80 text-white uppercase tracking-wider">UDIT</span>
+                    </span>
+                    <span class="text-[10px] font-medium text-gray-400 leading-tight mt-0.5">Gestión Institucional</span>
+                </div>
             </div>
-            <!-- Components -->
+            <!-- Right Icons -->
             <div class="flex items-center ml-auto">
                 <notifications></notifications>
-                <user [showAvatar]="false"></user>
             </div>
         </div>
-        <!-- User -->
-        <div class="flex flex-col items-center w-full p-4">
-            <div class="relative w-24 h-24">
-                <img
-                    class="w-full h-full rounded-full"
-                    *ngIf="user.avatar"
-                    [src]="user.avatar"
-                    alt="User avatar">
-                <mat-icon
-                    class="icon-size-24"
-                    *ngIf="!user.avatar"
-                    [svgIcon]="'heroicons_solid:user-circle'"></mat-icon>
-            </div>
-            <div class="flex flex-col items-center justify-center w-full mt-6">
-                <div class="w-full whitespace-nowrap text-ellipsis overflow-hidden text-center leading-normal font-medium">
-                    {{user.name}}
+
+        <!-- User Profile Card con Menú Interactivo Integrado -->
+        <div *ngIf="user" 
+             class="p-3.5 mx-3 my-3 rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/10 shadow-lg backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:bg-white/[0.09] group">
+            <div class="flex items-center gap-3">
+                <!-- Avatar interactivo con click para menú -->
+                <div class="relative flex-shrink-0 cursor-pointer" [matMenuTriggerFor]="profileMenu">
+                    <div class="w-11 h-11 rounded-full overflow-hidden border-2 shadow-md flex items-center justify-center bg-slate-800 transition-transform group-hover:scale-105"
+                         [ngClass]="{
+                             'border-red-500 ring-2 ring-red-500/30': user?.role === 'Admin',
+                             'border-blue-500 ring-2 ring-blue-500/30': user?.role === 'Developer',
+                             'border-amber-500 ring-2 ring-amber-500/30': user?.role === 'Assistant',
+                             'border-emerald-500 ring-2 ring-emerald-500/30': user?.role === 'User'
+                         }">
+                        <img *ngIf="user?.avatar" [src]="user.avatar" class="w-full h-full object-cover" alt="Avatar">
+                        <div *ngIf="!user?.avatar" class="w-full h-full flex items-center justify-center font-bold text-xs bg-slate-800 text-white">
+                            {{ getUserInitials() }}
+                        </div>
+                    </div>
+                    <!-- Indicador de estado de disponibilidad -->
+                    <span class="absolute right-0 bottom-0 w-3 h-3 rounded-full ring-2 ring-slate-900 shadow-sm"
+                          [ngClass]="{
+                              'bg-green-500': user?.status === 'online' || !user?.status,
+                              'bg-amber-500': user?.status === 'away',
+                              'bg-red-500': user?.status === 'busy',
+                              'bg-gray-400': user?.status === 'not-visible'
+                          }"></span>
                 </div>
-                <div class="w-full mt-0.5 whitespace-nowrap text-ellipsis overflow-hidden text-center text-md leading-normal font-medium text-secondary">
-                    {{user.email}}
+
+                <!-- Info de Usuario -->
+                <div class="flex flex-col min-w-0 flex-1 cursor-pointer" [matMenuTriggerFor]="profileMenu">
+                    <div class="text-xs font-bold text-white hover:text-red-400 transition-colors truncate block leading-tight">
+                        {{ user?.nombreCompleto || user?.name }}
+                    </div>
+                    <span class="text-[11px] text-gray-400 truncate leading-tight mt-0.5">
+                        &#64;{{ user?.username || 'usuario' }}
+                    </span>
+
+                    <!-- Role Pill Badge -->
+                    <div class="mt-1.5 flex items-center">
+                        <span class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider inline-flex items-center gap-1 shadow-sm"
+                              [ngClass]="{
+                                  'bg-red-500/20 text-red-300 border border-red-500/40': user?.role === 'Admin',
+                                  'bg-blue-500/20 text-blue-300 border border-blue-500/40': user?.role === 'Developer',
+                                  'bg-amber-500/20 text-amber-300 border border-amber-500/40': user?.role === 'Assistant',
+                                  'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40': user?.role === 'User'
+                              }">
+                            <span class="w-1.5 h-1.5 rounded-full"
+                                  [ngClass]="{
+                                      'bg-red-400 animate-pulse': user?.role === 'Admin',
+                                      'bg-blue-400': user?.role === 'Developer',
+                                      'bg-amber-400': user?.role === 'Assistant',
+                                      'bg-emerald-400': user?.role === 'User'
+                                  }"></span>
+                            {{ user?.role || 'User' }}
+                        </span>
+                    </div>
                 </div>
+
+                <!-- Botón opciones del perfil -->
+                <button mat-icon-button [matMenuTriggerFor]="profileMenu" 
+                        class="text-gray-400 hover:text-white -mr-1.5 opacity-60 group-hover:opacity-100 transition-opacity" 
+                        style="width: 28px; height: 28px; line-height: 28px;">
+                    <mat-icon class="icon-size-4" [svgIcon]="'heroicons_solid:ellipsis-vertical'"></mat-icon>
+                </button>
             </div>
         </div>
+
+        <!-- Menú Desplegable del Perfil de Usuario -->
+        <mat-menu #profileMenu="matMenu" class="user-profile-dropdown-menu" [xPosition]="'after'">
+            <div class="px-4 py-3 flex flex-col leading-none border-b border-gray-100 bg-gray-50/70">
+                <span class="font-bold text-gray-900 text-sm">{{ user?.nombreCompleto || user?.name }}</span>
+                <span class="text-xs text-indigo-600 font-semibold mt-1">&#64;{{ user?.username || 'usuario' }} &bull; {{ user?.role }}</span>
+                <span class="text-[11px] text-gray-500 mt-1" *ngIf="user?.email">{{ user?.email }}</span>
+            </div>
+
+            <button mat-menu-item [routerLink]="['/perfil']">
+                <mat-icon [svgIcon]="'heroicons_outline:user-circle'" class="text-indigo-600"></mat-icon>
+                <span class="font-semibold text-gray-700">Mi Perfil y Seguridad</span>
+            </button>
+
+            <button mat-menu-item *ngIf="user?.role === 'Admin'" [routerLink]="['/roles-permisos']">
+                <mat-icon [svgIcon]="'heroicons_outline:shield-check'" class="text-red-600"></mat-icon>
+                <span class="font-semibold text-gray-700">Roles y Permisos</span>
+            </button>
+
+            <button mat-menu-item [matMenuTriggerFor]="userStatusMenu">
+                <mat-icon [svgIcon]="'heroicons_outline:sparkles'" class="text-amber-500"></mat-icon>
+                <span class="font-semibold text-gray-700">Estado</span>
+            </button>
+
+            <mat-divider class="my-1"></mat-divider>
+
+            <button mat-menu-item (click)="signOut()">
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-right-on-rectangle'" class="text-red-600"></mat-icon>
+                <span class="text-red-600 font-bold">Cerrar Sesión</span>
+            </button>
+        </mat-menu>
+
+        <!-- Submenú de Estado de Disponibilidad -->
+        <mat-menu #userStatusMenu="matMenu" class="user-status-menu">
+            <button mat-menu-item (click)="updateUserStatus('online')">
+                <span class="w-3 h-3 mr-3 rounded-full bg-green-500 inline-block"></span>
+                <span>En Línea (Online)</span>
+            </button>
+            <button mat-menu-item (click)="updateUserStatus('away')">
+                <span class="w-3 h-3 mr-3 rounded-full bg-amber-500 inline-block"></span>
+                <span>Ausente (Away)</span>
+            </button>
+            <button mat-menu-item (click)="updateUserStatus('busy')">
+                <span class="w-3 h-3 mr-3 rounded-full bg-red-500 inline-block"></span>
+                <span>Ocupado (Busy)</span>
+            </button>
+            <button mat-menu-item (click)="updateUserStatus('not-visible')">
+                <span class="w-3 h-3 mr-3 rounded-full bg-gray-400 inline-block"></span>
+                <span>Invisible</span>
+            </button>
+        </mat-menu>
     </ng-container>
+
     <!-- Navigation footer hook -->
     <ng-container fuseVerticalNavigationContentFooter>
         <div class="flex flex-0 items-center justify-center h-16 pr-6 pl-2 mt-2 mb-4 opacity-12">
@@ -60,15 +162,52 @@
 <div class="flex flex-col flex-auto w-full min-w-0">
 
     <!-- Header -->
-    <div class="relative flex flex-0 items-center w-full h-16 px-4 md:px-6 z-49 shadow dark:shadow-none dark:border-b bg-card dark:bg-transparent print:hidden">
-        <!-- Navigation toggle button -->
-        <button
-            mat-icon-button
-            (click)="toggleNavigation('mainNavigation')">
-            <mat-icon [svgIcon]="'heroicons_outline:bars-3'"></mat-icon>
-        </button>
-        <!-- Components -->
-        
+    <div class="relative flex flex-0 items-center justify-between w-full h-16 px-3 sm:px-4 md:px-6 z-49 shadow-sm dark:shadow-none border-b border-gray-200/80 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md print:hidden">
+        <!-- Left: Navigation toggle button & mobile brand -->
+        <div class="flex items-center gap-2 sm:gap-3">
+            <button
+                mat-icon-button
+                (click)="toggleNavigation('mainNavigation')"
+                class="text-gray-700 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-xl"
+                style="min-width: 44px; min-height: 44px;"
+                matTooltip="Menú de Navegación">
+                <mat-icon [svgIcon]="'heroicons_outline:bars-3'"></mat-icon>
+            </button>
+
+            <!-- Brand visible on mobile when sidebar is closed -->
+            <div class="flex items-center gap-2 md:hidden">
+                <img class="w-6 h-6 object-contain" src="assets/images/logo/logodit.ico" alt="UDIT">
+                <span class="font-extrabold text-xs tracking-tight text-gray-900 dark:text-white flex items-center gap-1">
+                    INVENTARIO <span class="text-[9px] font-bold px-1 py-0.2 rounded bg-red-600 text-white uppercase">UDIT</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Right: Notifications, Theme Toggle & Quick User Profile on Mobile -->
+        <div class="flex items-center gap-1 sm:gap-2">
+            <!-- Theme Toggle Button (Light / Dark) -->
+            <button
+                mat-icon-button
+                (click)="toggleScheme()"
+                class="text-gray-700 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 rounded-xl transition-all"
+                style="min-width: 40px; min-height: 40px;"
+                [matTooltip]="scheme === 'dark' ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'">
+                <mat-icon *ngIf="scheme === 'dark'" class="text-amber-400">light_mode</mat-icon>
+                <mat-icon *ngIf="scheme === 'light'" class="text-slate-600">dark_mode</mat-icon>
+            </button>
+
+            <notifications></notifications>
+
+            <!-- Mobile Quick Profile Trigger -->
+            <div *ngIf="user" class="md:hidden flex items-center">
+                <button [matMenuTriggerFor]="profileMenu" class="flex items-center p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none">
+                    <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-300 shadow-sm flex items-center justify-center bg-slate-800 text-white font-bold text-[10px]">
+                        <img *ngIf="user?.avatar" [src]="user.avatar" class="w-full h-full object-cover" alt="Avatar">
+                        <span *ngIf="!user?.avatar">{{ getUserInitials() }}</span>
+                    </div>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Content -->

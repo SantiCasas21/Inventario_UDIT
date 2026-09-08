@@ -1,8 +1,8 @@
 import { inject } from '@angular/core';
 import { UserService } from '@app/core/user/user.service';
-import { FuseConfirmationService } from '@fuse/services/confirmation';
+import { ConfirmacionService } from '@app/core/services/confirmacion.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-﻿import { AfterViewInit, Component, ViewChild, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ViewChild, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { CatalogoDto } from '@app/core/models';
@@ -25,7 +25,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 })
 export class PersonalComponent implements OnInit, AfterViewInit {
   userService = inject(UserService);
-  fuseConfirmation = inject(FuseConfirmationService);
+  confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
   displayedColumns: string[] = ['editar', 'id', 'nombre'];
@@ -67,9 +67,11 @@ export class PersonalComponent implements OnInit, AfterViewInit {
 
   abrirPopup(data:any, estado:any){
     var _popup = this.dialog.open(PopupPersonalComponent,{
-      width:'30%',
-      enterAnimationDuration: '500ms',
-      exitAnimationDuration: '500ms',
+      width: '100%',
+      maxWidth: '520px',
+      panelClass: 'responsive-dialog-panel',
+      enterAnimationDuration: '300ms',
+      exitAnimationDuration: '300ms',
       data:{data, estado, endpoint: this.endpoint}
     })
     _popup.afterClosed().subscribe(item => {
@@ -78,31 +80,20 @@ export class PersonalComponent implements OnInit, AfterViewInit {
   }
 
   eliminarRegistro(row: any) {
-    const dialog = this.fuseConfirmation.open({
-      title: 'Eliminar registro',
-      message: '\u00bfEst\u00e1 seguro de eliminar este registro? Esta acci\u00f3n no se puede deshacer.',
-      icon: { name: 'heroicons_outline:trash', color: 'warn' },
-      actions: { confirm: { label: 'S\u00ed, eliminar', color: 'warn' }, cancel: { label: 'Cancelar' } },
-    });
-    dialog.afterClosed().subscribe(result => {
-      if (result === 'confirmed') {
+    const nombre = row.nombre || `ID ${row.id}`;
+    this.confirmacionService.confirmarEliminacion('Personal', nombre).subscribe(confirmado => {
+      if (confirmado) {
         this.service.delete(this.endpoint, row.id).subscribe({
           next: () => {
-            this.snackBar.open('Registro eliminado', 'Cerrar', { duration: 3000 });
+            this.snackBar.open('Registro de personal eliminado exitosamente', 'Cerrar', { duration: 3000 });
             this.ngOnInit();
           },
           error: (err:any) => {
             const msg = err.message || err.error?.message || err.error?.Message || (typeof err.error === 'string' ? err.error : 'No se puede eliminar este registro porque est\u00e1 siendo utilizado en insumos o movimientos del sistema.');
-            this.fuseConfirmation.open({
-              title: 'Error al eliminar',
-              message: msg,
-              icon: { show: true, name: 'heroicons_outline:exclamation-triangle', color: 'warn' },
-              actions: { confirm: { show: true, label: 'Entendido', color: 'primary' }, cancel: { show: false, label: 'Cancelar' } }
-            });
+            this.confirmacionService.mostrarAdvertencia('No es posible eliminar el registro', msg, `Personal: "${nombre}"`);
           }
         });
       }
     });
   }
-}
 

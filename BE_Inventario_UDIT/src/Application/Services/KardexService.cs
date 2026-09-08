@@ -48,20 +48,10 @@ namespace Application.Services
             if (request.IdUbicacion == null)
                 return OperationResult<MovimientoDto>.Fail("Debe especificar la ubicación para el ingreso");
 
-            // Calcular stock actual previo al ingreso para Costo Promedio Ponderado
-            int stockActual = await CalcularStockAsync(insumo.Id);
+            // Actualizar Precio de Referencia al Último Precio de Compra registrado
             if (request.PrecioUnitario.HasValue && request.PrecioUnitario.Value > 0)
             {
-                decimal precioActual = insumo.PrecioReferencia ?? 0m;
-                if (stockActual > 0 && precioActual > 0)
-                {
-                    decimal nuevoPrecioRef = ((stockActual * precioActual) + (request.Cantidad * request.PrecioUnitario.Value)) / (stockActual + request.Cantidad);
-                    insumo.PrecioReferencia = Math.Round(nuevoPrecioRef, 2);
-                }
-                else
-                {
-                    insumo.PrecioReferencia = request.PrecioUnitario.Value;
-                }
+                insumo.PrecioReferencia = request.PrecioUnitario.Value;
                 await _insumoRepo.UpdateAsync(insumo);
             }
 
@@ -89,11 +79,87 @@ namespace Application.Services
         }
 
         // ==========================================
+        // REGISTRAR INGRESO MASIVO (DESDE EXCEL)
+        // ==========================================
+        public async Task<OperationResult<IngresoMasivoResultDto>> RegistrarIngresoMasivoAsync(IngresoMasivoRequestDto request, string usuario)
+        {
+            if (request == null || request.Movimientos == null || request.Movimientos.Count == 0)
+                return OperationResult<IngresoMasivoResultDto>.Fail("No se proporcionaron movimientos para procesar");
+
+            var resultado = new IngresoMasivoResultDto();
+            decimal totalInvertido = 0m;
+
+            for (int i = 0; i < request.Movimientos.Count; i++)
+            {
+                var item = request.Movimientos[i];
+                var insumo = await _insumoRepo.GetByIdAsync(item.IdInsumo);
+                if (insumo == null)
+                {
+                    resultado.Errores.Add($"Fila {i + 1}: El insumo con ID {item.IdInsumo} no existe.");
+                    continue;
+                }
+
+                if (item.Cantidad <= 0)
+                {
+                    resultado.Errores.Add($"Fila {i + 1} ({insumo.CodigoFabrica}): La cantidad debe ser mayor a 0.");
+                    continue;
+                }
+
+                if (item.IdUbicacion == null)
+                {
+                    resultado.Errores.Add($"Fila {i + 1} ({insumo.CodigoFabrica}): Debe especificar la ubicación de ingreso.");
+                    continue;
+                }
+
+                // Actualizar Precio de Referencia al Último Precio de Compra si se especificó
+                if (item.PrecioUnitario.HasValue && item.PrecioUnitario.Value > 0)
+                {
+                    insumo.PrecioReferencia = item.PrecioUnitario.Value;
+                    await _insumoRepo.UpdateAsync(insumo);
+                }
+
+                var movimiento = new MovimientoInventario
+                {
+                    IdInsumo = item.IdInsumo,
+                    TipoMovimiento = TipoMovimiento.Ingreso,
+                    Cantidad = item.Cantidad,
+                    Fecha = DateTime.UtcNow,
+                    PrecioUnitario = item.PrecioUnitario ?? insumo.PrecioReferencia,
+                    Moneda = item.Moneda ?? insumo.Moneda ?? "COP",
+                    Observacion = item.Observacion,
+                    IdProveedor = item.IdProveedor,
+                    IdTipoCompra = item.IdTipoCompra,
+                    IdUbicacion = item.IdUbicacion,
+                    UsuarioRegistro = usuario
+                };
+
+                var created = await _movRepo.AddAsync(movimiento);
+                var dto = await MapToDtoAsync(created);
+                resultado.MovimientosCreados.Add(dto);
+                resultado.TotalProcesados++;
+
+                if (movimiento.PrecioUnitario.HasValue && movimiento.PrecioUnitario.Value > 0)
+                {
+                    totalInvertido += movimiento.Cantidad * movimiento.PrecioUnitario.Value;
+                }
+            }
+
+            resultado.TotalInvertido = Math.Round(totalInvertido, 2);
+
+            await _auditoriaService.LogAsync("INGRESO_MASIVO", "Movimientos",
+                $"Se registraron exitosamente {resultado.TotalProcesados} ingresos masivos de insumos por un valor de $ {resultado.TotalInvertido:N2} COP.",
+                usuario);
+
+            return OperationResult<IngresoMasivoResultDto>.Ok(resultado, $"Se registraron {resultado.TotalProcesados} insumos exitosamente");
+        }
+
+        // ==========================================
         // REGISTRAR SALIDA
         // ==========================================
         public async Task<OperationResult<MovimientoDto>> RegistrarSalidaAsync(MovimientoRequestDto request)
         {
-            if (!await _insumoRepo.ExistsAsync(request.IdInsumo))
+            var insumo = await _insumoRepo.GetByIdAsync(request.IdInsumo);
+            if (insumo == null)
                 return OperationResult<MovimientoDto>.Fail("El insumo especificado no existe");
 
             if (request.Cantidad <= 0)
@@ -122,6 +188,10 @@ namespace Application.Services
                 TipoMovimiento = TipoMovimiento.Salida,
                 Cantidad = request.Cantidad,
                 Fecha = DateTime.UtcNow,
+                PrecioUnitario = (request.PrecioUnitario.HasValue && request.PrecioUnitario.Value > 0)
+                    ? request.PrecioUnitario.Value
+                    : (insumo.PrecioReferencia ?? 0m),
+                Moneda = request.Moneda ?? insumo.Moneda ?? "COP",
                 Observacion = request.Observacion,
                 IdProyecto = request.IdProyecto,
                 IdEstadoSalida = request.IdEstadoSalida,
