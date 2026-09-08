@@ -7,7 +7,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![xUnit Tests](https://img.shields.io/badge/Tests-66%20Passing-success?style=for-the-badge&logo=checkmarx&logoColor=white)](https://xunit.net/)
 
-Bienvenido al repositorio oficial de **Inventario UDIT**, una solución web empresarial Full-Stack de alto rendimiento diseñada para la gestión, control transaccional, trazabilidad y auditoría de insumos tecnológicos, componentes electrónicos, materiales de laboratorio y herramientas institucionales de la **Universidad UDIT (Universidad Central)**.
+Bienvenido al repositorio oficial de **Inventario DIT**, una solución web empresarial Full-Stack de alto rendimiento diseñada para la gestión, control transaccional, trazabilidad y auditoría de insumos tecnológicos, componentes electrónicos, materiales de laboratorio y herramientas institucionales de el laboratorio **DIT (Universidad Central)**.
 
 ---
 
