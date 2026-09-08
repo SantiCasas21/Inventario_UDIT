@@ -208,11 +208,26 @@ builder.Services.AddCors(options =>
     }
     else
     {
-        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
-                            ?? new[] { "http://localhost:3000" };
+        var configuredOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
         options.AddPolicy("CorsPolicy", policy =>
         {
-            policy.WithOrigins(allowedOrigins)
+            policy.SetIsOriginAllowed(origin =>
+                   {
+                       if (string.IsNullOrWhiteSpace(origin)) return false;
+                       try
+                       {
+                           var uri = new Uri(origin);
+                           return uri.Host == "localhost" || 
+                                  uri.Host == "127.0.0.1" || 
+                                  uri.Host.StartsWith("172.") || 
+                                  uri.Host.EndsWith("udit.edu.co") || 
+                                  configuredOrigins.Contains(origin);
+                       }
+                       catch
+                       {
+                           return false;
+                       }
+                   })
                   .AllowAnyMethod()
                   .AllowAnyHeader();
         });
