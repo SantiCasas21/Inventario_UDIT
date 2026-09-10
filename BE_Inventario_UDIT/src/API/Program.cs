@@ -293,28 +293,25 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 // ==========================================
-// Auto-migrate + Seed (Development)
+// Auto-migrate + Seed (Development & Production)
 // ==========================================
-if (app.Environment.IsDevelopment())
+try
 {
-    try
-    {
-        using var scope = app.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await db.Database.MigrateAsync();
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
 
-        // Seed de roles y admin por defecto
-        await DbInitializer.SeedAsync(scope.ServiceProvider);
+    // Seed de roles y admin por defecto
+    await DbInitializer.SeedAsync(scope.ServiceProvider);
 
-        // Clasificación inteligente de empaquetamientos sin familia (idempotente)
-        var empaquetamientoService = scope.ServiceProvider.GetRequiredService<IEmpaquetamientoService>();
-        await empaquetamientoService.ClasificarPendientesAsync();
-    }
-    catch (Exception ex)
-    {
-        var logger = app.Services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Error durante la migración o inicialización de la base de datos.");
-    }
+    // Clasificación inteligente de empaquetamientos sin familia (idempotente)
+    var empaquetamientoService = scope.ServiceProvider.GetRequiredService<IEmpaquetamientoService>();
+    await empaquetamientoService.ClasificarPendientesAsync();
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Error durante la migración o inicialización de la base de datos.");
 }
 
 app.Run();
