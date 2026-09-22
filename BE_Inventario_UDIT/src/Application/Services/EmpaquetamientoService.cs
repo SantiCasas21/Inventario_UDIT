@@ -181,7 +181,10 @@ namespace Application.Services
 
         public async Task<int> ClasificarPendientesAsync()
         {
-            var pendientes = await _repository.FindAsync(e => e.IdFamiliaEmpaquetamiento == null);
+            var generalFam = (await _familiaRepo.FindAsync(f => f.Nombre.Contains("General"))).FirstOrDefault();
+            int? generalId = generalFam?.Id;
+
+            var pendientes = await _repository.FindAsync(e => e.IdFamiliaEmpaquetamiento == null || (generalId.HasValue && e.IdFamiliaEmpaquetamiento == generalId.Value));
             if (!pendientes.Any())
                 return 0;
 
@@ -189,7 +192,7 @@ namespace Application.Services
             foreach (var emp in pendientes)
             {
                 var familiaId = await ResolverFamiliaAsync(emp.Tipo, null);
-                if (familiaId.HasValue)
+                if (familiaId.HasValue && emp.IdFamiliaEmpaquetamiento != familiaId.Value)
                 {
                     emp.IdFamiliaEmpaquetamiento = familiaId.Value;
                     await _repository.UpdateAsync(emp);
@@ -198,7 +201,7 @@ namespace Application.Services
             }
 
             if (clasificados > 0)
-                await _auditoriaService.LogAsync("CLASIFICAR", "Empaquetamiento", $"Se clasificaron {clasificados} empaquetamientos pendientes");
+                await _auditoriaService.LogAsync("CLASIFICAR", "Empaquetamiento", $"Se clasificaron {clasificados} empaquetamientos");
 
             return clasificados;
         }

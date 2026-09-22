@@ -242,6 +242,61 @@ namespace Infrastructure.Data
                 );
             }
 
+            // 3i. Corrección ortográfica de FamiliaEmpaquetamiento
+            var famMecanico = await db.FamiliasEmpaquetamiento.FirstOrDefaultAsync(f => f.Nombre.Contains("Mec") && f.Nombre.Contains("nico"));
+            if (famMecanico != null && famMecanico.Nombre != "Mecánico / Disipación")
+            {
+                famMecanico.Nombre = "Mecánico / Disipación";
+            }
+
+            // 3j. Auto-poblar CategoriaFamiliaEmpaquetamiento si está vacía
+            if (!await db.CategoriaFamiliasEmpaquetamiento.AnyAsync())
+            {
+                var familiasGenerales = await db.FamiliasEmpaquetamiento
+                    .Where(f => f.Nombre.Contains("General") || f.Nombre.Contains("Bolsa"))
+                    .Select(f => f.Id)
+                    .ToListAsync();
+
+                var todasCategorias = await db.CategoriaInsumos.Select(c => c.Id).ToListAsync();
+                var pairs = new HashSet<(int idCat, int idFam)>();
+
+                // Vínculos existentes por insumos
+                var insumoEmpaques = await db.Insumos
+                    .Where(i => i.IdCategoria > 0 && i.IdEmpaquetamiento > 0)
+                    .Select(i => new { i.IdCategoria, i.IdEmpaquetamiento })
+                    .Distinct()
+                    .ToListAsync();
+
+                var empaquesDict = await db.Empaquetamientos
+                    .Where(e => e.IdFamiliaEmpaquetamiento.HasValue)
+                    .ToDictionaryAsync(e => e.Id, e => e.IdFamiliaEmpaquetamiento!.Value);
+
+                foreach (var item in insumoEmpaques)
+                {
+                    if (empaquesDict.TryGetValue(item.IdEmpaquetamiento, out var famId))
+                    {
+                        pairs.Add((item.IdCategoria, famId));
+                    }
+                }
+
+                foreach (var catId in todasCategorias)
+                {
+                    foreach (var famId in familiasGenerales)
+                    {
+                        pairs.Add((catId, famId));
+                    }
+                }
+
+                foreach (var p in pairs)
+                {
+                    db.CategoriaFamiliasEmpaquetamiento.Add(new CategoriaFamiliaEmpaquetamiento
+                    {
+                        IdCategoria = p.idCat,
+                        IdFamiliaEmpaquetamiento = p.idFam
+                    });
+                }
+            }
+
             await db.SaveChangesAsync();
 
             // ==========================================
