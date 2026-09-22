@@ -62,6 +62,12 @@ namespace API.Controllers
         public async Task<IActionResult> GetPorCategoria(int idCategoria)
         {
             var items = await _repository.FindAsync(x => x.IdCategoria == idCategoria);
+            if (!items.Any())
+            {
+                // Fallback seguro: retornar todas las unidades si no hay unidades específicas
+                items = await _repository.GetAllAsync();
+            }
+
             var dtos = items.OrderBy(x => x.Nombre).Select(x => new UnidadMedidaDto
             {
                 Id = x.Id,
@@ -76,9 +82,14 @@ namespace API.Controllers
         public async Task<IActionResult> GetPorCategorias([FromQuery] int[] ids)
         {
             if (ids == null || ids.Length == 0)
-                return Ok(OperationResult<IEnumerable<UnidadMedidaDto>>.Ok(Enumerable.Empty<UnidadMedidaDto>()));
+                return await GetAll();
 
             var items = await _repository.FindAsync(x => ids.Contains(x.IdCategoria));
+            if (!items.Any())
+            {
+                items = await _repository.GetAllAsync();
+            }
+
             var dtos = items.OrderBy(x => x.Nombre).Select(x => new UnidadMedidaDto
             {
                 Id = x.Id,

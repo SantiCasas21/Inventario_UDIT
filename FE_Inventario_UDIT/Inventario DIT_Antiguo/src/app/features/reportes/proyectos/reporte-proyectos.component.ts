@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,6 +18,7 @@ import { ReporteService } from '@app/core/services/reporte.service';
 import { CatalogoService } from '@app/core/services/catalogo.service';
 import { ExcelExportService, ExcelColumn } from '@app/core/services/excel-export.service';
 import { ResumenProyectoDto, ProyectoDto } from '@app/core/models';
+import { UserService } from '@app/core/user/user.service';
 
 @Component({
   selector: 'app-reporte-proyectos',
@@ -32,6 +33,12 @@ import { ResumenProyectoDto, ProyectoDto } from '@app/core/models';
   styleUrls: ['./reporte-proyectos.component.scss']
 })
 export class ReporteProyectosComponent implements OnInit {
+  userService = inject(UserService);
+
+  get canExportar(): boolean {
+    return this.userService.hasPermission('reportes.exportar');
+  }
+
   proyectos: ProyectoDto[] = [];
   proyCtrl = new FormControl<ProyectoDto | string | null>('');
   filteredProyectos$!: Observable<ProyectoDto[]>;

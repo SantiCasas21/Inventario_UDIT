@@ -160,8 +160,16 @@ export class MovimientosComponent implements OnInit, OnDestroy {
     return this.userService.currentUser?.role || '';
   }
 
+  get canCreateMovimiento(): boolean {
+    return this.userService.hasPermission('movimientos.crear');
+  }
+
   get canCreateInsumo(): boolean {
-    return this.userService.hasPermission('insumos.crear') || this.userService.hasRole(['Admin', 'Developer']);
+    return this.userService.hasPermission('insumos.crear');
+  }
+
+  get canAjustar(): boolean {
+    return this.userService.hasPermission('movimientos.ajuste');
   }
 
   ngOnInit(): void {
@@ -171,6 +179,8 @@ export class MovimientosComponent implements OnInit, OnDestroy {
         if (params['q']) {
           this.ingresoForm.get('insumoObj')?.setValue(params['q']);
         }
+      } else {
+        this.selectedTabIndex = !this.canCreateMovimiento ? 0 : (this.canAjustar ? 3 : 2);
       }
     });
 

@@ -109,7 +109,7 @@ namespace Application.Services
 
         public async Task<OperationResult<InsumoDto>> GetByIdAsync(int id)
         {
-            var insumo = await _repository.GetByIdAsync(id, "Categoria", "Empaquetamiento", "Ubicacion");
+            var insumo = await _repository.GetByIdAsync(id, "Categoria", "Empaquetamiento");
             if (insumo == null)
                 return OperationResult<InsumoDto>.Fail($"Insumo con ID {id} no encontrado");
 

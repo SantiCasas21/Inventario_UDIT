@@ -101,7 +101,7 @@ namespace API.Controllers
         // POST /api/movimiento/ajuste
         // ==========================================
         [HttpPost("ajuste")]
-        [Authorize(Roles = "Admin,Developer,Assistant")]
+        [Authorize(Roles = "Admin,Developer")]
         public async Task<IActionResult> RegistrarAjuste([FromBody] MovimientoRequestDto request)
         {
             request.UsuarioRegistro = User.FindFirst(ClaimTypes.Name)?.Value ?? User.Identity?.Name ?? "Sistema";

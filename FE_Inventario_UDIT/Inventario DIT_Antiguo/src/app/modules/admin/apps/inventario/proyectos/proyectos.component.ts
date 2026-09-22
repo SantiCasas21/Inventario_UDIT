@@ -27,7 +27,11 @@ export class ProyectosComponent implements OnInit, AfterViewInit {
   confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
-  displayedColumns: string[] = ['editar', 'id', 'nombre', 'descripcion', 'idestado', 'fechacreacion'];
+  get canManage(): boolean {
+    return this.userService.hasPermission('catalogos.proyectos.gestionar');
+  }
+
+  displayedColumns: string[] = ['id', 'nombre', 'descripcion', 'idestado', 'fechacreacion'];
   dataSource = new MatTableDataSource<ProyectoDto>();
   error: string | null = null;
 
@@ -45,7 +49,14 @@ export class ProyectosComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    if (this.userService.hasRole('admin') && !this.displayedColumns.includes('eliminar')) { this.displayedColumns.push('eliminar'); }
+    if (this.canManage) {
+      this.displayedColumns = ['editar', 'id', 'nombre', 'descripcion', 'idestado', 'fechacreacion'];
+      if (this.userService.hasRole('admin')) {
+        this.displayedColumns.push('eliminar');
+      }
+    } else {
+      this.displayedColumns = ['id', 'nombre', 'descripcion', 'idestado', 'fechacreacion'];
+    }
     this.mostrarProyectos();
   }
 

@@ -74,6 +74,9 @@ namespace Application.Services
             new() { Value = "catalogos.estadosalida.ver",   Label = "Ver Estados de Salida",       Module = "Catálogos Maestros",      Description = "Consultar estados de salida" },
             new() { Value = "catalogos.estadosalida.gestionar", Label = "Gestionar Estados de Salida", Module = "Catálogos Maestros",   Description = "Crear y editar estados de salida" },
 
+            new() { Value = "catalogos.personal.ver",       Label = "Ver Personal",                Module = "Catálogos Maestros",      Description = "Consultar directorio de personal" },
+            new() { Value = "catalogos.personal.gestionar", Label = "Gestionar Personal",          Module = "Catálogos Maestros",      Description = "Crear, editar y eliminar personal" },
+
             // Módulo: Sistema y Control
             new() { Value = "usuarios.ver",                 Label = "Ver Usuarios",                 Module = "Sistema y Control",       Description = "Ver la lista de usuarios del sistema" },
             new() { Value = "usuarios.gestionar",           Label = "Gestionar Usuarios",           Module = "Sistema y Control",       Description = "Crear, activar y desactivar usuarios del sistema" },

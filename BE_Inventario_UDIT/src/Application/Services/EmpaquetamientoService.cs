@@ -133,42 +133,50 @@ namespace Application.Services
             var vinculos = await _categoriaFamiliaRepo.FindAsync(cf => cf.IdCategoria == idCategoria);
             var familiaIds = vinculos.Select(v => v.IdFamiliaEmpaquetamiento).Distinct().ToList();
 
-            if (familiaIds.Count == 0)
-                return OperationResult<IEnumerable<EmpaquetamientoDto>>.Ok(Array.Empty<EmpaquetamientoDto>());
+            if (familiaIds.Count > 0)
+            {
+                var empaquetamientos = await _repository.FindAsync(
+                    e => e.IdFamiliaEmpaquetamiento.HasValue && familiaIds.Contains(e.IdFamiliaEmpaquetamiento.Value),
+                    "FamiliaEmpaquetamiento");
 
-            var empaquetamientos = await _repository.FindAsync(
-                e => e.IdFamiliaEmpaquetamiento.HasValue && familiaIds.Contains(e.IdFamiliaEmpaquetamiento.Value),
-                "FamiliaEmpaquetamiento");
+                var dtos = empaquetamientos
+                    .OrderBy(e => e.Tipo)
+                    .Select(MapToDto)
+                    .ToList();
 
-            var dtos = empaquetamientos
-                .OrderBy(e => e.Tipo)
-                .Select(MapToDto)
-                .ToList();
+                if (dtos.Count > 0)
+                    return OperationResult<IEnumerable<EmpaquetamientoDto>>.Ok(dtos);
+            }
 
-            return OperationResult<IEnumerable<EmpaquetamientoDto>>.Ok(dtos);
+            // Fallback seguro: si no hay vínculos o quedó vacío, retornar catálogo completo
+            return await GetAllAsync();
         }
 
         public async Task<OperationResult<IEnumerable<EmpaquetamientoDto>>> GetPorCategoriasAsync(int[] idsCategoria)
         {
             if (idsCategoria == null || idsCategoria.Length == 0)
-                return OperationResult<IEnumerable<EmpaquetamientoDto>>.Ok(Array.Empty<EmpaquetamientoDto>());
+                return await GetAllAsync();
 
             var vinculos = await _categoriaFamiliaRepo.FindAsync(cf => idsCategoria.Contains(cf.IdCategoria));
             var familiaIds = vinculos.Select(v => v.IdFamiliaEmpaquetamiento).Distinct().ToList();
 
-            if (familiaIds.Count == 0)
-                return OperationResult<IEnumerable<EmpaquetamientoDto>>.Ok(Array.Empty<EmpaquetamientoDto>());
+            if (familiaIds.Count > 0)
+            {
+                var empaquetamientos = await _repository.FindAsync(
+                    e => e.IdFamiliaEmpaquetamiento.HasValue && familiaIds.Contains(e.IdFamiliaEmpaquetamiento.Value),
+                    "FamiliaEmpaquetamiento");
 
-            var empaquetamientos = await _repository.FindAsync(
-                e => e.IdFamiliaEmpaquetamiento.HasValue && familiaIds.Contains(e.IdFamiliaEmpaquetamiento.Value),
-                "FamiliaEmpaquetamiento");
+                var dtos = empaquetamientos
+                    .OrderBy(e => e.Tipo)
+                    .Select(MapToDto)
+                    .ToList();
 
-            var dtos = empaquetamientos
-                .OrderBy(e => e.Tipo)
-                .Select(MapToDto)
-                .ToList();
+                if (dtos.Count > 0)
+                    return OperationResult<IEnumerable<EmpaquetamientoDto>>.Ok(dtos);
+            }
 
-            return OperationResult<IEnumerable<EmpaquetamientoDto>>.Ok(dtos);
+            // Fallback seguro
+            return await GetAllAsync();
         }
 
         public async Task<int> ClasificarPendientesAsync()

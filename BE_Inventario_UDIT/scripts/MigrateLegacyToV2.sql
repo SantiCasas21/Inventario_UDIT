@@ -182,11 +182,11 @@ BEGIN TRY
 
     INSERT INTO [dbo].[FamiliaEmpaquetamiento] ([Nombre])
     VALUES 
-        ('SMD / Montaje Superficial'),
-        ('Through-Hole / Pasante'),
-        ('Empaquetado General'),
-        ('Bolsa / Granel'),
-        ('Mecánico / Disipación');
+        (N'SMD / Montaje Superficial'),
+        (N'Through-Hole / Pasante'),
+        (N'Empaquetado General'),
+        (N'Bolsa / Granel'),
+        (N'Mecánico / Disipación');
 
     DECLARE @IdSMD INT = (SELECT TOP 1 Id FROM [dbo].[FamiliaEmpaquetamiento] WHERE [Nombre] LIKE '%SMD%');
     DECLARE @IdTHT INT = (SELECT TOP 1 Id FROM [dbo].[FamiliaEmpaquetamiento] WHERE [Nombre] LIKE '%Through%');
@@ -195,10 +195,36 @@ BEGIN TRY
     UPDATE [dbo].[Empaquetamiento]
     SET [IdFamiliaEmpaquetamiento] = 
         CASE 
-            WHEN [Tipo] LIKE '%SMD%' OR [Tipo] LIKE '%0805%' OR [Tipo] LIKE '%0603%' OR [Tipo] LIKE '%1206%' OR [Tipo] LIKE '%SOP%' OR [Tipo] LIKE '%QFP%' OR [Tipo] LIKE '%SOT%' THEN @IdSMD
-            WHEN [Tipo] LIKE '%DIP%' OR [Tipo] LIKE '%TO-92%' OR [Tipo] LIKE '%TO-220%' OR [Tipo] LIKE '%Pasante%' OR [Tipo] LIKE '%THT%' THEN @IdTHT
+            WHEN [Tipo] LIKE '%SMD%' OR [Tipo] LIKE '%0805%' OR [Tipo] LIKE '%0603%' OR [Tipo] LIKE '%1206%' 
+              OR [Tipo] LIKE '%0402%' OR [Tipo] LIKE '%0201%' OR [Tipo] LIKE '%2512%' OR [Tipo] LIKE '%1210%'
+              OR [Tipo] LIKE '%1812%' OR [Tipo] LIKE '%2515%' OR [Tipo] LIKE '%4527%' OR [Tipo] LIKE '%1218%'
+              OR [Tipo] LIKE '%SOP%' OR [Tipo] LIKE '%QFP%' OR [Tipo] LIKE '%SOT%' OR [Tipo] LIKE '%SOIC%'
+              OR [Tipo] LIKE '%QFN%' OR [Tipo] LIKE '%DFN%' OR [Tipo] LIKE '%TSSOP%' OR [Tipo] LIKE '%SSOP%'
+              OR [Tipo] LIKE '%MSOP%' OR [Tipo] LIKE '%BGA%' OR [Tipo] LIKE '%SOD%' OR [Tipo] LIKE '%DPAK%' THEN @IdSMD
+            WHEN [Tipo] LIKE '%DIP%' OR [Tipo] LIKE '%TO-92%' OR [Tipo] LIKE '%TO-220%' OR [Tipo] LIKE '%Pasante%' 
+              OR [Tipo] LIKE '%THT%' OR [Tipo] LIKE '%AXIAL%' OR [Tipo] LIKE '%RADIAL%' OR [Tipo] LIKE '%SIP%' THEN @IdTHT
             ELSE @IdGen
         END;
+
+    PRINT '  - Poblando CategoriaFamiliaEmpaquetamiento a partir de insumos y asociaciones universales...';
+    INSERT INTO [dbo].[CategoriaFamiliaEmpaquetamiento] ([IdCategoria], [IdFamiliaEmpaquetamiento])
+    SELECT DISTINCT i.[id_nombreInsumo], e.[IdFamiliaEmpaquetamiento]
+    FROM [UDIT_Legacy].[dbo].[Insumo] i
+    JOIN [dbo].[Empaquetamiento] e ON i.[id_empaquetamiento] = e.[Id]
+    WHERE e.[IdFamiliaEmpaquetamiento] IS NOT NULL
+      AND EXISTS (SELECT 1 FROM [dbo].[CategoriaInsumo] c WHERE c.[Id] = i.[id_nombreInsumo]);
+
+    INSERT INTO [dbo].[CategoriaFamiliaEmpaquetamiento] ([IdCategoria], [IdFamiliaEmpaquetamiento])
+    SELECT c.[Id], f.[Id]
+    FROM [dbo].[CategoriaInsumo] c
+    CROSS JOIN [dbo].[FamiliaEmpaquetamiento] f
+    WHERE (f.[Nombre] LIKE '%General%' OR f.[Nombre] LIKE '%Bolsa%')
+      AND NOT EXISTS (
+          SELECT 1 FROM [dbo].[CategoriaFamiliaEmpaquetamiento] x 
+          WHERE x.[IdCategoria] = c.[Id] AND x.[IdFamiliaEmpaquetamiento] = f.[Id]
+      );
+    DECLARE @rcCFE INT = @@ROWCOUNT;
+    PRINT '  - CategoriaFamiliaEmpaquetamiento poblada (' + CAST(@rcCFE AS VARCHAR) + ' vínculos creados).';
 
     PRINT '=====================================================';
     PRINT 'PASO 5: Poblando catálogo de Unidades de Medida...';

@@ -27,7 +27,11 @@ export class EstadosalidaComponent implements OnInit, AfterViewInit {
   confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
-  displayedColumns: string[] = ['editar', 'id', 'nombre'];
+  get canManage(): boolean {
+    return this.userService.hasPermission('catalogos.estadosalida.gestionar');
+  }
+
+  displayedColumns: string[] = ['id', 'nombre'];
   dataSource = new MatTableDataSource<CatalogoDto>();
   endpoint = 'estado-salida';
   error: string | null = null;
@@ -46,7 +50,14 @@ export class EstadosalidaComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    if (this.userService.hasRole('admin') && !this.displayedColumns.includes('eliminar')) { this.displayedColumns.push('eliminar'); }
+    if (this.canManage) {
+      this.displayedColumns = ['editar', 'id', 'nombre'];
+      if (this.userService.hasRole('admin')) {
+        this.displayedColumns.push('eliminar');
+      }
+    } else {
+      this.displayedColumns = ['id', 'nombre'];
+    }
     this.mostrarEstadoSalida();
   }
 

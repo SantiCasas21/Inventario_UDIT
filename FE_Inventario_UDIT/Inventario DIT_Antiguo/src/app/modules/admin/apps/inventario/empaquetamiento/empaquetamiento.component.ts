@@ -27,7 +27,11 @@ export class EmpaquetamientoComponent implements OnInit, AfterViewInit {
   confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
-  displayedColumns: string[] = ['editar', 'id', 'tipo', 'familia'];
+  get canManage(): boolean {
+    return this.userService.hasPermission('catalogos.empaquetamiento.gestionar');
+  }
+
+  displayedColumns: string[] = ['id', 'tipo', 'familia'];
   dataSource = new MatTableDataSource<EmpaquetamientoDto>();
   endpoint = 'empaquetamiento';
   error: string | null = null;
@@ -58,7 +62,14 @@ export class EmpaquetamientoComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    if (this.userService.hasRole('admin') && !this.displayedColumns.includes('eliminar')) { this.displayedColumns.push('eliminar'); }
+    if (this.canManage) {
+      this.displayedColumns = ['editar', 'id', 'tipo', 'familia'];
+      if (this.userService.hasRole('admin')) {
+        this.displayedColumns.push('eliminar');
+      }
+    } else {
+      this.displayedColumns = ['id', 'tipo', 'familia'];
+    }
     this.mostrarEmpaquetamiento();
   }
 

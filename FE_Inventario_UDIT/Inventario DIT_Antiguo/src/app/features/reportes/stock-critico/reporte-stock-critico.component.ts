@@ -15,6 +15,9 @@ import { ReporteService } from '@app/core/services/reporte.service';
 import { ExcelExportService, ExcelColumn } from '@app/core/services/excel-export.service';
 import { StockCriticoDto } from '@app/core/models';
 
+import { UserService } from '@app/core/user/user.service';
+import { inject } from '@angular/core';
+
 @Component({
   selector: 'app-reporte-stock-critico',
   standalone: true,
@@ -27,6 +30,12 @@ import { StockCriticoDto } from '@app/core/models';
   styleUrls: ['./reporte-stock-critico.component.scss']
 })
 export class ReporteStockCriticoComponent implements OnInit {
+  userService = inject(UserService);
+
+  get canExportar(): boolean {
+    return this.userService.hasPermission('reportes.exportar');
+  }
+
   umbral = 10;
   stockData: StockCriticoDto[] = [];
   columns = ['codigoFabrica', 'descripcion', 'categoria', 'ubicacion', 'stockActual', 'umbral', 'estado'];

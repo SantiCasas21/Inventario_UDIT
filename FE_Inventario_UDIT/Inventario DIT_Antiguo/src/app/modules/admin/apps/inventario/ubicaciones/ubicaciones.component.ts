@@ -27,7 +27,11 @@ export class UbicacionesComponent implements OnInit, AfterViewInit {
   confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
-  displayedColumns: string[] = ['editar', 'id', 'ubicacion'];
+  get canManage(): boolean {
+    return this.userService.hasPermission('catalogos.ubicaciones.gestionar');
+  }
+
+  displayedColumns: string[] = ['id', 'ubicacion'];
   dataSource = new MatTableDataSource<CatalogoDto>();
   endpoint = 'ubicacion';
   error: string | null = null;
@@ -46,7 +50,14 @@ export class UbicacionesComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    if (this.userService.hasRole('admin') && !this.displayedColumns.includes('eliminar')) { this.displayedColumns.push('eliminar'); }
+    if (this.canManage) {
+      this.displayedColumns = ['editar', 'id', 'ubicacion'];
+      if (this.userService.hasRole('admin')) {
+        this.displayedColumns.push('eliminar');
+      }
+    } else {
+      this.displayedColumns = ['id', 'ubicacion'];
+    }
     this.mostrarUbicaciones();
   }
 

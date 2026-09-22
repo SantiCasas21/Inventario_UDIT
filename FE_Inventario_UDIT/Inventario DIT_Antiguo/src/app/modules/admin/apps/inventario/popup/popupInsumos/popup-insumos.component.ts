@@ -152,6 +152,15 @@ export class PopupInsumosComponent implements OnInit {
   /** Carga los empaquetamientos válidos para la categoría seleccionada. */
   actualizarEmpaquetamientosDisponiblesPorId(idCategoria: number | null) {
     const cargar = (list: any[]) => {
+      // Si el servidor retornó lista vacía (ej. sin relaciones previas configuradas), recurrir a todos
+      if (!list || list.length === 0) {
+        this.catalogoService.getAll('empaquetamiento').subscribe(all => {
+          this.empaquetamientos = all || [];
+          this.initEmpaquetamientosFilter();
+        });
+        return;
+      }
+
       // En modo edición, conservar el empaquetamiento actual aunque no esté en la lista filtrada
       const currentEmp = this.form.get('idEmpaquetamiento')?.value;
       if (currentEmp && !list.find(x => x.id === currentEmp)) {
@@ -163,7 +172,16 @@ export class PopupInsumosComponent implements OnInit {
     };
 
     if (idCategoria) {
-      this.catalogoService.getByCategoria('empaquetamiento', idCategoria).subscribe(cargar);
+      this.catalogoService.getByCategoria('empaquetamiento', idCategoria).subscribe({
+        next: cargar,
+        error: () => {
+          // Si el endpoint por-categoria falla, cargar todos los empaquetamientos
+          this.catalogoService.getAll('empaquetamiento').subscribe(all => {
+            this.empaquetamientos = all || [];
+            this.initEmpaquetamientosFilter();
+          });
+        }
+      });
     } else {
       this.catalogoService.getAll('empaquetamiento').subscribe(cargar);
     }
@@ -212,6 +230,20 @@ export class PopupInsumosComponent implements OnInit {
     this.ref.close();
   }
 
+  private getCleanRequestPayload(): InsumoRequest {
+    const raw = this.form.value;
+    return {
+      idCategoria: Number(raw.idCategoria),
+      codigoFabrica: (raw.codigoFabrica || '').trim(),
+      idEmpaquetamiento: Number(raw.idEmpaquetamiento),
+      descripcion: raw.descripcion || '',
+      precioReferencia: raw.precioReferencia !== null && raw.precioReferencia !== undefined && raw.precioReferencia !== '' ? Number(raw.precioReferencia) : null,
+      moneda: raw.moneda || 'COP',
+      valorMedida: raw.valorMedida !== null && raw.valorMedida !== undefined && raw.valorMedida !== '' ? Number(raw.valorMedida) : null,
+      unidadMedida: raw.unidadMedida || ''
+    };
+  }
+
   guardarInsumo(): void {
     if (this.form.invalid) {
       this.mostrarCamposRequeridos();
@@ -220,7 +252,7 @@ export class PopupInsumosComponent implements OnInit {
     const codigo = this.form.get('codigoFabrica')?.value;
     this.confirmacionService.confirmarGuardado('Insumo', false, codigo).subscribe(confirmado => {
       if (confirmado) {
-        const req: InsumoRequest = this.form.value;
+        const req: InsumoRequest = this.getCleanRequestPayload();
         this.insumoService.create(req).subscribe({
           next: (res: any) => this.ref.close(res || req),
           error: (err: any) => this.mostrarErrorValidacion(err)
@@ -238,7 +270,7 @@ export class PopupInsumosComponent implements OnInit {
     this.confirmacionService.confirmarGuardado('Insumo', true, codigo).subscribe(confirmado => {
       if (confirmado) {
         const id = this.data.data.id;
-        const req: InsumoRequest = this.form.value;
+        const req: InsumoRequest = this.getCleanRequestPayload();
         this.insumoService.update(id, req).subscribe({
           next: () => this.ref.close(true),
           error: (err: any) => this.mostrarErrorValidacion(err)

@@ -82,19 +82,19 @@ namespace Application.Tests
         }
 
         [Theory]
-        [InlineData(nameof(MovimientoController.RegistrarIngreso))]
-        [InlineData(nameof(MovimientoController.RegistrarSalida))]
-        [InlineData(nameof(MovimientoController.RegistrarAjuste))]
-        [InlineData(nameof(MovimientoController.RegistrarIngresoMasivo))]
-        [InlineData(nameof(MovimientoController.PreviewExcel))]
-        public void MovimientoController_TransactionEndpoints_MustRequireAdminDeveloperAssistant(string methodName)
+        [InlineData(nameof(MovimientoController.RegistrarIngreso), "Admin,Developer,Assistant")]
+        [InlineData(nameof(MovimientoController.RegistrarSalida), "Admin,Developer,Assistant")]
+        [InlineData(nameof(MovimientoController.RegistrarAjuste), "Admin,Developer")]
+        [InlineData(nameof(MovimientoController.RegistrarIngresoMasivo), "Admin,Developer,Assistant")]
+        [InlineData(nameof(MovimientoController.PreviewExcel), "Admin,Developer,Assistant")]
+        public void MovimientoController_TransactionEndpoints_MustRequireCorrectRoles(string methodName, string expectedRoles)
         {
             var method = typeof(MovimientoController).GetMethod(methodName);
             Assert.NotNull(method);
 
             var authAttr = method!.GetCustomAttribute<AuthorizeAttribute>();
             Assert.NotNull(authAttr);
-            Assert.Equal("Admin,Developer,Assistant", authAttr!.Roles);
+            Assert.Equal(expectedRoles, authAttr!.Roles);
         }
 
         [Fact]

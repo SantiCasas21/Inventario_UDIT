@@ -12,11 +12,11 @@ namespace Application.Services
     /// </summary>
     public static class EmpaquetamientoClasificador
     {
-        public const string PasivosSMD = "Pasivos SMD";
-        public const string ThtGeneral = "THT General";
-        public const string DiscretosPotencia = "Discretos y Potencia";
-        public const string IcsMicro = "ICs y Microcontroladores";
-        public const string Genericos = "Genéricos y Otros";
+        public const string PasivosSMD = "SMD / Montaje Superficial";
+        public const string ThtGeneral = "Through-Hole / Pasante";
+        public const string DiscretosPotencia = "SMD / Montaje Superficial";
+        public const string IcsMicro = "SMD / Montaje Superficial";
+        public const string Genericos = "Empaquetado General";
 
         // Prefijos de encapsulados de circuitos integrados (multi-pines)
         private static readonly string[] IcsPrefijos =

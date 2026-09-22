@@ -26,7 +26,11 @@ export class UnidadMedidaComponent implements OnInit, AfterViewInit {
   confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
-  displayedColumns: string[] = ['id', 'nombre', 'idCategoria', 'acciones'];
+  get canManage(): boolean {
+    return this.userService.hasPermission('catalogos.unidades.gestionar');
+  }
+
+  displayedColumns: string[] = ['id', 'nombre', 'idCategoria'];
   dataSource = new MatTableDataSource<UnidadMedidaDto>();
   error: string | null = null;
 
@@ -44,7 +48,14 @@ export class UnidadMedidaComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    if (this.userService.hasRole('admin') && !this.displayedColumns.includes('eliminar')) { this.displayedColumns.push('eliminar'); }
+    if (this.canManage) {
+      this.displayedColumns = ['id', 'nombre', 'idCategoria', 'acciones'];
+      if (this.userService.hasRole('admin')) {
+        this.displayedColumns.push('eliminar');
+      }
+    } else {
+      this.displayedColumns = ['id', 'nombre', 'idCategoria'];
+    }
     this.mostrarUnidades();
   }
 

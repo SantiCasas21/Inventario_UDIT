@@ -39,6 +39,7 @@ namespace Infrastructure.Data
                 "catalogos.tipocompra.ver", "catalogos.tipocompra.gestionar",
                 "catalogos.estadoproyecto.ver", "catalogos.estadoproyecto.gestionar",
                 "catalogos.estadosalida.ver", "catalogos.estadosalida.gestionar",
+                "catalogos.personal.ver", "catalogos.personal.gestionar",
                 "usuarios.ver", "usuarios.gestionar", "roles.gestionar",
                 "auditoria.ver"
             },
@@ -56,6 +57,7 @@ namespace Infrastructure.Data
                 "catalogos.tipocompra.ver", "catalogos.tipocompra.gestionar",
                 "catalogos.estadoproyecto.ver", "catalogos.estadoproyecto.gestionar",
                 "catalogos.estadosalida.ver", "catalogos.estadosalida.gestionar",
+                "catalogos.personal.ver", "catalogos.personal.gestionar",
                 "auditoria.ver"
             },
             ["Assistant"] = new[]
@@ -65,7 +67,8 @@ namespace Infrastructure.Data
                 "reportes.ver",
                 "catalogos.categorias.ver", "catalogos.unidades.ver", "catalogos.empaquetamiento.ver",
                 "catalogos.ubicaciones.ver", "catalogos.proveedores.ver", "catalogos.proyectos.ver",
-                "catalogos.tipocompra.ver", "catalogos.estadoproyecto.ver", "catalogos.estadosalida.ver"
+                "catalogos.tipocompra.ver", "catalogos.estadoproyecto.ver", "catalogos.estadosalida.ver",
+                "catalogos.personal.ver"
             },
             ["User"] = new[]
             {
@@ -74,7 +77,8 @@ namespace Infrastructure.Data
                 "reportes.ver",
                 "catalogos.categorias.ver", "catalogos.unidades.ver", "catalogos.empaquetamiento.ver",
                 "catalogos.ubicaciones.ver", "catalogos.proveedores.ver", "catalogos.proyectos.ver",
-                "catalogos.tipocompra.ver", "catalogos.estadoproyecto.ver", "catalogos.estadosalida.ver"
+                "catalogos.tipocompra.ver", "catalogos.estadoproyecto.ver", "catalogos.estadosalida.ver",
+                "catalogos.personal.ver"
             },
 
         };
@@ -260,22 +264,11 @@ namespace Infrastructure.Data
                     await roleManager.RemoveClaimAsync(role, claim);
                 }
 
-                // 2. Si es Admin, asegurar el 100% de los permisos
-                if (roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                // 2. Asegurar que los roles tengan sus permisos por defecto asignados
+                var currentValues = existingClaims.Select(c => c.Value).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var permission in permissions)
                 {
-                    var currentValues = existingClaims.Select(c => c.Value).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                    foreach (var permission in permissions)
-                    {
-                        if (!currentValues.Contains(permission))
-                        {
-                            await roleManager.AddClaimAsync(role, new Claim(PermissionClaimType, permission));
-                        }
-                    }
-                }
-                // 3. Para otros roles, si no tienen ningún claim activo, sembrar defaults
-                else if (permissionClaims.Count == 0)
-                {
-                    foreach (var permission in permissions)
+                    if (!currentValues.Contains(permission))
                     {
                         await roleManager.AddClaimAsync(role, new Claim(PermissionClaimType, permission));
                     }

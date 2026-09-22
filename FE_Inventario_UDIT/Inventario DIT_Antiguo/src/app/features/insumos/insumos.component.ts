@@ -63,6 +63,18 @@ export class InsumosComponent implements OnInit, OnDestroy {
     return this.userService.currentUser?.role || '';
   }
 
+  get canCrear(): boolean {
+    return this.userService.hasPermission('insumos.crear');
+  }
+
+  get canEditar(): boolean {
+    return this.userService.hasPermission('insumos.editar');
+  }
+
+  get canEliminar(): boolean {
+    return this.userService.hasPermission('insumos.eliminar');
+  }
+
 
   ngOnInit(): void {
     this.loadData();

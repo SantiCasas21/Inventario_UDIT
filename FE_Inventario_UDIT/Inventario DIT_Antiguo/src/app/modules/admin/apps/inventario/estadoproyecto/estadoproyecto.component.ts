@@ -27,7 +27,11 @@ export class EstadoproyectoComponent implements OnInit, AfterViewInit {
   confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
-  displayedColumns: string[] = ['editar', 'id', 'estado'];
+  get canManage(): boolean {
+    return this.userService.hasPermission('catalogos.estadoproyecto.gestionar');
+  }
+
+  displayedColumns: string[] = ['id', 'estado'];
   dataSource = new MatTableDataSource<CatalogoDto>();
   endpoint = 'estado-proyecto';
   error: string | null = null;
@@ -46,7 +50,14 @@ export class EstadoproyectoComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    if (this.userService.hasRole('admin') && !this.displayedColumns.includes('eliminar')) { this.displayedColumns.push('eliminar'); }
+    if (this.canManage) {
+      this.displayedColumns = ['editar', 'id', 'estado'];
+      if (this.userService.hasRole('admin')) {
+        this.displayedColumns.push('eliminar');
+      }
+    } else {
+      this.displayedColumns = ['id', 'estado'];
+    }
     this.mostrarEstadoProyecto();
   }
 

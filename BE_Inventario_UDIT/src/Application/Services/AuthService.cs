@@ -45,7 +45,7 @@ namespace Application.Services
 
             var roles = await _userManager.GetRolesAsync(user);
             var permissions = await GetRolePermissionsAsync(roles);
-            var token = await GenerateJwtToken(user, roles);
+            var token = await GenerateJwtToken(user, roles, permissions);
 
             return OperationResult<LoginResponseDto>.Ok(new LoginResponseDto
             {
@@ -100,7 +100,7 @@ namespace Application.Services
 
             var roles = new List<string> { roleToAssign };
             var permissions = await GetRolePermissionsAsync(roles);
-            var token = await GenerateJwtToken(user, roles);
+            var token = await GenerateJwtToken(user, roles, permissions);
 
             await _auditoriaService.LogAsync("CREAR", "Usuario", $"Se registró el nuevo usuario '{user.UserName}' con Rol '{roleToAssign}'");
 
@@ -267,7 +267,7 @@ namespace Application.Services
         }
 
 
-        private Task<string> GenerateJwtToken(ApplicationUser user, IList<string> roles)
+        private Task<string> GenerateJwtToken(ApplicationUser user, IList<string> roles, IEnumerable<string>? permissions = null)
         {
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
@@ -284,6 +284,14 @@ namespace Application.Services
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            if (permissions != null)
+            {
+                foreach (var perm in permissions)
+                {
+                    claims.Add(new Claim("permission", perm));
+                }
             }
 
             var token = new JwtSecurityToken(

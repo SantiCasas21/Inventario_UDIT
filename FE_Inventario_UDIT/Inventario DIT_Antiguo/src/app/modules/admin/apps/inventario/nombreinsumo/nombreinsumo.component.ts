@@ -38,7 +38,11 @@ export class NombreinsumoComponent implements OnInit, AfterViewInit {
   confirmacionService = inject(ConfirmacionService);
   snackBar = inject(MatSnackBar);
 
-  displayedColumns: string[] = ['editar', 'id', 'nombreInsumo', 'eliminar'];
+  get canManage(): boolean {
+    return this.userService.hasPermission('catalogos.categorias.gestionar');
+  }
+
+  displayedColumns: string[] = ['id', 'nombreInsumo'];
   dataSource = new MatTableDataSource<CatalogoDto>([]);
   endpoint = 'categoria-insumo';
   error: string | null = null;
@@ -51,6 +55,14 @@ export class NombreinsumoComponent implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit(): void {
+    if (this.canManage) {
+      this.displayedColumns = ['editar', 'id', 'nombreInsumo'];
+      if (this.userService.hasRole('admin')) {
+        this.displayedColumns.push('eliminar');
+      }
+    } else {
+      this.displayedColumns = ['id', 'nombreInsumo'];
+    }
     this.cargarDatos();
   }
 

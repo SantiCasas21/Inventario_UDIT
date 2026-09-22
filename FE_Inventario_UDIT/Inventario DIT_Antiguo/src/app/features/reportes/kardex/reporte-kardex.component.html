@@ -20,6 +20,7 @@
           <mat-icon>arrow_back</mat-icon> Todos los Reportes
         </button>
         <button
+          *ngIf="canExportar"
           mat-raised-button
           color="primary"
           [disabled]="kardexData.length === 0 || loading"

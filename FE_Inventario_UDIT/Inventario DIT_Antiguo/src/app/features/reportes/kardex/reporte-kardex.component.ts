@@ -21,6 +21,9 @@ import { InsumoService } from '@app/core/services/insumo.service';
 import { ExcelExportService, ExcelColumn } from '@app/core/services/excel-export.service';
 import { InsumoDto, KardexDetalladoDto } from '@app/core/models';
 
+import { UserService } from '@app/core/user/user.service';
+import { inject } from '@angular/core';
+
 @Component({
   selector: 'app-reporte-kardex',
   standalone: true,
@@ -34,6 +37,12 @@ import { InsumoDto, KardexDetalladoDto } from '@app/core/models';
   styleUrls: ['./reporte-kardex.component.scss']
 })
 export class ReporteKardexComponent implements OnInit {
+  userService = inject(UserService);
+
+  get canExportar(): boolean {
+    return this.userService.hasPermission('reportes.exportar');
+  }
+
   insumos: InsumoDto[] = [];
   kardexInsumoCtrl = new FormControl<InsumoDto | string | null>('');
   filteredInsumos$!: Observable<InsumoDto[]>;

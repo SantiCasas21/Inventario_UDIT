@@ -18,7 +18,7 @@
       <mat-card-content style="padding:0;">
         <mat-tab-group [selectedIndex]="selectedTabIndex" (selectedIndexChange)="selectedTabIndex = $event">
           <!-- Tab: Registrar Ingreso -->
-          <mat-tab label="+ Ingreso" *ngIf="userRole !== 'User'">
+          <mat-tab label="+ Ingreso" *ngIf="canCreateMovimiento">
             <div class="tab-content">
               <div class="movimiento-form-container">
                 
@@ -192,7 +192,7 @@
           </mat-tab>
 
           <!-- Tab: Registrar Salida -->
-          <mat-tab label="- Salida" *ngIf="userRole !== 'User'">
+          <mat-tab label="- Salida" *ngIf="canCreateMovimiento">
             <div class="tab-content">
               <div class="movimiento-form-container">
                 
@@ -357,7 +357,7 @@
           </mat-tab>
 
           <!-- Tab: Registrar Ajuste -->
-          <mat-tab label="± Ajuste" *ngIf="userRole !== 'User'">
+          <mat-tab label="± Ajuste" *ngIf="canAjustar">
             <div class="tab-content">
               <div class="movimiento-form-container">
                 
