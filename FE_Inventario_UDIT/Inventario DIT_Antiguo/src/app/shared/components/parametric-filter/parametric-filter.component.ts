@@ -41,7 +41,11 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
         const subject = new BehaviorSubject<SelectOption[]>([]);
         colWithOptions.optionsSubject = subject;
         colWithOptions.options$ = subject.asObservable();
-        this.cargarOpcionesPorCategoria(colWithOptions).subscribe(opts => subject.next(opts));
+        if (col.dependsOnAllFilters) {
+          this.cargarOpcionesPorFiltroCompleto(colWithOptions).subscribe(opts => subject.next(opts));
+        } else {
+          this.cargarOpcionesPorCategoria(colWithOptions).subscribe(opts => subject.next(opts));
+        }
         return colWithOptions;
       }
       return col;
@@ -88,13 +92,50 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
     return this.catalogoService.getAll(col.optionsUrl!).pipe(map(toOptions));
   }
 
-  /** Recarga las opciones de las columnas que dependen de la clave que cambió. */
+  /**
+   * Carga las opciones activas según el estado completo de los filtros actuales
+   * (ej: Ubicaciones físicas que tienen existencias reales para la categoría, empaquetamiento o texto seleccionado).
+   */
+  private cargarOpcionesPorFiltroCompleto(col: FilterColumnConfig): Observable<SelectOption[]> {
+    const toOptions = (catalogos: CatalogoDto[]) => {
+      const seen = new Set<string | number>();
+      const opts: SelectOption[] = [];
+      for (const c of (catalogos || [])) {
+        if (!c || !c.nombre) continue;
+        const val = col.optionsValueField === 'nombre' ? c.nombre : c.id;
+        if (val !== undefined && val !== null && !seen.has(val)) {
+          seen.add(val);
+          opts.push({ label: c.nombre, value: val });
+        }
+      }
+      return opts;
+    };
+
+    const filterPayload: Record<string, unknown> = {
+      idsCategoria: this.currentFilter['idsCategoria'] || [],
+      idsEmpaquetamiento: this.currentFilter['idsEmpaquetamiento'] || [],
+      unidadesMedida: this.currentFilter['unidadesMedida'] || [],
+      valorMedidaMin: (this.currentFilter['valorMedidaRange'] as any)?.min ? Number((this.currentFilter['valorMedidaRange'] as any).min) : null,
+      valorMedidaMax: (this.currentFilter['valorMedidaRange'] as any)?.max ? Number((this.currentFilter['valorMedidaRange'] as any).max) : null,
+      textSearch: this.currentFilter['textSearch'] || null,
+    };
+
+    return this.catalogoService.getUbicacionesActivasPorFiltro(filterPayload).pipe(map(toOptions));
+  }
+
+  /** Recarga las opciones de las columnas que dependen de la clave que cambió o de todos los filtros. */
   private reloadDependentColumns(changedKey: string): void {
     for (const col of this.smartColumns) {
       if (col.dependsOn === changedKey) {
         const subject = (col as any).optionsSubject as BehaviorSubject<SelectOption[]> | undefined;
         if (subject) {
           this.cargarOpcionesPorCategoria(col).subscribe(opts => subject.next(opts));
+        }
+      }
+      if (col.dependsOnAllFilters && col.key !== changedKey) {
+        const subject = (col as any).optionsSubject as BehaviorSubject<SelectOption[]> | undefined;
+        if (subject) {
+          this.cargarOpcionesPorFiltroCompleto(col).subscribe(opts => subject.next(opts));
         }
       }
     }
@@ -214,6 +255,12 @@ export class ParametricFilterComponent implements OnInit, OnDestroy {
         const subject = (col as any).optionsSubject as BehaviorSubject<SelectOption[]> | undefined;
         if (subject) {
           this.cargarOpcionesPorCategoria(col).subscribe(opts => subject.next(opts));
+        }
+      }
+      if (col.dependsOnAllFilters) {
+        const subject = (col as any).optionsSubject as BehaviorSubject<SelectOption[]> | undefined;
+        if (subject) {
+          this.cargarOpcionesPorFiltroCompleto(col).subscribe(opts => subject.next(opts));
         }
       }
     }

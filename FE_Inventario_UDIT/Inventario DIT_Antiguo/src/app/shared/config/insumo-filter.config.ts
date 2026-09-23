@@ -37,6 +37,7 @@ export const INSUMO_FILTER_CONFIG: ParametricFilterConfig = {
       label: 'Ubicación',
       type: 'multi-select',
       optionsUrl: 'ubicacion',
+      dependsOnAllFilters: true,
       searchable: true,
       searchPlaceholder: 'Buscar...',
     },

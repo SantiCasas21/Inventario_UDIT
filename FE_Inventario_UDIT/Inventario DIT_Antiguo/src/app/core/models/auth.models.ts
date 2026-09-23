@@ -69,3 +69,17 @@ export interface UserDto {
 
 /** Roles disponibles en el sistema. */
 export type UserRole = 'Admin' | 'Developer' | 'Assistant' | 'User';
+
+/** DTO para solicitud de restablecimiento administrativo de contraseña temporal. */
+export interface ResetUserPasswordAdminRequest {
+  newTemporaryPassword?: string;
+  autoGenerate: boolean;
+}
+
+/** DTO de respuesta con la nueva contraseña temporal generada. */
+export interface ResetPasswordResponse {
+  userId: string;
+  username: string;
+  temporaryPassword: string;
+  debeCambiarPassword: boolean;
+}

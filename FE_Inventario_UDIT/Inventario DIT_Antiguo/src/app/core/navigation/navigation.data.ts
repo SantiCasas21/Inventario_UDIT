@@ -51,6 +51,15 @@ export const NAVIGATION_ITEMS: FuseNavigationItem[] = [
     link: '/reportes',
     children: [
       {
+        id: 'reporte-hub',
+        title: 'Centro de Reportes',
+        type: 'basic',
+        icon: 'heroicons_outline:squares-2x2',
+        link: '/reportes',
+        exactMatch: true,
+        meta: { permission: 'reportes.ver' },
+      },
+      {
         id: 'reporte-kardex',
         title: 'Kardex por Insumo',
         type: 'basic',

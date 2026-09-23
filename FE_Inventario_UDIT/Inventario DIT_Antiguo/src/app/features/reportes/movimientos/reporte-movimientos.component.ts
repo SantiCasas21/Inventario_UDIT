@@ -14,12 +14,13 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Observable } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError, startWith, map } from 'rxjs/operators';
 import { ReporteService } from '@app/core/services/reporte.service';
 import { InsumoService } from '@app/core/services/insumo.service';
 import { ExcelExportService, ExcelColumn } from '@app/core/services/excel-export.service';
 import { InsumoDto, MovimientosPeriodoDto } from '@app/core/models';
+import { ReportesNavComponent } from '../shared/reportes-nav.component';
 
 import { UserService } from '@app/core/user/user.service';
 import { inject } from '@angular/core';
@@ -31,7 +32,8 @@ import { inject } from '@angular/core';
     CommonModule, FormsModule, ReactiveFormsModule, RouterModule,
     MatTableModule, MatButtonModule, MatIconModule, MatInputModule,
     MatFormFieldModule, MatSnackBarModule, MatDatepickerModule, MatNativeDateModule,
-    MatAutocompleteModule, MatCardModule, MatTooltipModule, MatProgressSpinnerModule
+    MatAutocompleteModule, MatCardModule, MatTooltipModule, MatProgressSpinnerModule,
+    ReportesNavComponent
   ],
   templateUrl: './reporte-movimientos.component.html',
   styleUrls: ['./reporte-movimientos.component.scss']
@@ -43,7 +45,6 @@ export class ReporteMovimientosComponent implements OnInit {
     return this.userService.hasPermission('reportes.exportar');
   }
 
-  insumos: InsumoDto[] = [];
   movInsumoCtrl = new FormControl<InsumoDto | string | null>('');
   filteredInsumos$!: Observable<InsumoDto[]>;
 
@@ -64,26 +65,18 @@ export class ReporteMovimientosComponent implements OnInit {
   ngOnInit(): void {
     this.filteredInsumos$ = this.movInsumoCtrl.valueChanges.pipe(
       startWith(''),
-      map(val => this._filterInsumos(val))
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap(val => {
+        const text = typeof val === 'string' ? val.trim() : (val?.codigoFabrica || '');
+        return this.insumoService.getAllFiltered({ textSearch: text, pageSize: 30 }).pipe(
+          map(res => res.items || []),
+          catchError(() => of([]))
+        );
+      })
     );
 
-    this.insumoService.getAllFiltered({ page: 1, pageSize: 10000 }).subscribe({
-      next: res => {
-        this.insumos = res.items || [];
-        this.movInsumoCtrl.updateValueAndValidity();
-      }
-    });
-
     this.consultar();
-  }
-
-  private _filterInsumos(value: string | InsumoDto | null): InsumoDto[] {
-    const filterValue = typeof value === 'string' ? value.toLowerCase().trim() : (value?.codigoFabrica?.toLowerCase() || '');
-    if (!filterValue) return this.insumos.slice(0, 50);
-    return this.insumos.filter(i =>
-      (i.codigoFabrica && i.codigoFabrica.toLowerCase().includes(filterValue)) ||
-      (i.descripcion && i.descripcion.toLowerCase().includes(filterValue))
-    ).slice(0, 50);
   }
 
   displayInsumo(insumo: InsumoDto | null): string {
@@ -114,6 +107,29 @@ export class ReporteMovimientosComponent implements OnInit {
     const selected = this.movInsumoCtrl.value;
     const insumoId = typeof selected === 'object' && selected ? selected.id : undefined;
 
+    if (!insumoId && typeof selected === 'string' && selected.trim()) {
+      // Auto-resolver insumo si escribió código
+      this.loading = true;
+      this.insumoService.getAllFiltered({ textSearch: selected.trim(), pageSize: 5 }).subscribe({
+        next: res => {
+          const items = res.items || [];
+          if (items.length > 0) {
+            const exact = items.find(i => i.codigoFabrica.toLowerCase() === selected.trim().toLowerCase()) || items[0];
+            this.movInsumoCtrl.setValue(exact, { emitEvent: false });
+            this.ejecutarConsulta(exact.id);
+          } else {
+            this.ejecutarConsulta(undefined);
+          }
+        },
+        error: () => this.ejecutarConsulta(undefined)
+      });
+      return;
+    }
+
+    this.ejecutarConsulta(insumoId);
+  }
+
+  private ejecutarConsulta(insumoId?: number): void {
     this.loading = true;
     this.movData = undefined;
     this.reporteService.getMovimientosPeriodo(
@@ -154,6 +170,12 @@ export class ReporteMovimientosComponent implements OnInit {
       { header: 'Observación', field: 'observacion', type: 'string', width: 220 },
     ];
 
+    const exportRows = this.movData.movimientos.map(m => ({
+      ...m,
+      codigoFabrica: m.codigoFabrica || (m as any).insumoCodigo || '-',
+      ubicacion: m.ubicacionNombre || (m as any).insumoUbicacion || '-'
+    }));
+
     const filters = [
       { label: 'Período Consultado', value: `${this.formatDate(this.desde)} a ${this.formatDate(this.hasta)}` },
       { label: 'Filtro por Insumo', value: insumoFilter },
@@ -169,7 +191,7 @@ export class ReporteMovimientosComponent implements OnInit {
       fileName: `Movimientos_${this.formatDate(this.desde)}_al_${this.formatDate(this.hasta)}`,
       filters,
       columns,
-      data: this.movData.movimientos,
+      data: exportRows,
       totalFields: ['cantidad'],
       totalLabel: 'SUMA TOTAL DE CANTIDADES'
     });

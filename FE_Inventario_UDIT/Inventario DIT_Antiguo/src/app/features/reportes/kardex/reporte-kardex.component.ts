@@ -14,12 +14,13 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Observable } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError, startWith, map } from 'rxjs/operators';
 import { ReporteService } from '@app/core/services/reporte.service';
 import { InsumoService } from '@app/core/services/insumo.service';
 import { ExcelExportService, ExcelColumn } from '@app/core/services/excel-export.service';
 import { InsumoDto, KardexDetalladoDto } from '@app/core/models';
+import { ReportesNavComponent } from '../shared/reportes-nav.component';
 
 import { UserService } from '@app/core/user/user.service';
 import { inject } from '@angular/core';
@@ -31,7 +32,8 @@ import { inject } from '@angular/core';
     CommonModule, FormsModule, ReactiveFormsModule, RouterModule,
     MatTableModule, MatButtonModule, MatIconModule, MatInputModule,
     MatFormFieldModule, MatSnackBarModule, MatDatepickerModule, MatNativeDateModule,
-    MatAutocompleteModule, MatCardModule, MatTooltipModule, MatProgressSpinnerModule
+    MatAutocompleteModule, MatCardModule, MatTooltipModule, MatProgressSpinnerModule,
+    ReportesNavComponent
   ],
   templateUrl: './reporte-kardex.component.html',
   styleUrls: ['./reporte-kardex.component.scss']
@@ -43,7 +45,6 @@ export class ReporteKardexComponent implements OnInit {
     return this.userService.hasPermission('reportes.exportar');
   }
 
-  insumos: InsumoDto[] = [];
   kardexInsumoCtrl = new FormControl<InsumoDto | string | null>('');
   filteredInsumos$!: Observable<InsumoDto[]>;
 
@@ -69,24 +70,16 @@ export class ReporteKardexComponent implements OnInit {
   ngOnInit(): void {
     this.filteredInsumos$ = this.kardexInsumoCtrl.valueChanges.pipe(
       startWith(''),
-      map(val => this._filterInsumos(val))
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap(val => {
+        const text = typeof val === 'string' ? val.trim() : (val?.codigoFabrica || '');
+        return this.insumoService.getAllFiltered({ textSearch: text, pageSize: 30 }).pipe(
+          map(res => res.items || []),
+          catchError(() => of([]))
+        );
+      })
     );
-
-    this.insumoService.getAllFiltered({ page: 1, pageSize: 10000 }).subscribe({
-      next: res => {
-        this.insumos = res.items || [];
-        this.kardexInsumoCtrl.updateValueAndValidity();
-      }
-    });
-  }
-
-  private _filterInsumos(value: string | InsumoDto | null): InsumoDto[] {
-    const filterValue = typeof value === 'string' ? value.toLowerCase().trim() : (value?.codigoFabrica?.toLowerCase() || '');
-    if (!filterValue) return this.insumos.slice(0, 50);
-    return this.insumos.filter(i =>
-      (i.codigoFabrica && i.codigoFabrica.toLowerCase().includes(filterValue)) ||
-      (i.descripcion && i.descripcion.toLowerCase().includes(filterValue))
-    ).slice(0, 50);
   }
 
   displayInsumo(insumo: InsumoDto | null): string {
@@ -112,11 +105,38 @@ export class ReporteKardexComponent implements OnInit {
     const selected = this.kardexInsumoCtrl.value;
     const insumoId = typeof selected === 'object' && selected ? selected.id : null;
 
-    if (!insumoId) {
-      this.snackBar.open('Por favor selecciona un insumo de la lista predictiva', 'Cerrar', { duration: 4000 });
+    if (insumoId) {
+      this.ejecutarConsulta(insumoId);
       return;
     }
 
+    if (typeof selected === 'string' && selected.trim()) {
+      // Si el usuario escribió un código/descripción en texto sin seleccionar de la lista predictiva
+      this.loading = true;
+      this.insumoService.getAllFiltered({ textSearch: selected.trim(), pageSize: 5 }).subscribe({
+        next: res => {
+          const items = res.items || [];
+          if (items.length > 0) {
+            const exact = items.find(i => i.codigoFabrica.toLowerCase() === selected.trim().toLowerCase()) || items[0];
+            this.kardexInsumoCtrl.setValue(exact, { emitEvent: false });
+            this.ejecutarConsulta(exact.id);
+          } else {
+            this.loading = false;
+            this.snackBar.open(`No se encontró ningún insumo con "${selected}"`, 'Cerrar', { duration: 4000 });
+          }
+        },
+        error: () => {
+          this.loading = false;
+          this.snackBar.open('Error al buscar insumo', 'Cerrar', { duration: 4000 });
+        }
+      });
+      return;
+    }
+
+    this.snackBar.open('Por favor escribe o selecciona un insumo de la lista', 'Cerrar', { duration: 4000 });
+  }
+
+  private ejecutarConsulta(insumoId: number): void {
     this.loading = true;
     this.kardexData = [];
     this.reporteService.getKardex(insumoId, this.formatDate(this.desde), this.formatDate(this.hasta))

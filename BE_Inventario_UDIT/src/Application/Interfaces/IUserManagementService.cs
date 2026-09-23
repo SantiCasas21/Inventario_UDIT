@@ -17,6 +17,7 @@ namespace Application.Interfaces
         Task<OperationResult> DeactivateAsync(string id);
         Task<OperationResult> ActivateAsync(string id);
         Task<OperationResult> DeleteAsync(string id);
+        Task<OperationResult<ResetPasswordResponseDto>> ResetPasswordAsync(string id, ResetUserPasswordAdminDto request, string? adminUsername = null);
 
 
 

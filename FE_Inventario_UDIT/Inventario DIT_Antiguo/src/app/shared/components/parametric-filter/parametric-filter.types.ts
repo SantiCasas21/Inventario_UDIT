@@ -24,6 +24,8 @@ export interface FilterColumnConfig {
   options$?: Observable<SelectOption[]>;
   /** Clave de otra columna de la que dependen las opciones (ej: 'idsCategoria') */
   dependsOn?: string;
+  /** Si es true, recarga las opciones dinámicamente con base en todos los filtros activos (ej: Ubicaciones con stock) */
+  dependsOnAllFilters?: boolean;
   /** Endpoint para cargar opciones filtradas por categoría (ej: 'empaquetamiento/por-categoria') */
   optionsByCategoriaUrl?: string;
   /** Unidad para range (ej: '$', 'und', 'kg') */

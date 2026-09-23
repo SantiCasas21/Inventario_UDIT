@@ -99,6 +99,25 @@ namespace API.Controllers
             return Ok(result);
         }
 
+        /// PUT /api/user/{id}/reset-password
+        [HttpPut("{id}/reset-password")]
+        public async Task<IActionResult> ResetPassword(string id, [FromBody] ResetUserPasswordAdminDto request)
+        {
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var canManage = await _userManagementService.UserHasPermissionAsync(userId, "usuarios.gestionar");
+            if (!canManage)
+                return StatusCode(StatusCodes.Status403Forbidden, OperationResult.Fail("No tienes permisos para restablecer contraseñas de usuarios."));
+
+            var currentUsername = User.Identity?.Name;
+            var result = await _userManagementService.ResetPasswordAsync(id, request, currentUsername);
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
         /// PUT /api/user/{id}/deactivate
         [HttpPut("{id}/deactivate")]
         public async Task<IActionResult> Deactivate(string id)

@@ -5,6 +5,7 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace Application.Services
 {
@@ -324,6 +325,82 @@ namespace Application.Services
                 return OperationResult.Fail("Error al eliminar usuario");
 
             return OperationResult.Ok($"Usuario '{user.UserName}' eliminado permanentemente");
+        }
+
+        public async Task<OperationResult<ResetPasswordResponseDto>> ResetPasswordAsync(string id, ResetUserPasswordAdminDto request, string? adminUsername = null)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return OperationResult<ResetPasswordResponseDto>.Fail("Identificador de usuario inválido.");
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+                return OperationResult<ResetPasswordResponseDto>.Fail("Usuario no encontrado.");
+
+            string tempPassword;
+            if (request == null || request.AutoGenerate || string.IsNullOrWhiteSpace(request.NewTemporaryPassword))
+            {
+                tempPassword = GenerateSecureTemporaryPassword();
+            }
+            else
+            {
+                tempPassword = request.NewTemporaryPassword.Trim();
+                if (tempPassword.Length < 6)
+                {
+                    return OperationResult<ResetPasswordResponseDto>.Fail("La contraseña temporal debe tener al menos 6 caracteres.");
+                }
+            }
+
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetResult = await _userManager.ResetPasswordAsync(user, resetToken, tempPassword);
+
+            if (!resetResult.Succeeded)
+            {
+                var errors = string.Join(" ", resetResult.Errors.Select(e => e.Description));
+                return OperationResult<ResetPasswordResponseDto>.Fail($"Error al restablecer contraseña: {errors}");
+            }
+
+            user.DebeCambiarPassword = true;
+
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                await _userManager.SetLockoutEndDateAsync(user, null);
+            }
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                var errors = string.Join(" ", updateResult.Errors.Select(e => e.Description));
+                return OperationResult<ResetPasswordResponseDto>.Fail($"Error al actualizar estado del usuario: {errors}");
+            }
+
+            var adminWhoReset = !string.IsNullOrWhiteSpace(adminUsername) ? adminUsername : "Administrador";
+            await _auditoriaService.LogAsync("EDITAR", "Usuarios", $"El Administrador '{adminWhoReset}' restableció la contraseña temporal del usuario '{user.UserName}' (requiere cambio obligatorio en próximo login)");
+
+            var response = new ResetPasswordResponseDto
+            {
+                UserId = user.Id,
+                Username = user.UserName ?? string.Empty,
+                TemporaryPassword = tempPassword,
+                DebeCambiarPassword = true
+            };
+
+            return OperationResult<ResetPasswordResponseDto>.Ok(response, $"Contraseña temporal para '{user.UserName}' establecida exitosamente.");
+        }
+
+        private static string GenerateSecureTemporaryPassword()
+        {
+            const string upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+            const string lower = "abcdefghijkmnopqrstuvwxyz";
+            const string digits = "23456789";
+            const string special = "!@$?#*";
+
+            var randomChars = new char[4];
+            randomChars[0] = upper[RandomNumberGenerator.GetInt32(upper.Length)];
+            randomChars[1] = lower[RandomNumberGenerator.GetInt32(lower.Length)];
+            randomChars[2] = digits[RandomNumberGenerator.GetInt32(digits.Length)];
+            randomChars[3] = special[RandomNumberGenerator.GetInt32(special.Length)];
+
+            return $"Udit{DateTime.UtcNow.Year}!{new string(randomChars)}";
         }
 
         // ── RBAC: Gestión de roles y permisos ────────────────────────────────

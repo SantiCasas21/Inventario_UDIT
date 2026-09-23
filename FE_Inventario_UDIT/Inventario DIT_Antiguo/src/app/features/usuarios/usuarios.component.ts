@@ -38,10 +38,20 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   roleFilter: string = 'ALL';
   statusFilter: string = 'ALL';
 
-  // Estado para modal de cambio de rol
-  selectedUserForRoleEdit: UserDto | null = null;
+  // Estado para modal integral de Gestión de Usuario (Rol + Contraseña)
+  selectedUserForManage: UserDto | null = null;
+  activeManageTab: 'role' | 'password' = 'role';
   selectedNewRole: string = 'User';
   updatingRole: boolean = false;
+
+  // Variables para Restablecimiento de Contraseña Temporal
+  resetAutoGenerate: boolean = true;
+  customTemporaryPassword: string = '';
+  showCustomPassword: boolean = false;
+  resettingPassword: boolean = false;
+  resetPasswordError: string | null = null;
+  generatedPasswordResult: string | null = null;
+  passwordCopied: boolean = false;
 
   // Estado para modal de registro de nuevo usuario (Admin)
   isCreateUserModalOpen: boolean = false;
@@ -211,19 +221,39 @@ export class UsuariosComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Edición exclusiva de Rol ──────────────────────────────────────────
-  openEditRole(user: UserDto): void {
-    this.selectedUserForRoleEdit = user;
+  // ── Gestión Integral de Usuario (Rol y Contraseña) ─────────────────────
+  openManageUser(user: UserDto, initialTab: 'role' | 'password' = 'role'): void {
+    this.selectedUserForManage = user;
+    this.activeManageTab = initialTab;
     this.selectedNewRole = user.role;
+    this.resetAutoGenerate = true;
+    this.customTemporaryPassword = '';
+    this.showCustomPassword = false;
+    this.resettingPassword = false;
+    this.resetPasswordError = null;
+    this.generatedPasswordResult = null;
+    this.passwordCopied = false;
+  }
+
+  // Compatibilidad con invocaciones previas
+  openEditRole(user: UserDto): void {
+    this.openManageUser(user, 'role');
+  }
+
+  cancelManageUser(): void {
+    this.selectedUserForManage = null;
+    this.resetPasswordError = null;
+    this.generatedPasswordResult = null;
+    this.passwordCopied = false;
   }
 
   cancelEditRole(): void {
-    this.selectedUserForRoleEdit = null;
+    this.cancelManageUser();
   }
 
   saveUserRole(): void {
-    if (!this.selectedUserForRoleEdit) return;
-    const user = this.selectedUserForRoleEdit;
+    if (!this.selectedUserForManage) return;
+    const user = this.selectedUserForManage;
     const newRole = this.selectedNewRole;
 
     this.confirmacionService.confirmar({
@@ -240,7 +270,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
           next: () => {
             this.snackBar.open(`Rol de "${user.username}" actualizado a "${newRole}" exitosamente`, 'Cerrar', { duration: 4000 });
             this.updatingRole = false;
-            this.selectedUserForRoleEdit = null;
+            this.selectedUserForManage = null;
             this.loadUsers();
           },
           error: (err) => {
@@ -250,6 +280,74 @@ export class UsuariosComponent implements OnInit, OnDestroy {
         });
       }
     });
+  }
+
+  executePasswordReset(): void {
+    if (!this.selectedUserForManage) return;
+    const user = this.selectedUserForManage;
+
+    if (!this.resetAutoGenerate) {
+      if (!this.customTemporaryPassword || this.customTemporaryPassword.trim().length < 6) {
+        this.resetPasswordError = 'La contraseña temporal debe tener al menos 6 caracteres.';
+        return;
+      }
+    }
+
+    const accionMsg = this.resetAutoGenerate
+      ? 'Se generará una contraseña temporal automática y el usuario estará obligado a cambiarla en su próximo acceso.'
+      : 'Se asignará la contraseña temporal personalizada y el usuario estará obligado a cambiarla en su próximo acceso.';
+
+    this.confirmacionService.confirmar({
+      titulo: 'Restablecer Contraseña Temporal',
+      mensajePrincipal: `¿Desea restablecer la contraseña de "${user.nombreCompleto || user.username}"?`,
+      subtitulo: accionMsg,
+      tipo: 'advertencia',
+      btnConfirmarTexto: 'Sí, Restablecer',
+      btnCancelarTexto: 'Cancelar'
+    }).subscribe(confirmado => {
+      if (confirmado) {
+        this.resettingPassword = true;
+        this.resetPasswordError = null;
+        this.generatedPasswordResult = null;
+        this.passwordCopied = false;
+
+        this.userManagementService.resetPassword(user.id, {
+          autoGenerate: this.resetAutoGenerate,
+          newTemporaryPassword: this.resetAutoGenerate ? undefined : this.customTemporaryPassword.trim()
+        }).subscribe({
+          next: (res) => {
+            this.resettingPassword = false;
+            this.generatedPasswordResult = res.temporaryPassword;
+            user.debeCambiarPassword = true;
+            this.snackBar.open(`Contraseña temporal generada para @${user.username}`, 'Cerrar', { duration: 4000 });
+          },
+          error: (err) => {
+            this.resettingPassword = false;
+            this.resetPasswordError = err?.message || err?.error?.message || 'Error al restablecer la contraseña.';
+            this.confirmacionService.mostrarAdvertencia('Error al restablecer contraseña', this.resetPasswordError || 'Error');
+          }
+        });
+      }
+    });
+  }
+
+  copyGeneratedPassword(): void {
+    if (!this.generatedPasswordResult) return;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(this.generatedPasswordResult).then(() => {
+        this.passwordCopied = true;
+        setTimeout(() => { this.passwordCopied = false; }, 3000);
+      });
+    } else {
+      const textArea = document.createElement('textarea');
+      textArea.value = this.generatedPasswordResult;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      this.passwordCopied = true;
+      setTimeout(() => { this.passwordCopied = false; }, 3000);
+    }
   }
 
   // ── Creación de Usuario por el Administrador ─────────────────────────

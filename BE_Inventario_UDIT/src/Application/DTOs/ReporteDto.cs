@@ -14,6 +14,7 @@ namespace Application.DTOs
         public string? Proveedor { get; set; }
         public string? Proyecto { get; set; }
         public string? Ubicacion { get; set; }
+        public string? UsuarioRegistro { get; set; }
 
         /// <summary>Saldo después de este movimiento</summary>
         public int SaldoAcumulado { get; set; }

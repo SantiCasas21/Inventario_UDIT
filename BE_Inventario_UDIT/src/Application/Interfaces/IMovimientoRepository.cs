@@ -47,6 +47,12 @@ namespace Application.Interfaces
         /// Útil para unificar duplicados.
         /// </summary>
         Task MigrateMovimientosAsync(int[] oldInsumoIds, int newInsumoId);
+
+        /// <summary>
+        /// Obtiene las ubicaciones físicas que actualmente tienen existencias (stock > 0)
+        /// para los insumos que coinciden con los criterios de filtro especificados.
+        /// </summary>
+        Task<List<CatalogoDto>> GetUbicacionesConStockPorFiltroAsync(InsumoFilterDto filter);
     }
 
     /// <summary>

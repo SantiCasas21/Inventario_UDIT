@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClientService } from '@app/core/http/api-client.service';
-import { UserDto, CreateUserAdminRequest } from '@app/core/models';
+import { UserDto, CreateUserAdminRequest, ResetUserPasswordAdminRequest, ResetPasswordResponse } from '@app/core/models';
 
 @Injectable({ providedIn: 'root' })
 export class UserManagementService {
@@ -21,13 +21,17 @@ export class UserManagementService {
 
   /** Obtener detalle de un usuario */
   getById(id: string): Observable<UserDto> {
-
     return this.api.get<UserDto>(`${this.endpoint}/${id}`);
   }
 
   /** Actualizar rol asignado a un usuario */
   updateRole(id: string, role: string): Observable<void> {
     return this.api.put<void>(`${this.endpoint}/${id}/role`, { role });
+  }
+
+  /** Restablecer contraseña temporal administrativamente (requiere cambio forzado al iniciar sesión) */
+  resetPassword(id: string, request: ResetUserPasswordAdminRequest): Observable<ResetPasswordResponse> {
+    return this.api.put<ResetPasswordResponse>(`${this.endpoint}/${id}/reset-password`, request);
   }
 
   /** Desactivar usuario (soft-delete) */

@@ -19,6 +19,7 @@ import { CatalogoService } from '@app/core/services/catalogo.service';
 import { ExcelExportService, ExcelColumn } from '@app/core/services/excel-export.service';
 import { ResumenProyectoDto, ProyectoDto } from '@app/core/models';
 import { UserService } from '@app/core/user/user.service';
+import { ReportesNavComponent } from '../shared/reportes-nav.component';
 
 @Component({
   selector: 'app-reporte-proyectos',
@@ -27,7 +28,8 @@ import { UserService } from '@app/core/user/user.service';
     CommonModule, FormsModule, ReactiveFormsModule, RouterModule,
     MatTableModule, MatButtonModule, MatIconModule, MatInputModule,
     MatFormFieldModule, MatSnackBarModule, MatAutocompleteModule,
-    MatCardModule, MatTooltipModule, MatProgressSpinnerModule
+    MatCardModule, MatTooltipModule, MatProgressSpinnerModule,
+    ReportesNavComponent
   ],
   templateUrl: './reporte-proyectos.component.html',
   styleUrls: ['./reporte-proyectos.component.scss']
@@ -87,7 +89,18 @@ export class ReporteProyectosComponent implements OnInit {
 
   consultar(): void {
     const selected = this.proyCtrl.value;
-    const proyectoId = typeof selected === 'object' && selected ? selected.id : undefined;
+    let proyectoId: number | undefined = undefined;
+
+    if (typeof selected === 'object' && selected) {
+      proyectoId = selected.id;
+    } else if (typeof selected === 'string' && selected.trim()) {
+      const query = selected.trim().toLowerCase();
+      const match = this.proyectos.find(p => p.nombre?.toLowerCase() === query)
+        || this.proyectos.find(p => p.nombre?.toLowerCase().includes(query));
+      if (match) {
+        proyectoId = match.id;
+      }
+    }
 
     this.loading = true;
     this.proyData = [];

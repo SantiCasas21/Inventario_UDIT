@@ -53,7 +53,7 @@ namespace Application.Services
                 m => m.IdInsumo == insumoId
                     && (!fechaDesde.HasValue || m.Fecha >= fechaDesde.Value)
                     && (!fechaHasta.HasValue || m.Fecha <= fechaHasta.Value),
-                "Proveedor", "Proyecto", "Ubicacion");
+                "Proveedor", "Proyecto", "Ubicacion", "UbicacionAnterior");
 
             var ordenados = movimientos.OrderBy(m => m.Fecha).ThenBy(m => m.Id);
 
@@ -108,6 +108,7 @@ namespace Application.Services
                     Proveedor = m.Proveedor?.Nombre,
                     Proyecto = m.Proyecto?.Nombre,
                     Ubicacion = ubicacionFinal,
+                    UsuarioRegistro = m.UsuarioRegistro,
                     SaldoAcumulado = saldo
                 });
             }
@@ -133,9 +134,11 @@ namespace Application.Services
         {
             var insumos = await _insumoRepo.GetAllAsync("Categoria");
 
-            var criticosInsumos = stockGeneral
-                .Where(s => s.StockActual <= umbral)
-                .Join(insumos, s => s.IdInsumo, i => i.Id, (s, i) => new { Insumo = i, Stock = s.StockActual })
+            var stockDict = stockGeneral.ToDictionary(s => s.IdInsumo, s => s.StockActual);
+
+            var criticosInsumos = insumos
+                .Select(i => new { Insumo = i, Stock = stockDict.GetValueOrDefault(i.Id, 0) })
+                .Where(x => x.Stock <= umbral)
                 .ToList();
 
             var insumoIds = criticosInsumos.Select(c => c.Insumo.Id).ToArray();

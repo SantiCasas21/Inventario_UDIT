@@ -3,7 +3,11 @@ using Domain.Entities.Catalogos;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Data;
 using System.Security.Claims;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Infrastructure.Data
 {
@@ -90,6 +94,7 @@ namespace Infrastructure.Data
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var logger = scope.ServiceProvider.GetService<ILogger<AppDbContext>>();
 
             // ==========================================
             // 1. ROLES
@@ -126,6 +131,12 @@ namespace Infrastructure.Data
                     await userManager.AddToRoleAsync(adminUser, "Admin");
                 }
             }
+
+            // ==========================================
+            // 2.5 MIGRACIÓN AUTOMÁTICA DE DATOS HISTÓRICOS (LEGACY -> V2)
+            // Se ejecuta solo si existe UDIT_Legacy y no se han migrado salidas o hay mojibake
+            // ==========================================
+            await CheckAndMigrateLegacyDataAsync(db, logger);
 
             // ==========================================
             // 3. CATÁLOGOS — solo si están vacíos (idempotente)
@@ -328,6 +339,99 @@ namespace Infrastructure.Data
                         await roleManager.AddClaimAsync(role, new Claim(PermissionClaimType, permission));
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Verifica si la base de datos de origen UDIT_Legacy existe y si UDIT_Inventario_V2 requiere
+        /// migrar salidas, compras y tildes limpias (ej. si Salidas == 0 o hay mojibake).
+        /// Es 100% idempotente: si los datos ya están migrados y validados, no realiza ninguna acción.
+        /// </summary>
+        public static async Task CheckAndMigrateLegacyDataAsync(AppDbContext db, ILogger? logger = null)
+        {
+            try
+            {
+                var connection = db.Database.GetDbConnection();
+                if (connection.State != ConnectionState.Open)
+                {
+                    await connection.OpenAsync();
+                }
+
+                // 1. Verificar si la base de datos UDIT_Legacy (o UDIT) existe
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM sys.databases WHERE name IN (N'UDIT_Legacy', N'UDIT')";
+                    var dbCount = Convert.ToInt32(await cmd.ExecuteScalarAsync() ?? 0);
+                    if (dbCount == 0)
+                    {
+                        logger?.LogInformation("[DbInitializer] Base de datos UDIT_Legacy no encontrada en la instancia SQL. Omitiendo migración legacy.");
+                        return;
+                    }
+                }
+
+                // 2. Verificar si se requiere migración:
+                // Criterio: ¿No hay salidas registradas o hay registros con mojibake?
+                int salidasCount = 0;
+                int mojibakeCount = 0;
+                int insumosCount = 0;
+
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT 
+                            ISNULL((SELECT COUNT(*) FROM [dbo].[Insumo]), 0) AS InsumosCount,
+                            ISNULL((SELECT COUNT(*) FROM [dbo].[MovimientoInventario] WHERE TipoMovimiento = 'SALIDA'), 0) AS SalidasCount,
+                            ISNULL((SELECT COUNT(*) FROM [dbo].[MovimientoInventario] WHERE Observacion LIKE '%Ã%' OR UsuarioRegistro LIKE '%Ã%'), 0) AS MojibakeCount
+                    ";
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    if (await reader.ReadAsync())
+                    {
+                        insumosCount = reader.GetInt32(0);
+                        salidasCount = reader.GetInt32(1);
+                        mojibakeCount = reader.GetInt32(2);
+                    }
+                }
+
+                bool needsMigration = insumosCount == 0 || salidasCount == 0 || mojibakeCount > 0;
+                if (!needsMigration)
+                {
+                    logger?.LogInformation("[DbInitializer] Datos históricos de inventario validados (Insumos: {Insumos}, Salidas: {Salidas}, Mojibake: 0). No se requiere migración.", insumosCount, salidasCount);
+                    return;
+                }
+
+                logger?.LogWarning("[DbInitializer] Se detectó necesidad de migración histórica (Insumos: {Insumos}, Salidas: {Salidas}, Mojibake: {Mojibake}). Ejecutando script de migración automática...", insumosCount, salidasCount, mojibakeCount);
+
+                // 3. Cargar el script SQL embebido
+                var assembly = typeof(DbInitializer).Assembly;
+                using var stream = assembly.GetManifestResourceStream("Infrastructure.Data.Scripts.MigrateLegacyToV2.sql");
+                if (stream == null)
+                {
+                    logger?.LogError("[DbInitializer] No se encontró el recurso embebido 'Infrastructure.Data.Scripts.MigrateLegacyToV2.sql'.");
+                    return;
+                }
+
+                using var readerSql = new StreamReader(stream, Encoding.UTF8);
+                var fullSql = await readerSql.ReadToEndAsync();
+
+                // 4. Dividir por lotes 'GO' y ejecutar
+                var batches = Regex.Split(fullSql, @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+
+                foreach (var batch in batches)
+                {
+                    var sqlBatch = batch.Trim();
+                    if (string.IsNullOrWhiteSpace(sqlBatch)) continue;
+
+                    using var cmdBatch = connection.CreateCommand();
+                    cmdBatch.CommandText = sqlBatch;
+                    cmdBatch.CommandTimeout = 600; // 10 minutos por si la máquina es modesta
+                    await cmdBatch.ExecuteNonQueryAsync();
+                }
+
+                logger?.LogInformation("[DbInitializer] ¡Migración de datos históricos completada con éxito!");
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, "[DbInitializer] Error al verificar o ejecutar la migración legacy automática.");
             }
         }
     }

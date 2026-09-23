@@ -64,15 +64,19 @@ namespace API.Controllers
         // ==========================================
         [HttpGet("movimientos")]
         public async Task<IActionResult> GetMovimientosPorPeriodo(
-            [FromQuery] DateTime desde,
-            [FromQuery] DateTime hasta,
+            [FromQuery] DateTime? desde = null,
+            [FromQuery] DateTime? hasta = null,
             [FromQuery] int? insumoId = null)
         {
-            if (desde > hasta)
+            var hoy = DateTime.Today;
+            var fechaDesde = desde ?? new DateTime(hoy.Year, hoy.Month, 1);
+            var fechaHasta = hasta ?? hoy;
+
+            if (fechaDesde > fechaHasta)
                 return BadRequest(Application.Common.Models.OperationResult.Fail("La fecha 'desde' no puede ser posterior a 'hasta'"));
 
-            var result = await _reporteService.GetMovimientosPorPeriodoAsync(desde, hasta, insumoId);
-            await _auditoriaService.LogAsync("CONSULTAR", "Reportes", $"Consulta de reporte Movimientos del período {desde:yyyy-MM-dd} al {hasta:yyyy-MM-dd}" + (insumoId.HasValue ? $" para insumo ID {insumoId}" : ""));
+            var result = await _reporteService.GetMovimientosPorPeriodoAsync(fechaDesde, fechaHasta, insumoId);
+            await _auditoriaService.LogAsync("CONSULTAR", "Reportes", $"Consulta de reporte Movimientos del período {fechaDesde:yyyy-MM-dd} al {fechaHasta:yyyy-MM-dd}" + (insumoId.HasValue ? $" para insumo ID {insumoId}" : ""));
             return Ok(result);
         }
 

@@ -213,6 +213,82 @@ namespace Infrastructure.Repositories
             _context.ChangeTracker.Clear();
         }
 
+        // ==========================================
+        // UBICACIONES ACTIVAS CON STOCK POR FILTRO
+        // ==========================================
+        public async Task<List<CatalogoDto>> GetUbicacionesConStockPorFiltroAsync(InsumoFilterDto filter)
+        {
+            var insumoPredicate = FilterExpressionBuilder.BuildInsumoFilter(filter ?? new InsumoFilterDto());
+            var insumosFiltrados = _context.Insumos.AsNoTracking().Where(insumoPredicate);
+
+            var movimientosNormales = _context.MovimientosInventario.AsNoTracking()
+                .Where(m => m.IdUbicacion.HasValue)
+                .Join(insumosFiltrados, m => m.IdInsumo, i => i.Id, (m, i) => new
+                {
+                    IdInsumo = m.IdInsumo,
+                    IdUbicacion = m.IdUbicacion!.Value,
+                    Cantidad = m.TipoMovimiento == TipoMovimiento.Salida ? -m.Cantidad :
+                               m.TipoMovimiento == TipoMovimiento.Unificacion ? 0 :
+                               m.Cantidad
+                });
+
+            var movimientosTraslado = _context.MovimientosInventario.AsNoTracking()
+                .Where(m => m.TipoMovimiento == TipoMovimiento.Traslado && m.IdUbicacionAnterior.HasValue)
+                .Join(insumosFiltrados, m => m.IdInsumo, i => i.Id, (m, i) => new
+                {
+                    IdInsumo = m.IdInsumo,
+                    IdUbicacion = m.IdUbicacionAnterior!.Value,
+                    Cantidad = -m.Cantidad
+                });
+
+            var todosMovimientos = movimientosNormales.Concat(movimientosTraslado);
+
+            var ubicacionesConStock = await todosMovimientos
+                .GroupBy(m => new { m.IdUbicacion, m.IdInsumo })
+                .Select(g => new
+                {
+                    g.Key.IdUbicacion,
+                    Stock = g.Sum(x => x.Cantidad)
+                })
+                .Where(x => x.Stock > 0)
+                .Select(x => x.IdUbicacion)
+                .Distinct()
+                .ToListAsync();
+
+            bool hasCriteria = filter != null && (
+                (filter.IdsCategoria?.Count > 0) ||
+                (filter.IdsEmpaquetamiento?.Count > 0) ||
+                (filter.IdsInsumo?.Count > 0) ||
+                (filter.UnidadesMedida?.Count > 0) ||
+                filter.ValorMedidaMin.HasValue ||
+                filter.ValorMedidaMax.HasValue ||
+                !string.IsNullOrWhiteSpace(filter.TextSearch)
+            );
+
+            if (ubicacionesConStock.Count == 0)
+            {
+                if (!hasCriteria)
+                {
+                    return await _context.Ubicaciones.AsNoTracking()
+                        .OrderBy(u => u.Nombre)
+                        .Select(u => new CatalogoDto { Id = u.Id, Nombre = u.Nombre, Tipo = "Ubicacion" })
+                        .ToListAsync();
+                }
+                return new List<CatalogoDto>();
+            }
+
+            return await _context.Ubicaciones.AsNoTracking()
+                .Where(u => ubicacionesConStock.Contains(u.Id))
+                .OrderBy(u => u.Nombre)
+                .Select(u => new CatalogoDto
+                {
+                    Id = u.Id,
+                    Nombre = u.Nombre,
+                    Tipo = "Ubicacion"
+                })
+                .ToListAsync();
+        }
+
         private static Func<IQueryable<MovimientoInventario>, IOrderedQueryable<MovimientoInventario>>? BuildMovimientoOrderBy(
             string? sortBy, bool desc)
         {

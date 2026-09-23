@@ -21,4 +21,8 @@
     <ProjectReference Include="..\Application\Application.csproj" />
     <ProjectReference Include="..\Domain\Domain.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data\Scripts\MigrateLegacyToV2.sql" />
+  </ItemGroup>
 </Project>

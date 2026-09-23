@@ -1,4 +1,4 @@
-﻿import { Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -47,7 +47,7 @@ export class CambiarPasswordInicialComponent implements OnInit {
     private snackBar: MatSnackBar
   ) {
     this.form = this.fb.group({
-      currentPassword: ['Udit2026!', [Validators.required]],
+      currentPassword: ['', [Validators.required]],
       newPassword: ['', [
         Validators.required,
         Validators.minLength(6),

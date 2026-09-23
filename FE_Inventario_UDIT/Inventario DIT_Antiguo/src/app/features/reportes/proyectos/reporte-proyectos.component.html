@@ -32,6 +32,9 @@
       </div>
     </div>
 
+    <!-- Barra de Navegación Rápida entre Reportes -->
+    <app-reportes-nav></app-reportes-nav>
+
     <!-- Filtro -->
     <mat-card class="glass-card mb-6 border-none">
       <mat-card-content class="p-6">
@@ -39,7 +42,7 @@
           <mat-form-field appearance="outline" class="md:col-span-8 w-full">
             <mat-label>Proyecto (Opcional - Todos si está vacío)</mat-label>
             <mat-icon matPrefix class="text-emerald-500 mr-2">search</mat-icon>
-            <input type="text" matInput [formControl]="proyCtrl" [matAutocomplete]="autoProy" placeholder="Escribe el nombre del proyecto...">
+            <input type="text" matInput [formControl]="proyCtrl" [matAutocomplete]="autoProy" (keyup.enter)="consultar()" placeholder="Escribe el nombre del proyecto...">
             <button *ngIf="proyCtrl.value" matSuffix mat-icon-button type="button" (click)="proyCtrl.setValue('')" matTooltip="Limpiar">
               <mat-icon class="text-gray-400">close</mat-icon>
             </button>

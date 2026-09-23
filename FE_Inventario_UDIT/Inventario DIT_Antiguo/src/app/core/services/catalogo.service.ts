@@ -49,4 +49,11 @@ export class CatalogoService {
   delete(endpoint: string, id: number): Observable<void> {
     return this.api.delete(`${endpoint}/${id}`);
   }
+
+  /**
+   * Obtiene las ubicaciones físicas que tienen existencias reales para los criterios de filtro dados.
+   */
+  getUbicacionesActivasPorFiltro(filter: Record<string, unknown>): Observable<CatalogoDto[]> {
+    return this.api.post<CatalogoDto[]>('ubicacion/activas-por-filtro', filter);
+  }
 }

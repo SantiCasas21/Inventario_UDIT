@@ -1,3 +1,4 @@
+using Application.DTOs;
 using Application.Interfaces;
 using Domain.Entities.Catalogos;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +29,30 @@ namespace API.Controllers
     [Route("api/ubicacion")]
     public class UbicacionController : BaseCatalogoController<Ubicacion>
     {
-        public UbicacionController(ICatalogoService<Ubicacion> service) : base(service) { }
+        private readonly IMovimientoRepository _movimientoRepo;
+
+        public UbicacionController(
+            ICatalogoService<Ubicacion> service,
+            IMovimientoRepository movimientoRepo) : base(service)
+        {
+            _movimientoRepo = movimientoRepo;
+        }
+
+        // POST /api/ubicacion/activas-por-filtro
+        [HttpPost("activas-por-filtro")]
+        public async Task<IActionResult> GetActivasPorFiltroPost([FromBody] InsumoFilterDto filter)
+        {
+            var result = await _movimientoRepo.GetUbicacionesConStockPorFiltroAsync(filter);
+            return Ok(Application.Common.Models.OperationResult<List<CatalogoDto>>.Ok(result));
+        }
+
+        // GET /api/ubicacion/activas-por-filtro
+        [HttpGet("activas-por-filtro")]
+        public async Task<IActionResult> GetActivasPorFiltroGet([FromQuery] InsumoFilterDto filter)
+        {
+            var result = await _movimientoRepo.GetUbicacionesConStockPorFiltroAsync(filter);
+            return Ok(Application.Common.Models.OperationResult<List<CatalogoDto>>.Ok(result));
+        }
     }
 
     [Route("api/tipo-compra")]

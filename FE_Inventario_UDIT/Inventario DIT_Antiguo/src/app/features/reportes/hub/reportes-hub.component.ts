@@ -5,6 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ReportesNavComponent } from '../shared/reportes-nav.component';
 
 interface ReportCard {
   title: string;
@@ -20,7 +21,7 @@ interface ReportCard {
 @Component({
   selector: 'app-reportes-hub',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatCardModule, MatButtonModule, MatIconModule, MatTooltipModule],
+  imports: [CommonModule, RouterModule, MatCardModule, MatButtonModule, MatIconModule, MatTooltipModule, ReportesNavComponent],
   templateUrl: './reportes-hub.component.html',
   styleUrls: ['./reportes-hub.component.scss']
 })

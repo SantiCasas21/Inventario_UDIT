@@ -9,7 +9,8 @@ export interface MovimientoDto {
   tipoMovimiento: TipoMovimiento;
   fecha: string; // ISO 8601 string
   idInsumo: number;
-  insumoCodigo: string;
+  insumoCodigo?: string;
+  codigoFabrica?: string;
   insumoDescripcion?: string | null;
   cantidad: number;
   precioUnitario?: number | null;

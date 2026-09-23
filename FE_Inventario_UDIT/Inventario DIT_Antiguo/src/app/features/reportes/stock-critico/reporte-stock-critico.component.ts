@@ -14,6 +14,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ReporteService } from '@app/core/services/reporte.service';
 import { ExcelExportService, ExcelColumn } from '@app/core/services/excel-export.service';
 import { StockCriticoDto } from '@app/core/models';
+import { ReportesNavComponent } from '../shared/reportes-nav.component';
 
 import { UserService } from '@app/core/user/user.service';
 import { inject } from '@angular/core';
@@ -24,7 +25,8 @@ import { inject } from '@angular/core';
   imports: [
     CommonModule, FormsModule, RouterModule,
     MatTableModule, MatButtonModule, MatIconModule, MatInputModule,
-    MatFormFieldModule, MatSnackBarModule, MatCardModule, MatTooltipModule, MatProgressSpinnerModule
+    MatFormFieldModule, MatSnackBarModule, MatCardModule, MatTooltipModule, MatProgressSpinnerModule,
+    ReportesNavComponent
   ],
   templateUrl: './reporte-stock-critico.component.html',
   styleUrls: ['./reporte-stock-critico.component.scss']

@@ -29,6 +29,26 @@ namespace Application.DTOs
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = "User";
     }
+
+    /// <summary>
+    /// DTO para la solicitud de restablecimiento administrativo de contraseña temporal.
+    /// </summary>
+    public class ResetUserPasswordAdminDto
+    {
+        public string? NewTemporaryPassword { get; set; }
+        public bool AutoGenerate { get; set; } = true;
+    }
+
+    /// <summary>
+    /// DTO con la respuesta del restablecimiento de contraseña temporal.
+    /// </summary>
+    public class ResetPasswordResponseDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string TemporaryPassword { get; set; } = string.Empty;
+        public bool DebeCambiarPassword { get; set; } = true;
+    }
 }
 
 
